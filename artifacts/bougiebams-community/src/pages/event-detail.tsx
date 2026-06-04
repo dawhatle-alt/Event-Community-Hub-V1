@@ -66,7 +66,7 @@ export default function EventDetail() {
       },
       {
         onSuccess: (data) => {
-          window.location.href = data.url; // Redirect to Stripe
+          window.open(data.url, "_blank", "noopener,noreferrer");
         }
       }
     );
