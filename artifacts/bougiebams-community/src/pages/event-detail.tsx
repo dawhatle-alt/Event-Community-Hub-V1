@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@workspace/replit-auth-web";
 import img3 from "@assets/bb-image-3.png";
 
 export default function EventDetail() {
@@ -19,6 +20,7 @@ export default function EventDetail() {
   });
 
   const createCheckout = useCreateCheckoutSession();
+  const { user, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -27,6 +29,17 @@ export default function EventDetail() {
     phone: "",
     quantity: 1
   });
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: prev.firstName || user.firstName || "",
+        lastName:  prev.lastName  || user.lastName  || "",
+        email:     prev.email     || user.email      || "",
+      }));
+    }
+  }, [isAuthenticated, user]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
