@@ -1,19 +1,32 @@
 import { Link, useLocation } from "wouter";
 import logoPath from "@assets/bougiebams-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut, CalendarDays } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@workspace/replit-auth-web";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { user, isLoading, isAuthenticated, login, logout } = useAuth();
 
-  // Close mobile menu on navigate
   React.useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
+
+  const initials = user
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "U"
+    : "";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
@@ -30,15 +43,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/events" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/events" ? "text-primary" : "text-muted-foreground")}>Events</Link>
             <Link href="/about" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/about" ? "text-primary" : "text-muted-foreground")}>About</Link>
             <Link href="/contact" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/contact" ? "text-primary" : "text-muted-foreground")}>Contact</Link>
-            <Link href="/events" className="text-sm">
-              <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 shadow-sm">
+
+            {!isLoading && isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <Avatar className="h-9 w-9">
+                      {user?.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.firstName ?? "User"} />}
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-3 py-2 text-sm font-medium truncate">
+                    {user?.firstName} {user?.lastName}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
+                      <CalendarDays className="h-4 w-4" />
+                      My Events
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : !isLoading ? (
+              <Button
+                size="sm"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 shadow-sm"
+                onClick={login}
+              >
+                <LogIn className="mr-2 h-4 w-4" />
                 Join Us
               </Button>
-            </Link>
+            ) : (
+              <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+            )}
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <button 
+          <button
             className="md:hidden p-2 text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
@@ -61,6 +112,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/events" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Events</Link>
                 <Link href="/about" className="text-lg font-medium p-2 hover:bg-muted rounded-md">About</Link>
                 <Link href="/contact" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Contact</Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link href="/my-events" className="text-lg font-medium p-2 hover:bg-muted rounded-md flex items-center gap-2">
+                      <CalendarDays className="h-5 w-5" />
+                      My Events
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="text-lg font-medium p-2 hover:bg-muted rounded-md flex items-center gap-2 text-left text-destructive"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={login}
+                    className="text-lg font-medium p-2 hover:bg-muted rounded-md flex items-center gap-2 text-left"
+                  >
+                    <LogIn className="h-5 w-5" />
+                    Log in / Join Us
+                  </button>
+                )}
               </nav>
             </motion.div>
           )}

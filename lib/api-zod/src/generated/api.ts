@@ -9,6 +9,85 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().email().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional().describe('Relative path to redirect to after login (must start with `\/`). Defaults to `\/`.')
+})
+
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string().optional(),
+  "iss": zod.coerce.string().url().optional()
+})
+
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const LogoutBrowserSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+
+/**
+ * @summary Exchange a mobile OIDC code for a session token
+ */
+
+
+
+
+
+
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().url().min(1),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -324,6 +403,50 @@ export const ListRegistrationsResponse = zod.array(ListRegistrationsResponseItem
 
 
 /**
+ * @summary Get registrations for the currently logged-in user
+ */
+export const GetMyRegistrationsHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetMyRegistrationsResponseItem = zod.object({
+  "registration": zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullish(),
+  "quantity": zod.number().optional(),
+  "totalAmount": zod.number().optional(),
+  "stripeSessionId": zod.string().nullish(),
+  "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "createdAt": zod.coerce.date()
+}),
+  "event": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "date": zod.coerce.date(),
+  "endDate": zod.coerce.date().nullish(),
+  "location": zod.string(),
+  "address": zod.string().nullish(),
+  "price": zod.number().describe('Price in dollars'),
+  "capacity": zod.number(),
+  "spotsRemaining": zod.number().nullish(),
+  "imageUrl": zod.string().nullable(),
+  "category": zod.string(),
+  "tags": zod.string().nullish().describe('Comma-separated tags'),
+  "featured": zod.boolean(),
+  "published": zod.boolean(),
+  "stripePriceId": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+})
+export const GetMyRegistrationsResponse = zod.array(GetMyRegistrationsResponseItem)
+
+
+/**
  * @summary Create a Stripe Checkout session for event registration
  */
 
@@ -415,16 +538,15 @@ export const GetRegistrationStatsResponse = zod.object({
 
 
 /**
- * Receives Stripe webhook events. Must be registered BEFORE express.json()
-middleware so the raw Buffer body is preserved for signature verification.
-Handles checkout.session.completed to mark registrations paid and
-decrement spots_remaining.
+ * Receives Square webhook events (payment.completed, checkout.order.completed).
+Must be registered BEFORE express.json() so the raw body is preserved for
+HMAC-SHA256 signature verification via x-square-hmacsha256-signature header.
 
- * @summary Stripe webhook endpoint
+ * @summary Square webhook endpoint
  */
-export const HandleStripeWebhookBody = zod.record(zod.string(), zod.unknown()).describe('Raw Stripe webhook event payload')
+export const HandleSquareWebhookBody = zod.record(zod.string(), zod.unknown()).describe('Raw Stripe webhook event payload')
 
-export const HandleStripeWebhookResponse = zod.object({
+export const HandleSquareWebhookResponse = zod.object({
   "received": zod.boolean().optional()
 })
 

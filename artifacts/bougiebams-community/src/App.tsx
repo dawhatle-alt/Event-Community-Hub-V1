@@ -12,6 +12,7 @@ import Confirmation from "@/pages/confirmation";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
+import MyEvents from "@/pages/my-events";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />
         <Route path="/admin" component={Admin} />
+        <Route path="/my-events" component={MyEvents} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type HandleStripeWebhook200 = {
+export type HandleSquareWebhook200 = {
   received?: boolean;
 };

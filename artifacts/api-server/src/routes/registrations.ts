@@ -8,8 +8,33 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
-
 const router: IRouter = Router();
+
+// Authenticated user: list their own registrations with event details
+router.get("/registrations/my", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const regs = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.userId, req.user.id))
+    .orderBy(sql`${registrationsTable.createdAt} DESC`);
+
+  const results = await Promise.all(
+    regs.map(async (reg) => {
+      const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId));
+      return {
+        registration: { ...reg, totalAmount: Number(reg.totalAmount) },
+        event: event ? { ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null } : null,
+      };
+    })
+  );
+
+  res.json(results.filter((r) => r.event !== null));
+});
 
 // Admin-only: list registrations for an event
 // Two route aliases: /events/:id/registrations and /registrations?eventId=:id
@@ -66,6 +91,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   }
 
   const { eventId, firstName, lastName, email, phone, quantity = 1 } = parsed.data;
+  const userId = req.isAuthenticated() ? req.user.id : null;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId));
   if (!event) {
@@ -91,6 +117,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     await db.insert(registrationsTable).values({
       eventId,
+      userId: userId ?? undefined,
       firstName,
       lastName,
       email,
@@ -125,6 +152,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     .insert(registrationsTable)
     .values({
       eventId,
+      userId: userId ?? undefined,
       firstName,
       lastName,
       email,

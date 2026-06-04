@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './authorizationSessionHeaderParameter';
+export * from './authUser';
+export * from './authUserEnvelope';
+export * from './beginBrowserLoginParams';
 export * from './checkoutSessionInput';
 export * from './checkoutSessionResponse';
 export * from './errorEnvelope';
@@ -13,14 +17,19 @@ export * from './event';
 export * from './eventInput';
 export * from './eventUpdate';
 export * from './getRegistrationBySessionParams';
-export * from './handleStripeWebhook200';
+export * from './handleBrowserLoginCallbackParams';
+export * from './handleSquareWebhook200';
 export * from './healthStatus';
 export * from './listEventsParams';
 export * from './listRegistrationsParams';
+export * from './logoutSuccess';
+export * from './mobileTokenExchangeRequest';
+export * from './mobileTokenExchangeSuccess';
 export * from './registration';
 export * from './registrationConfirmation';
 export * from './registrationStats';
 export * from './registrationStatus';
+export * from './registrationWithEvent';
 export * from './uploadUrlRequest';
 export * from './uploadUrlResponse';
 export * from './webhookPayload';
