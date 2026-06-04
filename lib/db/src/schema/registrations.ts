@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, numeric, timestamp, varchar, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
@@ -15,6 +15,7 @@ export const registrationsTable = pgTable("registrations", {
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   stripeSessionId: text("stripe_session_id"),
   status: text("status").notNull().default("pending"),
+  confirmationEmailSent: boolean("confirmation_email_sent").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

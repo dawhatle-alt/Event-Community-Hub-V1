@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, sum, sql } from "drizzle-orm";
+import { eq, count, sum, sql, and } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import {
   ListEventRegistrationsParams,
@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
+import { sendRegistrationConfirmation } from "../lib/email";
 const router: IRouter = Router();
 
 // Authenticated user: list their own registrations with event details
@@ -115,7 +116,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   // Free events: skip Square entirely, confirm immediately
   if (Number(event.price) === 0) {
     const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    await db.insert(registrationsTable).values({
+    const [freeReg] = await db.insert(registrationsTable).values({
       eventId,
       userId: userId ?? undefined,
       firstName,
@@ -126,12 +127,31 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       totalAmount: "0",
       stripeSessionId: sessionId,
       status: "paid",
-    });
+    }).returning();
 
     await db
       .update(eventsTable)
       .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
       .where(eq(eventsTable.id, eventId));
+
+    // Send confirmation email (non-blocking — never fail the registration if email fails)
+    sendRegistrationConfirmation({
+      to: email,
+      firstName,
+      eventTitle: event.title,
+      eventDate: event.date,
+      eventEndDate: event.endDate,
+      eventLocation: event.location,
+      eventAddress: event.address,
+      quantity,
+      totalAmount: 0,
+    }).then((sent) => {
+      if (sent) {
+        return db.update(registrationsTable)
+          .set({ confirmationEmailSent: true })
+          .where(and(eq(registrationsTable.id, freeReg.id), eq(registrationsTable.confirmationEmailSent, false)));
+      }
+    }).catch(() => {});
 
     res.json({
       url: `${baseUrl}/events/confirmation?sessionId=${sessionId}`,
@@ -239,11 +259,36 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
         const orderResp = await square.orders.get({ orderId: registration.stripeSessionId });
         const order = orderResp.order;
         if (order?.state === "COMPLETED") {
-          await db
+          const [updatedReg] = await db
             .update(registrationsTable)
             .set({ status: "paid" })
-            .where(eq(registrationsTable.id, registration.id));
-          registration = { ...registration, status: "paid" };
+            .where(eq(registrationsTable.id, registration.id))
+            .returning();
+          registration = updatedReg ?? { ...registration, status: "paid" };
+
+          // Send confirmation email if not already sent (idempotency guard)
+          if (!registration.confirmationEmailSent) {
+            const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, registration.eventId));
+            if (eventForEmail) {
+              sendRegistrationConfirmation({
+                to: registration.email,
+                firstName: registration.firstName,
+                eventTitle: eventForEmail.title,
+                eventDate: eventForEmail.date,
+                eventEndDate: eventForEmail.endDate,
+                eventLocation: eventForEmail.location,
+                eventAddress: eventForEmail.address,
+                quantity: registration.quantity,
+                totalAmount: Number(registration.totalAmount),
+              }).then((sent) => {
+                if (sent) {
+                  return db.update(registrationsTable)
+                    .set({ confirmationEmailSent: true })
+                    .where(and(eq(registrationsTable.id, registration.id), eq(registrationsTable.confirmationEmailSent, false)));
+                }
+              }).catch(() => {});
+            }
+          }
         }
       } catch (err) {
         logger.warn({ err }, "Could not verify Square order status");

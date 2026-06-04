@@ -1,6 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { db, registrationsTable, eventsTable } from "@workspace/db";
 import { logger } from "./logger";
+import { sendRegistrationConfirmation } from "./email";
 import { createHmac, timingSafeEqual } from "crypto";
 
 /**
@@ -71,6 +72,30 @@ export class WebhookHandlers {
             .where(eq(eventsTable.id, reg.eventId));
 
           logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots decremented after Square payment confirmation");
+
+          // Send confirmation email if not already sent (idempotency guard)
+          if (!reg.confirmationEmailSent) {
+            const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId));
+            if (eventForEmail) {
+              sendRegistrationConfirmation({
+                to: reg.email,
+                firstName: reg.firstName,
+                eventTitle: eventForEmail.title,
+                eventDate: eventForEmail.date,
+                eventEndDate: eventForEmail.endDate,
+                eventLocation: eventForEmail.location,
+                eventAddress: eventForEmail.address,
+                quantity: reg.quantity,
+                totalAmount: Number(reg.totalAmount),
+              }).then((sent) => {
+                if (sent) {
+                  return db.update(registrationsTable)
+                    .set({ confirmationEmailSent: true })
+                    .where(and(eq(registrationsTable.id, reg.id), eq(registrationsTable.confirmationEmailSent, false)));
+                }
+              }).catch(() => {});
+            }
+          }
         } else {
           logger.warn({ orderId }, "Square webhook: no registration found for order");
         }
@@ -98,6 +123,30 @@ export class WebhookHandlers {
             spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${reg.quantity})`
           })
           .where(eq(eventsTable.id, reg.eventId));
+
+        // Send confirmation email if not already sent (idempotency guard)
+        if (!reg.confirmationEmailSent) {
+          const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId));
+          if (eventForEmail) {
+            sendRegistrationConfirmation({
+              to: reg.email,
+              firstName: reg.firstName,
+              eventTitle: eventForEmail.title,
+              eventDate: eventForEmail.date,
+              eventEndDate: eventForEmail.endDate,
+              eventLocation: eventForEmail.location,
+              eventAddress: eventForEmail.address,
+              quantity: reg.quantity,
+              totalAmount: Number(reg.totalAmount),
+            }).then((sent) => {
+              if (sent) {
+                return db.update(registrationsTable)
+                  .set({ confirmationEmailSent: true })
+                  .where(and(eq(registrationsTable.id, reg.id), eq(registrationsTable.confirmationEmailSent, false)));
+              }
+            }).catch(() => {});
+          }
+        }
       }
     }
   }
