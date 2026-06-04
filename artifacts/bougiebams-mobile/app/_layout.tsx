@@ -16,14 +16,17 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setBaseUrl } from "@workspace/api-client-react";
-import { Stack } from "expo-router";
+import * as Notifications from "expo-notifications";
+import { useRouter, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { requestNotificationPermissions } from "@/lib/notifications";
 
 // Set API base URL for Expo (runs outside the web proxy)
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -34,6 +37,29 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const router = useRouter();
+  const notificationResponseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    notificationResponseListener.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as {
+          eventId?: number;
+          screen?: string;
+        };
+        if (data?.eventId && data?.screen === "event") {
+          router.push(`/event/${data.eventId}`);
+        }
+      }
+    );
+
+    return () => {
+      notificationResponseListener.current?.remove();
+    };
+  }, [router]);
+
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -73,6 +99,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    requestNotificationPermissions();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 

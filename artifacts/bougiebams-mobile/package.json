@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",
-    "date-fns": "^3.6.0"
+    "date-fns": "^3.6.0",
+    "expo-notifications": "~0.31.5"
   }
 }

@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useGetRegistrationBySession } from "@workspace/api-client-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,12 +16,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import {
+  scheduleConfirmationNotification,
+  scheduleDayBeforeReminder,
+} from "@/lib/notifications";
 
 export default function ConfirmationScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const notificationsScheduled = useRef(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -32,8 +37,19 @@ export default function ConfirmationScreen() {
   );
 
   useEffect(() => {
-    if (data?.registration) {
+    if (data?.registration && data?.event && !notificationsScheduled.current) {
+      notificationsScheduled.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      const event = {
+        id: data.event.id,
+        title: data.event.title,
+        date: data.event.date,
+        location: data.event.location,
+      };
+
+      scheduleConfirmationNotification(event);
+      scheduleDayBeforeReminder(event);
     }
   }, [data]);
 
