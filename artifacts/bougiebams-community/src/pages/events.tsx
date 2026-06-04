@@ -1,17 +1,100 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { format } from "date-fns";
-import { Calendar, Users, MapPin, Search, LayoutGrid, LayoutList } from "lucide-react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
+import { Calendar, Users, MapPin, Search, LayoutGrid, LayoutList, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useListEvents, useListEventCategories } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import type { Event } from "@workspace/api-client-react";
+
+type ViewMode = "grid" | "list" | "calendar";
+
+function CalendarView({ events }: { events: Event[] }) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // Pad start
+  const startDow = monthStart.getDay();
+  const paddedDays: (Date | null)[] = [...Array(startDow).fill(null), ...days];
+
+  const eventsOnDay = (day: Date) =>
+    events.filter((e) => isSameDay(new Date(e.date), day));
+
+  return (
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      {/* Month header */}
+      <div className="flex items-center justify-between p-6 border-b border-border">
+        <button
+          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h3 className="font-serif text-xl font-medium">{format(currentMonth, "MMMM yyyy")}</h3>
+        <button
+          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground uppercase py-2 border-b border-border">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="py-2">{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar cells */}
+      <div className="grid grid-cols-7">
+        {paddedDays.map((day, idx) => {
+          const dayEvents = day ? eventsOnDay(day) : [];
+          const isToday = day ? isSameDay(day, new Date()) : false;
+          return (
+            <div
+              key={idx}
+              className={`min-h-[80px] p-2 border-b border-r border-border/50 last:border-r-0 ${
+                day && !isSameMonth(day, currentMonth) ? "opacity-30" : ""
+              }`}
+            >
+              {day && (
+                <>
+                  <span
+                    className={`inline-flex items-center justify-center w-7 h-7 text-sm rounded-full mb-1 ${
+                      isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground"
+                    }`}
+                  >
+                    {format(day, "d")}
+                  </span>
+                  <div className="space-y-0.5">
+                    {dayEvents.map((event) => (
+                      <Link key={event.id} href={`/events/${event.id}`}>
+                        <div className="text-xs bg-primary/15 text-primary px-1.5 py-0.5 rounded truncate hover:bg-primary/25 transition-colors cursor-pointer">
+                          {event.title}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function Events() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showUpcomingOnly, setShowUpcomingOnly] = useState(true);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const { data: categories } = useListEventCategories();
   const { data: events, isLoading } = useListEvents({
@@ -91,21 +174,21 @@ export default function Events() {
               >
                 Past
               </Button>
+
+              {/* View mode toggle: grid / list / calendar */}
               <div className="ml-2 flex items-center gap-1 border border-border rounded-full p-1">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-full transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-full transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  aria-label="List view"
-                >
-                  <LayoutList className="w-4 h-4" />
-                </button>
+                {(["grid", "list", "calendar"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`p-1.5 rounded-full transition-colors ${viewMode === mode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    aria-label={`${mode} view`}
+                  >
+                    {mode === "grid" && <LayoutGrid className="w-4 h-4" />}
+                    {mode === "list" && <LayoutList className="w-4 h-4" />}
+                    {mode === "calendar" && <CalendarDays className="w-4 h-4" />}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -131,6 +214,8 @@ export default function Events() {
                 Clear Filters
               </Button>
             </div>
+          ) : viewMode === "calendar" ? (
+            <CalendarView events={filtered ?? []} />
           ) : viewMode === "grid" ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filtered?.map((event, i) => (
@@ -208,9 +293,9 @@ export default function Events() {
                     <div className="flex-1 min-w-0">
                       <div className="text-primary font-medium text-xs mb-1 uppercase tracking-wider">{event.category}</div>
                       <h3 className="font-serif text-xl font-medium group-hover:text-primary transition-colors truncate">{event.title}</h3>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(event.date), "MMM d, yyyy · h:mm a")}</span>
-                        <span className="flex items-center gap-1 hidden sm:flex"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
                       </div>
                     </div>
                     <div className="flex-shrink-0 text-right">

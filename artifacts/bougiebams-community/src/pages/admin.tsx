@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   useListEvents,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
   useGetRegistrationStats,
+  useListEventRegistrations,
+  useRequestUploadUrl,
   getListEventsQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -13,34 +15,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 const ADMIN_KEY = "bb_admin_auth";
 
 function getStoredPassword(): string | null {
-  try {
-    return sessionStorage.getItem(ADMIN_KEY);
-  } catch {
-    return null;
-  }
+  try { return sessionStorage.getItem(ADMIN_KEY); } catch { return null; }
 }
-
 function storePassword(pw: string) {
-  try {
-    sessionStorage.setItem(ADMIN_KEY, pw);
-  } catch {
-    // ignore
-  }
+  try { sessionStorage.setItem(ADMIN_KEY, pw); } catch { /* ignore */ }
 }
-
 function clearPassword() {
-  try {
-    sessionStorage.removeItem(ADMIN_KEY);
-  } catch {
-    // ignore
-  }
+  try { sessionStorage.removeItem(ADMIN_KEY); } catch { /* ignore */ }
 }
 
 function AdminLoginGate({ onAuth }: { onAuth: (pw: string) => void }) {
@@ -56,8 +44,10 @@ function AdminLoginGate({ onAuth }: { onAuth: (pw: string) => void }) {
       const res = await fetch("/api/registrations/stats", {
         headers: { Authorization: `Bearer ${pw}` },
       });
-      if (res.ok || res.status === 200) {
+      if (res.ok) {
         onAuth(pw);
+      } else if (res.status === 503) {
+        setError("Admin access is not configured on this server.");
       } else if (res.status === 401 || res.status === 403) {
         setError("Incorrect password. Please try again.");
       } else {
@@ -92,6 +82,7 @@ function AdminLoginGate({ onAuth }: { onAuth: (pw: string) => void }) {
               placeholder="••••••••"
               className="rounded-xl"
               autoFocus
+              autoComplete="current-password"
             />
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
@@ -104,54 +95,106 @@ function AdminLoginGate({ onAuth }: { onAuth: (pw: string) => void }) {
   );
 }
 
-export default function Admin() {
-  const [adminPassword, setAdminPassword] = useState<string | null>(getStoredPassword);
+function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
+  const [open, setOpen] = useState(false);
+  const { data: regs, isLoading } = useListEventRegistrations(eventId, {
+    request: { headers: adminHeaders },
+    query: { enabled: open },
+  });
 
+  return (
+    <div className="border-t border-border mt-2 pt-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+      >
+        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        Registrations
+      </button>
+      {open && (
+        <div className="mt-2 text-xs space-y-1">
+          {isLoading ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : !regs?.length ? (
+            <p className="text-muted-foreground">No registrations yet.</p>
+          ) : (
+            regs.map((r) => (
+              <div key={r.id} className="flex items-center justify-between bg-muted/40 rounded px-2 py-1">
+                <span className="font-medium">{r.firstName} {r.lastName}</span>
+                <span className="text-muted-foreground">{r.email}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${r.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{r.status}</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const BLANK_FORM = {
+  title: "",
+  description: "",
+  date: new Date().toISOString().slice(0, 16),
+  location: "",
+  address: "",
+  price: 0,
+  capacity: 20,
+  category: "Brunch",
+  imageUrl: "",
+  featured: false,
+};
+
+function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; onLogout: () => void }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const adminHeaders = adminPassword ? { Authorization: `Bearer ${adminPassword}` } : {};
+  const adminHeaders = useMemo(() => ({ Authorization: `Bearer ${adminPassword}` }), [adminPassword]);
+  const requestOpts = useMemo(() => ({ headers: adminHeaders }), [adminHeaders]);
 
-  const { data: events, isLoading: eventsLoading } = useListEvents(
-    {},
-    { request: adminPassword ? { headers: adminHeaders } : undefined }
-  );
-  const { data: stats } = useGetRegistrationStats(
-    { request: adminPassword ? { headers: adminHeaders } : undefined }
-  );
-
-  const createEvent = useCreateEvent();
-  const updateEvent = useUpdateEvent();
-  const deleteEvent = useDeleteEvent();
+  // All hooks instantiated with auth baked in
+  const { data: events, isLoading: eventsLoading } = useListEvents({}, { request: requestOpts });
+  const { data: stats } = useGetRegistrationStats({ request: requestOpts });
+  const createEvent = useCreateEvent({ request: requestOpts });
+  const updateEvent = useUpdateEvent({ request: requestOpts });
+  const deleteEvent = useDeleteEvent({ request: requestOpts });
+  const requestUploadUrl = useRequestUploadUrl({ request: requestOpts });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: new Date().toISOString().slice(0, 16),
-    location: "",
-    address: "",
-    price: 0,
-    capacity: 20,
-    category: "Brunch",
-    imageUrl: "",
-    featured: false,
-  });
+  const [formData, setFormData] = useState(BLANK_FORM);
+  const [uploading, setUploading] = useState(false);
 
-  const handleAuth = (pw: string) => {
-    storePassword(pw);
-    setAdminPassword(pw);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await new Promise<{ uploadURL: string; objectPath: string }>((resolve, reject) => {
+        requestUploadUrl.mutate(
+          { data: { name: file.name, size: file.size, contentType: file.type } },
+          {
+            onSuccess: resolve,
+            onError: reject,
+          }
+        );
+      });
+
+      await fetch(result.uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      const imageUrl = `/api/storage/objects/${result.objectPath}`;
+      setFormData((f) => ({ ...f, imageUrl }));
+      toast({ title: "Image uploaded" });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
-
-  const handleLogout = () => {
-    clearPassword();
-    setAdminPassword(null);
-  };
-
-  if (!adminPassword) {
-    return <AdminLoginGate onAuth={handleAuth} />;
-  }
 
   const handleEdit = (event: any) => {
     setIsEditing(true);
@@ -173,32 +216,17 @@ export default function Admin() {
   const handleNew = () => {
     setIsEditing(true);
     setEditingId(null);
-    setFormData({
-      title: "",
-      description: "",
-      date: new Date().toISOString().slice(0, 16),
-      location: "",
-      address: "",
-      price: 0,
-      capacity: 20,
-      category: "Brunch",
-      imageUrl: "",
-      featured: false,
-    });
+    setFormData(BLANK_FORM);
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this event?")) {
-      deleteEvent.mutate(
-        { id, params: undefined as any },
-        {
-          headers: adminHeaders,
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
-            toast({ title: "Event deleted" });
-          },
-        } as any,
-      );
+    if (confirm("Delete this event?")) {
+      deleteEvent.mutate({ id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+          toast({ title: "Event deleted" });
+        },
+      });
     }
   };
 
@@ -207,29 +235,21 @@ export default function Admin() {
     const payload = { ...formData, date: new Date(formData.date).toISOString() };
 
     if (editingId) {
-      updateEvent.mutate(
-        { id: editingId, data: payload },
-        {
-          headers: adminHeaders,
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
-            setIsEditing(false);
-            toast({ title: "Event updated" });
-          },
-        } as any,
-      );
+      updateEvent.mutate({ id: editingId, data: payload }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+          setIsEditing(false);
+          toast({ title: "Event updated" });
+        },
+      });
     } else {
-      createEvent.mutate(
-        { data: payload },
-        {
-          headers: adminHeaders,
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
-            setIsEditing(false);
-            toast({ title: "Event created" });
-          },
-        } as any,
-      );
+      createEvent.mutate({ data: payload }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+          setIsEditing(false);
+          toast({ title: "Event created" });
+        },
+      });
     }
   };
 
@@ -244,7 +264,7 @@ export default function Admin() {
                 <Plus className="w-4 h-4 mr-2" /> New Event
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleLogout} className="rounded-xl text-muted-foreground">
+            <Button variant="outline" size="sm" onClick={onLogout} className="rounded-xl text-muted-foreground">
               Sign Out
             </Button>
           </div>
@@ -280,16 +300,43 @@ export default function Admin() {
                   <Input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Image URL</Label>
-                  <Input value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} />
-                </div>
-                <div className="space-y-2">
                   <Label>Price ($)</Label>
-                  <Input type="number" required min="0" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
+                  <Input type="number" required min="0" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Capacity</Label>
                   <Input type="number" required min="1" value={formData.capacity} onChange={e => setFormData({ ...formData, capacity: Number(e.target.value) })} />
+                </div>
+              </div>
+
+              {/* Image upload */}
+              <div className="space-y-2">
+                <Label>Event Image</Label>
+                <div className="flex items-center gap-4">
+                  {formData.imageUrl && (
+                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-border flex-shrink-0">
+                      <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, imageUrl: "" })}
+                        className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="https://… or upload below"
+                      value={formData.imageUrl}
+                      onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                    />
+                    <label className={`inline-flex items-center gap-2 cursor-pointer text-sm text-primary hover:text-primary/80 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+                      <Upload className="w-4 h-4" />
+                      {uploading ? "Uploading…" : "Upload image file"}
+                      <input type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} disabled={uploading} />
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -325,7 +372,7 @@ export default function Admin() {
                   <div className="p-3 bg-primary/10 rounded-xl"><DollarSign className="w-6 h-6 text-primary" /></div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Revenue</p>
-                    <h3 className="text-2xl font-bold">${stats?.totalRevenue || 0}</h3>
+                    <h3 className="text-2xl font-bold">${stats?.totalRevenue?.toFixed(2) || "0.00"}</h3>
                   </div>
                 </div>
               </div>
@@ -349,42 +396,36 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Events List */}
+            {/* Events List with per-event registration panels */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
               <div className="p-6 border-b border-border">
                 <h3 className="font-serif text-xl font-medium">Manage Events</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/50 text-muted-foreground uppercase">
-                    <tr>
-                      <th className="px-6 py-4 font-medium">Title</th>
-                      <th className="px-6 py-4 font-medium">Date</th>
-                      <th className="px-6 py-4 font-medium">Price</th>
-                      <th className="px-6 py-4 font-medium">Capacity</th>
-                      <th className="px-6 py-4 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eventsLoading ? (
-                      <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Loading…</td></tr>
-                    ) : events?.map((event) => (
-                      <tr key={event.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                        <td className="px-6 py-4 font-medium">
-                          {event.title}
-                          {event.featured && <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-1 rounded">Featured</span>}
-                        </td>
-                        <td className="px-6 py-4">{format(new Date(event.date), "MMM d, yyyy")}</td>
-                        <td className="px-6 py-4">${event.price}</td>
-                        <td className="px-6 py-4">{event.capacity - (event.spotsRemaining ?? 0)} / {event.capacity}</td>
-                        <td className="px-6 py-4 text-right">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(event)}><Edit className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(event.id)}><Trash2 className="w-4 h-4" /></Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="divide-y divide-border">
+                {eventsLoading ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground">Loading…</div>
+                ) : events?.map((event) => (
+                  <div key={event.id} className="p-6 hover:bg-muted/10 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium truncate">{event.title}</h4>
+                          {event.featured && <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Featured</span>}
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <span>{format(new Date(event.date), "MMM d, yyyy · h:mm a")}</span>
+                          <span>${event.price}</span>
+                          <span>{event.capacity - (event.spotsRemaining ?? event.capacity)} / {event.capacity} registered</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(event)}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(event.id)}><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                    <EventRegistrationsPanel eventId={event.id} adminHeaders={adminHeaders} />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -392,4 +433,24 @@ export default function Admin() {
       </div>
     </div>
   );
+}
+
+export default function Admin() {
+  const [adminPassword, setAdminPassword] = useState<string | null>(getStoredPassword);
+
+  const handleAuth = (pw: string) => {
+    storePassword(pw);
+    setAdminPassword(pw);
+  };
+
+  const handleLogout = () => {
+    clearPassword();
+    setAdminPassword(null);
+  };
+
+  if (!adminPassword) {
+    return <AdminLoginGate onAuth={handleAuth} />;
+  }
+
+  return <AdminDashboard adminPassword={adminPassword} onLogout={handleLogout} />;
 }

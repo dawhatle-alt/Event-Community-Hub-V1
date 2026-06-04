@@ -43,9 +43,16 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
     return;
   }
 
+  // Server-side capacity enforcement: prevent overbooking
+  const spotsAvailable = event.spotsRemaining ?? event.capacity;
+  if (spotsAvailable < quantity) {
+    res.status(400).json({ error: `Only ${spotsAvailable} spot(s) remaining for this event.` });
+    return;
+  }
+
   const totalAmount = Number(event.price) * quantity;
 
-  // If Stripe is connected, use it; otherwise create a free/mock registration
+  // If Stripe is connected, use it; otherwise create a mock registration
   try {
     const { getUncachableStripeClient } = await import("../lib/stripeClient");
     const stripe = await getUncachableStripeClient();
@@ -82,6 +89,12 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       })
       .returning();
 
+    // Decrement spots_remaining
+    await db
+      .update(eventsTable)
+      .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
+      .where(eq(eventsTable.id, eventId));
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
@@ -106,7 +119,7 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       err?.message?.includes("integration not connected") ||
       err?.message?.includes("Missing Replit environment")
     ) {
-      logger.warn("Stripe not connected — creating free registration");
+      logger.warn("Stripe not connected — creating mock registration");
 
       const sessionId = `mock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       await db
@@ -123,6 +136,12 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
           status: event.price === "0" || Number(event.price) === 0 ? "paid" : "pending",
         })
         .returning();
+
+      // Decrement spots_remaining
+      await db
+        .update(eventsTable)
+        .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
+        .where(eq(eventsTable.id, eventId));
 
       const baseUrl = process.env.REPLIT_DOMAINS
         ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`

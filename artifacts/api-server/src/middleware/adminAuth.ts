@@ -4,7 +4,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export function requireAdminAuth(req: Request, res: Response, next: NextFunction): void {
   if (!ADMIN_PASSWORD) {
-    next();
+    res.status(503).json({ error: "Admin access is not configured. Set the ADMIN_PASSWORD environment variable." });
     return;
   }
 
