@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import img4 from "@assets/bb-image-4.png";
 import img1 from "@assets/bb-image-1.png";
+import mahjongTable from "/mahjong-table.jpeg";
 
 export default function About() {
   return (
@@ -63,6 +64,26 @@ export default function About() {
           </div>
         </div>
       </section>
+
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        className="relative overflow-hidden"
+      >
+        <div className="aspect-[21/9] w-full">
+          <img
+            src={mahjongTable}
+            alt="BougieBams custom mahjong table setup"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center text-background">
+            <p className="font-serif text-2xl md:text-3xl italic">Where every table tells a story.</p>
+          </div>
+        </div>
+      </motion.section>
 
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 max-w-6xl">
