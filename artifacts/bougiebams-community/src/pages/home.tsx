@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, Users, Wine } from "lucide-react";
+import { ArrowRight, Calendar, Users, Sparkles, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
@@ -29,7 +29,7 @@ export default function Home() {
           <div className="flex flex-col space-y-8 z-10">
             <div className="inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-medium bg-background/50 backdrop-blur w-fit">
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-              Curated experiences for elevated Black women
+              Premium mahjong experiences for everyone
             </div>
 
             <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-foreground leading-[1.1]">
@@ -38,7 +38,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed max-w-md font-light">
-              BougieBams is a private gathering space for brunches, wine tastings, and connections that feel rich, polished, and unmistakably ours.
+              BougieBams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -60,21 +60,58 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Philosophy Section */}
+      {/* Custom Table Setup Section */}
       <section className="w-full py-24 bg-foreground text-background">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 text-primary text-sm font-medium uppercase tracking-widest mb-6">
+                <LayoutGrid className="w-4 h-4" />
+                Build Your Table
+              </div>
+              <h2 className="font-serif text-4xl md:text-5xl font-medium leading-tight mb-6">
+                Your table, <span className="text-primary italic">your way.</span>
+              </h2>
+              <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
+                Choose from over <strong className="font-semibold text-primary">40 premium mats, tile sets, and racks</strong> to create a setup that's completely your own. Every detail is yours to customize — from the feel of the tiles to the look of the table — for an experience that's as unique as you are.
+              </p>
+              <Button size="lg" variant="outline" className="rounded-xl border-background/30 text-background hover:bg-background/10 h-12 px-8" asChild>
+                <Link href="/events">Browse Upcoming Events</Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: "🀄", label: "40+ Tile Sets", desc: "Hand-selected premium sets" },
+                { icon: "🎨", label: "Premium Mats", desc: "Luxurious playing surfaces" },
+                { icon: "🏮", label: "Styled Racks", desc: "Matching rack collections" },
+                { icon: "✨", label: "Full Curation", desc: "Every detail considered" },
+              ].map((item) => (
+                <div key={item.label} className="bg-background/10 rounded-2xl p-6 border border-background/10 hover:bg-background/15 transition-colors">
+                  <div className="text-3xl mb-3">{item.icon}</div>
+                  <div className="font-serif text-lg font-medium mb-1">{item.label}</div>
+                  <div className="text-sm opacity-70 font-light">{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Philosophy Section */}
+      <section className="w-full py-24 bg-background">
         <div className="container mx-auto px-4 max-w-5xl text-center flex flex-col items-center">
-          <Wine className="h-12 w-12 text-primary mb-8 opacity-80" />
-          <h2 className="font-serif text-3xl md:text-5xl font-medium leading-tight mb-8">
-            "A well-dressed room, a poured glass, and the magic of Black women gathering."
+          <Sparkles className="h-10 w-10 text-primary mb-8 opacity-80" />
+          <h2 className="font-serif text-3xl md:text-5xl font-medium leading-tight mb-8 text-foreground">
+            "A well-dressed table, a warm welcome, and the magic of gathering."
           </h2>
-          <p className="text-lg text-muted md:text-xl font-light max-w-2xl leading-relaxed opacity-90">
-            We believe in creating spaces where we can show up fully, beautifully, and luxuriously. No stuffy networking—just genuine connection in gorgeous environments.
+          <p className="text-lg text-muted-foreground md:text-xl font-light max-w-2xl leading-relaxed">
+            We believe every gathering deserves to be beautiful. No stuffy events — just genuine connection, stunning setups, and unforgettable evenings around the table.
           </p>
         </div>
       </section>
 
       {/* Featured Events */}
-      <section className="w-full py-24 bg-background">
+      <section className="w-full py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
@@ -123,7 +160,7 @@ export default function Home() {
                         {format(new Date(event.date), "MMM d, yyyy")}
                       </div>
                       <div className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
-                        ${event.price}
+                        {Number(event.price) === 0 ? "Free" : `$${event.price}`}
                       </div>
                     </div>
                     <div className="p-8 flex flex-col flex-1">
