@@ -52,6 +52,37 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
 
   const totalAmount = Number(event.price) * quantity;
 
+  const baseUrl = process.env.REPLIT_DOMAINS
+    ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+    : "http://localhost";
+
+  // Free events: skip Stripe entirely, confirm immediately
+  if (Number(event.price) === 0) {
+    const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    await db.insert(registrationsTable).values({
+      eventId,
+      firstName,
+      lastName,
+      email,
+      phone: phone ?? null,
+      quantity,
+      totalAmount: "0",
+      stripeSessionId: sessionId,
+      status: "paid",
+    });
+
+    await db
+      .update(eventsTable)
+      .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
+      .where(eq(eventsTable.id, eventId));
+
+    res.json({
+      url: `${baseUrl}/events/confirmation?sessionId=${sessionId}`,
+      sessionId,
+    });
+    return;
+  }
+
   // If Stripe is connected, use it; otherwise create a mock registration
   try {
     const { getUncachableStripeClient } = await import("../lib/stripeClient");
@@ -70,10 +101,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
             quantity,
           },
         ];
-
-    const baseUrl = process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : "http://localhost";
 
     const [registration] = await db
       .insert(registrationsTable)
@@ -142,10 +169,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
         .update(eventsTable)
         .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
         .where(eq(eventsTable.id, eventId));
-
-      const baseUrl = process.env.REPLIT_DOMAINS
-        ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-        : "http://localhost";
 
       res.json({
         url: `${baseUrl}/events/confirmation?sessionId=${sessionId}`,

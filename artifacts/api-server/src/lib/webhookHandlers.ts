@@ -1,4 +1,6 @@
-import { getStripeSync } from './stripeClient';
+import { eq } from "drizzle-orm";
+import { db, registrationsTable } from "@workspace/db";
+import { logger } from "./logger";
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string): Promise<void> {
@@ -10,7 +12,46 @@ export class WebhookHandlers {
       );
     }
 
-    const sync = await getStripeSync();
-    await sync.processWebhook(payload, signature);
+    let stripe: any;
+    try {
+      const { getUncachableStripeClient } = await import('./stripeClient');
+      stripe = await getUncachableStripeClient();
+    } catch {
+      throw new Error("Stripe not connected");
+    }
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      logger.warn("STRIPE_WEBHOOK_SECRET not set — skipping signature verification");
+    }
+
+    let event: any;
+    try {
+      event = webhookSecret
+        ? stripe.webhooks.constructEvent(payload, signature, webhookSecret)
+        : JSON.parse(payload.toString());
+    } catch (err: any) {
+      throw new Error(`Webhook signature verification failed: ${err.message}`);
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const sessionId: string = session.id;
+      const paymentStatus: string = session.payment_status;
+
+      if (paymentStatus === "paid") {
+        const updated = await db
+          .update(registrationsTable)
+          .set({ status: "paid" })
+          .where(eq(registrationsTable.stripeSessionId, sessionId))
+          .returning();
+
+        if (updated.length > 0) {
+          logger.info({ sessionId, registrationId: updated[0].id }, "Registration marked paid via webhook");
+        } else {
+          logger.warn({ sessionId }, "Webhook: no registration found for session");
+        }
+      }
+    }
   }
 }

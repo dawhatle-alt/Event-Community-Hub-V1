@@ -143,6 +143,7 @@ const BLANK_FORM = {
   category: "Brunch",
   imageUrl: "",
   featured: false,
+  published: false,
 };
 
 function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; onLogout: () => void }) {
@@ -186,7 +187,8 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
         headers: { "Content-Type": file.type },
       });
 
-      const imageUrl = `/api/storage/objects/${result.objectPath}`;
+      // objectPath is already normalized as "/objects/..." — prepend /api/storage
+      const imageUrl = `/api/storage${result.objectPath}`;
       setFormData((f) => ({ ...f, imageUrl }));
       toast({ title: "Image uploaded" });
     } catch {
@@ -210,6 +212,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
       category: event.category,
       imageUrl: event.imageUrl || "",
       featured: event.featured,
+      published: event.published,
     });
   };
 
@@ -345,13 +348,23 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                 <Textarea required className="min-h-[100px]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="featured"
-                  checked={formData.featured}
-                  onCheckedChange={(c) => setFormData({ ...formData, featured: !!c })}
-                />
-                <Label htmlFor="featured">Featured on Homepage</Label>
+              <div className="flex flex-wrap gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="published"
+                    checked={formData.published}
+                    onCheckedChange={(c) => setFormData({ ...formData, published: !!c })}
+                  />
+                  <Label htmlFor="published">Published (visible to public)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="featured"
+                    checked={formData.featured}
+                    onCheckedChange={(c) => setFormData({ ...formData, featured: !!c })}
+                  />
+                  <Label htmlFor="featured">Featured on Homepage</Label>
+                </div>
               </div>
 
               <Button
@@ -408,8 +421,12 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                   <div key={event.id} className="p-6 hover:bg-muted/10 transition-colors">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h4 className="font-medium truncate">{event.title}</h4>
+                          {event.published
+                            ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">Published</span>
+                            : <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded font-medium">Draft</span>
+                          }
                           {event.featured && <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Featured</span>}
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">

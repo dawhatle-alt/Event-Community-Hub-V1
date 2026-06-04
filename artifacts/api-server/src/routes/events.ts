@@ -17,6 +17,14 @@ router.get("/events", async (req, res): Promise<void> => {
   const query = ListEventsQueryParams.safeParse(req.query);
   const conditions: ReturnType<typeof sql>[] = [];
 
+  // Public listing always filters to published=true unless admin token provided
+  const authHeader = req.headers.authorization;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const isAdmin = adminPassword && authHeader === `Bearer ${adminPassword}`;
+  if (!isAdmin) {
+    conditions.push(sql`${eventsTable.published} = true`);
+  }
+
   if (query.success) {
     if (query.data.featured === true) {
       conditions.push(sql`${eventsTable.featured} = true`);
@@ -49,7 +57,7 @@ router.get("/events/featured", async (_req, res): Promise<void> => {
   const events = await db
     .select()
     .from(eventsTable)
-    .where(eq(eventsTable.featured, true))
+    .where(sql`${eventsTable.featured} = true AND ${eventsTable.published} = true`)
     .orderBy(asc(eventsTable.date))
     .limit(6);
 

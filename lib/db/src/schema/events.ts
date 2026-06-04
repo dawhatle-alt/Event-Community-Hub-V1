@@ -17,6 +17,7 @@ export const eventsTable = pgTable("events", {
   category: text("category").notNull().default("General"),
   tags: text("tags"),
   featured: boolean("featured").notNull().default(false),
+  published: boolean("published").notNull().default(false),
   stripePriceId: text("stripe_price_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
