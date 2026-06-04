@@ -24,7 +24,8 @@ export const HealthCheckResponse = zod.object({
 export const ListEventsQueryParams = zod.object({
   "category": zod.coerce.string().nullish().describe('Filter by event category'),
   "featured": zod.coerce.boolean().nullish().describe('Filter to featured events only'),
-  "upcoming": zod.coerce.boolean().nullish().describe('Filter to upcoming events only')
+  "upcoming": zod.coerce.boolean().nullish().describe('Filter to upcoming events only'),
+  "search": zod.coerce.string().nullish().describe('Full-text search filter (title, description, location, category)')
 })
 
 export const ListEventsResponseItem = zod.object({

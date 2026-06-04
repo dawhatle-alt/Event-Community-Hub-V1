@@ -185,6 +185,11 @@ featured?: boolean | null;
  * @nullable
  */
 upcoming?: boolean | null;
+/**
+ * Full-text search filter (title, description, location, category)
+ * @nullable
+ */
+search?: string | null;
 };
 
 export type GetRegistrationBySessionParams = {

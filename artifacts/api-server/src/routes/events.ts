@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, sql, ilike, or } from "drizzle-orm";
 import { db, eventsTable } from "@workspace/db";
 import {
   ListEventsQueryParams,
@@ -13,15 +13,18 @@ import { requireAdminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
+function isAdminRequest(req: any): boolean {
+  const authHeader = req.headers.authorization as string | undefined;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  return !!(adminPassword && authHeader === `Bearer ${adminPassword}`);
+}
+
 router.get("/events", async (req, res): Promise<void> => {
   const query = ListEventsQueryParams.safeParse(req.query);
   const conditions: ReturnType<typeof sql>[] = [];
 
   // Public listing always filters to published=true unless admin token provided
-  const authHeader = req.headers.authorization;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const isAdmin = adminPassword && authHeader === `Bearer ${adminPassword}`;
-  if (!isAdmin) {
+  if (!isAdminRequest(req)) {
     conditions.push(sql`${eventsTable.published} = true`);
   }
 
@@ -34,6 +37,13 @@ router.get("/events", async (req, res): Promise<void> => {
     }
     if (query.data.category) {
       conditions.push(sql`${eventsTable.category} = ${query.data.category}`);
+    }
+    // Server-side search: filter by title, description, location, or category
+    if (query.data.search) {
+      const term = `%${query.data.search}%`;
+      conditions.push(
+        sql`(${eventsTable.title} ILIKE ${term} OR ${eventsTable.description} ILIKE ${term} OR ${eventsTable.location} ILIKE ${term} OR ${eventsTable.category} ILIKE ${term})`
+      );
     }
   }
 
@@ -93,10 +103,7 @@ router.get("/events/:id", async (req, res): Promise<void> => {
   }
 
   // Enforce published check — drafts only accessible to admin
-  const authHeader = req.headers.authorization;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const isAdmin = adminPassword && authHeader === `Bearer ${adminPassword}`;
-  if (!event.published && !isAdmin) {
+  if (!event.published && !isAdminRequest(req)) {
     res.status(404).json({ error: "Event not found" });
     return;
   }
@@ -116,7 +123,36 @@ router.post("/events", requireAdminAuth, async (req, res): Promise<void> => {
   res.status(201).json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 
+// PATCH is used by OpenAPI spec; PUT alias provided for spec compatibility
 router.patch("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {
+  const params = UpdateEventParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const parsed = UpdateEventBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [event] = await db
+    .update(eventsTable)
+    .set(parsed.data as any)
+    .where(eq(eventsTable.id, params.data.id))
+    .returning();
+
+  if (!event) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+
+  res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
+});
+
+// PUT alias (task requirement compatibility)
+router.put("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const params = UpdateEventParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

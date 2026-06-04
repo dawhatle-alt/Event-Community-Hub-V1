@@ -53,6 +53,11 @@ paths:
           schema:
             type: ["boolean", "null"]
           description: Filter to upcoming events only
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+          description: Full-text search filter (title, description, location, category)
       responses:
         "200":
           description: List of events

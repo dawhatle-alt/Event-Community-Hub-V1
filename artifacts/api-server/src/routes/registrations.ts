@@ -12,6 +12,26 @@ import { requireAdminAuth } from "../middleware/adminAuth";
 const router: IRouter = Router();
 
 // Admin-only: list registrations for an event
+// Two route aliases: /events/:id/registrations and /registrations?eventId=:id
+router.get("/registrations", requireAdminAuth, async (req, res): Promise<void> => {
+  const eventIdParam = req.query.eventId;
+  if (!eventIdParam) {
+    res.status(400).json({ error: "eventId query parameter required" });
+    return;
+  }
+  const eventId = Number(eventIdParam);
+  if (isNaN(eventId)) {
+    res.status(400).json({ error: "Invalid eventId" });
+    return;
+  }
+  const regs = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.eventId, eventId))
+    .orderBy(registrationsTable.createdAt);
+  res.json(regs.map((r) => ({ ...r, totalAmount: Number(r.totalAmount) })));
+});
+
 router.get("/events/:id/registrations", requireAdminAuth, async (req, res): Promise<void> => {
   const params = ListEventRegistrationsParams.safeParse(req.params);
   if (!params.success) {
@@ -28,7 +48,18 @@ router.get("/events/:id/registrations", requireAdminAuth, async (req, res): Prom
   res.json(regs.map((r) => ({ ...r, totalAmount: Number(r.totalAmount) })));
 });
 
+// POST /events/:id/register — alias for /registrations/checkout that reads eventId from path
+router.post("/events/:id/register", async (req, res): Promise<void> => {
+  req.body = { ...req.body, eventId: Number(req.params.id) };
+  // Fall through to checkout handler below (DRY via shared handler fn)
+  return checkoutHandler(req, res);
+});
+
 router.post("/registrations/checkout", async (req, res): Promise<void> => {
+  return checkoutHandler(req, res);
+});
+
+async function checkoutHandler(req: any, res: any): Promise<void> {
   const parsed = CreateCheckoutSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -176,7 +207,7 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
     }
     throw err;
   }
-});
+}
 
 router.get("/registrations/confirmation", async (req, res): Promise<void> => {
   const query = GetRegistrationBySessionQueryParams.safeParse(req.query);
