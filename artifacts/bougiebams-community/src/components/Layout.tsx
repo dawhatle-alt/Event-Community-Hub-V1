@@ -15,9 +15,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const NAV_LINKS = [
+  { id: "home",    href: "/",        label: "Home" },
+  { id: "events",  href: "/events",  label: "Events" },
+  { id: "about",   href: "/about",   label: "About" },
+  { id: "contact", href: "/contact", label: "Contact" },
+] as const;
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const { user, isLoading, isAuthenticated, login, logout } = useAuth();
 
   React.useEffect(() => {
@@ -38,53 +46,94 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/" ? "text-primary" : "text-muted-foreground")}>Home</Link>
-            <Link href="/events" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/events" ? "text-primary" : "text-muted-foreground")}>Events</Link>
-            <Link href="/about" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/about" ? "text-primary" : "text-muted-foreground")}>About</Link>
-            <Link href="/contact" className={cn("text-sm font-medium transition-colors hover:text-primary", location === "/contact" ? "text-primary" : "text-muted-foreground")}>Contact</Link>
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map(({ id, href, label }) => {
+              const isActive = location === href;
+              const isHovered = hoveredId === id;
+              return (
+                <div
+                  key={id}
+                  className="relative"
+                  onMouseEnter={() => setHoveredId(id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  <Link
+                    href={href}
+                    className={cn(
+                      "relative z-10 flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200",
+                      isHovered
+                        ? "text-[#FAF8F5]"
+                        : isActive
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {label}
+                  </Link>
+                  <AnimatePresence>
+                    {isHovered && (
+                      <motion.div
+                        layoutId="nav-highlight"
+                        className="absolute inset-0 rounded-xl"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1.05 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        style={{
+                          background: "linear-gradient(135deg, #181D37 0%, #252c55 100%)",
+                          boxShadow:
+                            "0 8px 30px rgba(201,162,39,0.25), 0 4px 12px rgba(24,29,55,0.5), 0 0 0 1px rgba(201,162,39,0.2)",
+                        }}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
 
             {!isLoading && isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                    <Avatar className="h-9 w-9">
-                      {user?.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.firstName ?? "User"} />}
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-3 py-2 text-sm font-medium truncate">
-                    {user?.firstName} {user?.lastName}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
-                      <CalendarDays className="h-4 w-4" />
-                      My Events
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
-                    <LogOut className="h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="ml-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      <Avatar className="h-9 w-9">
+                        {user?.profileImageUrl && <AvatarImage src={user.profileImageUrl} alt={user.firstName ?? "User"} />}
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <div className="px-3 py-2 text-sm font-medium truncate">
+                      {user?.firstName} {user?.lastName}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-events" className="flex items-center gap-2 cursor-pointer">
+                        <CalendarDays className="h-4 w-4" />
+                        My Events
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : !isLoading ? (
               <Button
                 size="sm"
-                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 shadow-sm"
+                className="ml-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 shadow-sm"
                 onClick={login}
               >
                 <LogIn className="mr-2 h-4 w-4" />
                 Join Us
               </Button>
             ) : (
-              <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+              <div className="ml-4 h-9 w-9 rounded-full bg-muted animate-pulse" />
             )}
           </nav>
 
