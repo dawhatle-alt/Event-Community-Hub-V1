@@ -2,10 +2,21 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { Calendar, MapPin, Users, LogIn } from "lucide-react";
+import { Calendar, MapPin, Users, LogIn, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Registration {
   id: number;
@@ -56,6 +67,16 @@ export default function MyEvents() {
         setFetching(false);
       });
   }, [isAuthenticated]);
+
+  function handleCancelled(registrationId: number) {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.registration.id === registrationId
+          ? { ...item, registration: { ...item.registration, status: "cancelled" } }
+          : item
+      )
+    );
+  }
 
   if (isLoading) {
     return (
@@ -115,7 +136,13 @@ export default function MyEvents() {
           <h2 className="font-serif text-xl font-semibold mb-4 text-primary">Upcoming</h2>
           <div className="space-y-4">
             {upcoming.map(({ registration, event }, i) => (
-              <RegistrationCard key={registration.id} registration={registration} event={event} index={i} />
+              <RegistrationCard
+                key={registration.id}
+                registration={registration}
+                event={event}
+                index={i}
+                onCancelled={handleCancelled}
+              />
             ))}
           </div>
         </section>
@@ -126,7 +153,13 @@ export default function MyEvents() {
           <h2 className="font-serif text-xl font-semibold mb-4 text-muted-foreground">Past Events</h2>
           <div className="space-y-4 opacity-75">
             {past.map(({ registration, event }, i) => (
-              <RegistrationCard key={registration.id} registration={registration} event={event} index={i} isPast />
+              <RegistrationCard
+                key={registration.id}
+                registration={registration}
+                event={event}
+                index={i}
+                isPast
+              />
             ))}
           </div>
         </section>
@@ -140,12 +173,40 @@ function RegistrationCard({
   event,
   index,
   isPast = false,
+  onCancelled,
 }: {
   registration: Registration;
   event: Event;
   index: number;
   isPast?: boolean;
+  onCancelled?: (id: number) => void;
 }) {
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  async function handleCancel() {
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(`/api/registrations/${registration.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      onCancelled?.(registration.id);
+    } catch (err: any) {
+      setCancelError(err.message);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  const isCancelled = registration.status === "cancelled";
+  const canCancel = !isPast && !isCancelled && onCancelled;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -169,7 +230,9 @@ function RegistrationCard({
             <Badge variant="outline" className="mt-1 text-xs">{event.category}</Badge>
           </div>
           <Badge
-            variant={registration.status === "paid" ? "default" : "secondary"}
+            variant={
+              isCancelled ? "destructive" : registration.status === "paid" ? "default" : "secondary"
+            }
             className="shrink-0"
           >
             {registration.status}
@@ -196,13 +259,52 @@ function RegistrationCard({
           </div>
         </div>
 
-        {!isPast && (
-          <Link href={`/events/${event.id}`}>
-            <Button variant="outline" size="sm" className="mt-1 rounded-full text-xs">
-              View Event
-            </Button>
-          </Link>
+        {cancelError && (
+          <p className="text-destructive text-xs">{cancelError}</p>
         )}
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isPast && !isCancelled && (
+            <Link href={`/events/${event.id}`}>
+              <Button variant="outline" size="sm" className="rounded-full text-xs">
+                View Event
+              </Button>
+            </Link>
+          )}
+          {canCancel && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={cancelling}
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  {cancelling ? "Cancelling…" : "Cancel Registration"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel your registration?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will cancel your registration for <strong>{event.title}</strong>. Your spot
+                    will be released back to the event. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Registration</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancel}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Yes, Cancel
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
     </motion.div>
   );

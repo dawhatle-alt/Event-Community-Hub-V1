@@ -53,11 +53,11 @@ export class WebhookHandlers {
       const status: string = payment.status;
 
       if (status === "COMPLETED" && orderId) {
-        // Find the registration by Square order ID (stored in stripeSessionId column)
+        // Only transition pending → paid; never reactivate a cancelled registration
         const updated = await db
           .update(registrationsTable)
           .set({ status: "paid" })
-          .where(eq(registrationsTable.stripeSessionId, orderId))
+          .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
           .returning();
 
         if (updated.length > 0) {
@@ -107,10 +107,11 @@ export class WebhookHandlers {
       const orderId: string | undefined = event.data?.object?.checkout?.order_id;
       if (!orderId) return;
 
+      // Only transition pending → paid; never reactivate a cancelled registration
       const updated = await db
         .update(registrationsTable)
         .set({ status: "paid" })
-        .where(eq(registrationsTable.stripeSessionId, orderId))
+        .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
         .returning();
 
       if (updated.length > 0) {

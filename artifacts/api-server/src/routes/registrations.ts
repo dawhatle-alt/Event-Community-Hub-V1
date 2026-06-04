@@ -313,6 +313,89 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
   });
 });
 
+// Authenticated user: cancel their own registration
+router.delete("/registrations/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid registration id" });
+    return;
+  }
+
+  type TxResult =
+    | { outcome: "not_found" }
+    | { outcome: "forbidden" }
+    | { outcome: "already_cancelled" }
+    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number };
+
+  // Use a transaction with FOR UPDATE to lock the row, capturing the pre-update status
+  // atomically. This prevents a concurrent webhook payment from slipping between our read
+  // and write and causing a stale prevStatus decision outside the transaction.
+  const result = await db.transaction(async (tx): Promise<TxResult> => {
+    const locked = await tx.execute(
+      sql`SELECT id, user_id, status, quantity, event_id FROM registrations WHERE id = ${id} FOR UPDATE`
+    );
+    const reg = (locked.rows?.[0] ?? null) as {
+      id: number;
+      user_id: string | null;
+      status: string;
+      quantity: number;
+      event_id: number;
+    } | null;
+
+    if (!reg) return { outcome: "not_found" };
+    if (reg.user_id !== req.user.id) return { outcome: "forbidden" };
+    if (reg.status === "cancelled") return { outcome: "already_cancelled" };
+
+    await tx
+      .update(registrationsTable)
+      .set({ status: "cancelled" })
+      .where(eq(registrationsTable.id, id));
+
+    return {
+      outcome: "ok",
+      prevStatus: reg.status,
+      quantity: Number(reg.quantity),
+      eventId: Number(reg.event_id),
+    };
+  });
+
+  if (result.outcome === "not_found") {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  if (result.outcome === "forbidden") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  if (result.outcome === "already_cancelled") {
+    res.status(400).json({ error: "Registration is already cancelled" });
+    return;
+  }
+
+  // Restore capacity only when the registration had actually consumed a spot (status was 'paid').
+  // Pending registrations never decremented capacity — that only happens on webhook confirmation
+  // or free-event checkout — so restoring them would inflate spotsRemaining above reality.
+  // Cap to event capacity to guard against any edge-case double-restoration.
+  if (result.prevStatus === "paid") {
+    await db
+      .update(eventsTable)
+      .set({
+        spotsRemaining: sql`LEAST(
+          ${eventsTable.capacity},
+          COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}
+        )`,
+      })
+      .where(eq(eventsTable.id, result.eventId));
+  }
+
+  res.json({ success: true });
+});
+
 // Admin-only: registration stats
 router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<void> => {
   const [totals] = await db
