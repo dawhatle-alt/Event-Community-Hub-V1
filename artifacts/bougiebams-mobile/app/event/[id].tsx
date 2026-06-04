@@ -8,6 +8,7 @@ import { useGetEvent } from "@workspace/api-client-react";
 import React from "react";
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -53,6 +54,11 @@ export default function EventDetailScreen() {
       </View>
     );
   }
+
+  const openMap = () => {
+    const query = encodeURIComponent(event.address || event.location);
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+  };
 
   const isFree = Number(event.price) === 0;
   const priceLabel = isFree ? "Free" : `$${Number(event.price).toFixed(0)}`;
@@ -146,12 +152,16 @@ export default function EventDetailScreen() {
                 {event.endDate ? ` – ${format(new Date(event.endDate), "h:mm a")}` : ""}
               </Text>
             </View>
-            <View style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable
+              style={({ pressed }) => [styles.pill, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.7 : 1 }]}
+              onPress={openMap}
+            >
               <Feather name="map-pin" size={14} color={colors.primary} />
-              <Text style={[styles.pillText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              <Text style={[styles.pillText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
                 {event.location}
               </Text>
-            </View>
+              <Feather name="external-link" size={11} color={colors.primary} />
+            </Pressable>
             <View style={[styles.pill, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Feather name="users" size={14} color={isSoldOut ? colors.destructive : colors.primary} />
               <Text
@@ -192,7 +202,10 @@ export default function EventDetailScreen() {
           {event.address && (
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <View style={[styles.addressCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <Pressable
+                style={({ pressed }) => [styles.addressCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.75 : 1 }]}
+                onPress={openMap}
+              >
                 <Feather name="map-pin" size={16} color={colors.primary} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.addressLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -205,7 +218,8 @@ export default function EventDetailScreen() {
                     {event.address}
                   </Text>
                 </View>
-              </View>
+                <Feather name="external-link" size={14} color={colors.mutedForeground} />
+              </Pressable>
             </>
           )}
         </View>

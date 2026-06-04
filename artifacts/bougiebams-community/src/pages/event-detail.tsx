@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
-import { Calendar, MapPin, Users, ArrowLeft, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,13 +104,21 @@ export default function EventDetail() {
                     <div className="text-sm">{format(new Date(event.date), "h:mm a")}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address || event.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 group"
+                >
                   <MapPin className="w-5 h-5 text-primary" />
                   <div>
-                    <div className="font-medium text-foreground">{event.location}</div>
-                    {event.address && <div className="text-sm">{event.address}</div>}
+                    <div className="font-medium text-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                      {event.location}
+                      <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </div>
+                    {event.address && <div className="text-sm group-hover:text-primary/70 transition-colors">{event.address}</div>}
                   </div>
-                </div>
+                </a>
               </div>
 
               <div className="prose prose-lg prose-headings:font-serif dark:prose-invert max-w-none">
