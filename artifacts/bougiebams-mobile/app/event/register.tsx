@@ -3,12 +3,11 @@ import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRegisterForEvent } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,7 +15,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useColors } from "@/hooks/useColors";
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -35,6 +42,10 @@ export default function RegisterScreen() {
   const [quantity, setQuantity] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+
+  const lastNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
 
   const { mutate: register, isPending } = useRegisterForEvent();
 
@@ -72,7 +83,7 @@ export default function RegisterScreen() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim(),
-          phone: phone.trim() || null,
+          phone: phone.replace(/\D/g, "") || null,
           quantity,
         },
       },
@@ -140,7 +151,7 @@ export default function RegisterScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         style={{ flex: 1 }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
         keyboardShouldPersistTaps="handled"
@@ -166,6 +177,9 @@ export default function RegisterScreen() {
                 onChangeText={(v) => { setFirstName(v); setErrors((e) => ({ ...e, firstName: "" })); }}
                 autoCapitalize="words"
                 autoComplete="given-name"
+                returnKeyType="next"
+                onSubmitEditing={() => lastNameRef.current?.focus()}
+                blurOnSubmit={false}
               />
               {errors.firstName && (
                 <Text style={[styles.errorText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
@@ -178,6 +192,7 @@ export default function RegisterScreen() {
                 Last Name *
               </Text>
               <TextInput
+                ref={lastNameRef}
                 testID="last-name-input"
                 style={[styles.input, fieldStyle(!!errors.lastName)]}
                 placeholder="Smith"
@@ -186,6 +201,9 @@ export default function RegisterScreen() {
                 onChangeText={(v) => { setLastName(v); setErrors((e) => ({ ...e, lastName: "" })); }}
                 autoCapitalize="words"
                 autoComplete="family-name"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                blurOnSubmit={false}
               />
               {errors.lastName && (
                 <Text style={[styles.errorText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
@@ -200,6 +218,7 @@ export default function RegisterScreen() {
               Email Address *
             </Text>
             <TextInput
+              ref={emailRef}
               testID="email-input"
               style={[styles.input, fieldStyle(!!errors.email)]}
               placeholder="jane@example.com"
@@ -209,6 +228,9 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
+              blurOnSubmit={false}
             />
             {errors.email && (
               <Text style={[styles.errorText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
@@ -222,14 +244,17 @@ export default function RegisterScreen() {
               Phone (optional)
             </Text>
             <TextInput
+              ref={phoneRef}
               testID="phone-input"
               style={[styles.input, fieldStyle(false)]}
-              placeholder="+1 (555) 000-0000"
+              placeholder="(555) 000-0000"
               placeholderTextColor={colors.mutedForeground}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(v) => setPhone(formatPhone(v))}
               keyboardType="phone-pad"
               autoComplete="tel"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
             />
           </View>
         </View>
@@ -324,7 +349,7 @@ export default function RegisterScreen() {
         <Text style={[styles.secureNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
           {isFree ? "Your spot will be reserved immediately." : "Payments are securely processed by Square."}
         </Text>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }
