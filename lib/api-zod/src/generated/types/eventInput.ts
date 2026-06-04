@@ -26,6 +26,7 @@ export interface EventInput {
   /** @nullable */
   tags?: string | null;
   featured?: boolean;
+  published?: boolean;
   /** @nullable */
   stripePriceId?: string | null;
 }

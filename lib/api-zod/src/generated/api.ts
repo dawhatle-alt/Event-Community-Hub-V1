@@ -42,6 +42,7 @@ export const ListEventsResponseItem = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish().describe('Comma-separated tags'),
   "featured": zod.boolean(),
+  "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -70,6 +71,7 @@ export const CreateEventBody = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish(),
   "featured": zod.boolean().optional(),
+  "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish()
 })
 
@@ -93,6 +95,7 @@ export const ListFeaturedEventsResponseItem = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish().describe('Comma-separated tags'),
   "featured": zod.boolean(),
+  "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -129,6 +132,7 @@ export const GetEventResponse = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish().describe('Comma-separated tags'),
   "featured": zod.boolean(),
+  "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -160,6 +164,7 @@ export const UpdateEventBody = zod.object({
   "category": zod.string().optional(),
   "tags": zod.string().nullish(),
   "featured": zod.boolean().optional(),
+  "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish()
 })
 
@@ -178,6 +183,7 @@ export const UpdateEventResponse = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish().describe('Comma-separated tags'),
   "featured": zod.boolean(),
+  "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -274,6 +280,7 @@ export const GetRegistrationBySessionResponse = zod.object({
   "category": zod.string(),
   "tags": zod.string().nullish().describe('Comma-separated tags'),
   "featured": zod.boolean(),
+  "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })

@@ -30,6 +30,7 @@ export interface Event {
      */
   tags?: string | null;
   featured: boolean;
+  published: boolean;
   /** @nullable */
   stripePriceId?: string | null;
   createdAt: Date;

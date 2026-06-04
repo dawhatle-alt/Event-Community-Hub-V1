@@ -99,7 +99,7 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
   const [open, setOpen] = useState(false);
   const { data: regs, isLoading } = useListEventRegistrations(eventId, {
     request: { headers: adminHeaders },
-    query: { enabled: open },
+    query: { enabled: open, queryKey: undefined as any },
   });
 
   return (

@@ -22,14 +22,12 @@ export class WebhookHandlers {
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      logger.warn("STRIPE_WEBHOOK_SECRET not set — skipping signature verification");
+      throw new Error("STRIPE_WEBHOOK_SECRET is not set. Webhook signature verification is required.");
     }
 
     let event: any;
     try {
-      event = webhookSecret
-        ? stripe.webhooks.constructEvent(payload, signature, webhookSecret)
-        : JSON.parse(payload.toString());
+      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
     } catch (err: any) {
       throw new Error(`Webhook signature verification failed: ${err.message}`);
     }

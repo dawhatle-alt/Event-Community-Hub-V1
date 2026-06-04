@@ -36,7 +36,7 @@ export default function EventDetail() {
     return <div className="min-h-screen flex items-center justify-center">Event not found</div>;
   }
 
-  const isSoldOut = event.spotsRemaining !== null && event.spotsRemaining <= 0;
+  const isSoldOut = event.spotsRemaining != null && event.spotsRemaining <= 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

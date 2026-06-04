@@ -389,7 +389,7 @@ components:
 
     Event:
       type: object
-      required: [id, title, description, date, location, price, capacity, imageUrl, category, featured, createdAt]
+      required: [id, title, description, date, location, price, capacity, imageUrl, category, featured, published, createdAt]
       properties:
         id:
           type: integer
@@ -422,6 +422,8 @@ components:
           type: ["string", "null"]
           description: Comma-separated tags
         featured:
+          type: boolean
+        published:
           type: boolean
         stripePriceId:
           type: ["string", "null"]
@@ -462,6 +464,8 @@ components:
           type: ["string", "null"]
         featured:
           type: boolean
+        published:
+          type: boolean
         stripePriceId:
           type: ["string", "null"]
 
@@ -496,6 +500,8 @@ components:
         tags:
           type: ["string", "null"]
         featured:
+          type: boolean
+        published:
           type: boolean
         stripePriceId:
           type: ["string", "null"]
