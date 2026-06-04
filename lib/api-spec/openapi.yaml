@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BougieBams Community & Events API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Event browsing and management
+  - name: registrations
+    description: Event registrations and payments
+  - name: Storage
+    description: Object storage upload and serving endpoints.
 paths:
   /healthz:
     get:
@@ -24,6 +30,353 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List all events
+      description: Returns a list of all upcoming and past events
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+          description: Filter by event category
+        - name: featured
+          in: query
+          schema:
+            type: ["boolean", "null"]
+          description: Filter to featured events only
+        - name: upcoming
+          in: query
+          schema:
+            type: ["boolean", "null"]
+          description: Filter to upcoming events only
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create a new event (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /events/featured:
+    get:
+      operationId: listFeaturedEvents
+      tags: [events]
+      summary: List featured events
+      description: Returns a curated list of featured events for the homepage hero
+      responses:
+        "200":
+          description: Featured events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /events/categories:
+    get:
+      operationId: listEventCategories
+      tags: [events]
+      summary: List all event categories
+      description: Returns distinct event categories for filtering
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get a single event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /events/{id}/registrations:
+    get:
+      operationId: listEventRegistrations
+      tags: [registrations]
+      summary: List registrations for an event (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of registrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Registration"
+
+  /registrations/checkout:
+    post:
+      operationId: createCheckoutSession
+      tags: [registrations]
+      summary: Create a Stripe Checkout session for event registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSessionInput"
+      responses:
+        "200":
+          description: Stripe Checkout session URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSessionResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /registrations/confirmation:
+    get:
+      operationId: getRegistrationBySession
+      tags: [registrations]
+      summary: Get registration details by Stripe session ID
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Registration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationConfirmation"
+        "404":
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /registrations/stats:
+    get:
+      operationId: getRegistrationStats
+      tags: [registrations]
+      summary: Get overall registration statistics (admin)
+      responses:
+        "200":
+          description: Registration statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationStats"
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      description: |
+        Returns a presigned GCS URL for direct upload. The client sends JSON
+        metadata here, then uploads the file directly to the returned URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to generate upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/public-objects/{filePath}:
+    get:
+      tags: [Storage]
+      operationId: getPublicObject
+      summary: Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to serve public object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an object entity from PRIVATE_OBJECT_DIR
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object content streamed with correct Content-Type.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to serve object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +387,234 @@ components:
       required:
         - status
 
+    Event:
+      type: object
+      required: [id, title, description, date, location, price, capacity, imageUrl, category, featured, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+        location:
+          type: string
+        address:
+          type: ["string", "null"]
+        price:
+          type: number
+          description: Price in dollars
+        capacity:
+          type: integer
+        spotsRemaining:
+          type: ["integer", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        category:
+          type: string
+        tags:
+          type: ["string", "null"]
+          description: Comma-separated tags
+        featured:
+          type: boolean
+        stripePriceId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    EventInput:
+      type: object
+      required: [title, description, date, location, price, capacity, category]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+        location:
+          type: string
+        address:
+          type: ["string", "null"]
+        price:
+          type: number
+          minimum: 0
+        capacity:
+          type: integer
+          minimum: 1
+        imageUrl:
+          type: ["string", "null"]
+        category:
+          type: string
+        tags:
+          type: ["string", "null"]
+        featured:
+          type: boolean
+        stripePriceId:
+          type: ["string", "null"]
+
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+        location:
+          type: string
+        address:
+          type: ["string", "null"]
+        price:
+          type: number
+          minimum: 0
+        capacity:
+          type: integer
+          minimum: 1
+        imageUrl:
+          type: ["string", "null"]
+        category:
+          type: string
+        tags:
+          type: ["string", "null"]
+        featured:
+          type: boolean
+        stripePriceId:
+          type: ["string", "null"]
+
+    Registration:
+      type: object
+      required: [id, eventId, firstName, lastName, email, status, createdAt]
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        totalAmount:
+          type: number
+        stripeSessionId:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, paid, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+
+    RegistrationConfirmation:
+      type: object
+      required: [registration, event]
+      properties:
+        registration:
+          $ref: "#/components/schemas/Registration"
+        event:
+          $ref: "#/components/schemas/Event"
+
+    CheckoutSessionInput:
+      type: object
+      required: [eventId, firstName, lastName, email, quantity]
+      properties:
+        eventId:
+          type: integer
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        phone:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+
+    CheckoutSessionResponse:
+      type: object
+      required: [url, sessionId]
+      properties:
+        url:
+          type: string
+          format: uri
+        sessionId:
+          type: string
+
+    RegistrationStats:
+      type: object
+      required: [totalRegistrations, totalRevenue, upcomingEvents, totalEvents]
+      properties:
+        totalRegistrations:
+          type: integer
+        totalRevenue:
+          type: number
+        upcomingEvents:
+          type: integer
+        totalEvents:
+          type: integer
+        recentRegistrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Registration"
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/UploadUrlRequest'
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
