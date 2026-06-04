@@ -8,6 +8,7 @@ const DARK = "#0D1020";
 const MID_NAVY = "#252D55";
 const WARM_GOLD = "#8B6914";
 const LIGHT_GOLD = "#F0D060";
+const DIM_GOLD = "#5C4610"; // WARM_GOLD desaturated ~25% for background use
 
 /* ─────────────────────────────────────────────
    Smooth background: pure-CSS keyframe shift on
@@ -40,11 +41,11 @@ const CSS = `
       ${DARK},
       ${NAVY},
       ${MID_NAVY},
-      ${WARM_GOLD},
+      ${DIM_GOLD},
       ${NAVY},
       #1a2850,
       ${MID_NAVY},
-      ${WARM_GOLD},
+      ${DIM_GOLD},
       ${NAVY},
       ${DARK}
     );
@@ -184,10 +185,10 @@ export function GradientHero() {
         <div className="gradient-bg" style={{ position: "absolute", inset: 0 }} />
 
         {/* Floating radial orbs for depth */}
-        <FloatingOrb color={`${GOLD}55`}   size={520} x="55%"  y="-15%" dx={80}  dy={60}  duration={20} delay={0}   />
+        <FloatingOrb color={`${GOLD}40`}    size={520} x="55%"  y="-15%" dx={80}  dy={60}  duration={20} delay={0}   />
         <FloatingOrb color={`${MID_NAVY}cc`} size={600} x="-8%"  y="30%"  dx={60}  dy={80}  duration={25} delay={3}   />
-        <FloatingOrb color={`${GOLD}33`}   size={400} x="10%"  y="60%"  dx={-50} dy={-40} duration={18} delay={6}   />
-        <FloatingOrb color={`${WARM_GOLD}44`} size={360} x="70%"  y="55%"  dx={-60} dy={50}  duration={22} delay={9}   />
+        <FloatingOrb color={`${GOLD}26`}   size={400} x="10%"  y="60%"  dx={-50} dy={-40} duration={18} delay={6}   />
+        <FloatingOrb color={`${WARM_GOLD}33`} size={360} x="70%"  y="55%"  dx={-60} dy={50}  duration={22} delay={9}   />
 
         {/* Vignette */}
         <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 100% 80% at 50% 50%, transparent 30%, ${DARK}88 100%)`, pointerEvents: "none" }} />
