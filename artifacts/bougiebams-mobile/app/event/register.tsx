@@ -2,8 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRegisterForEvent } from "@workspace/api-client-react";
-import React, { useRef, useState } from "react";
+import { useGetCurrentAuthUser, useRegisterForEvent } from "@workspace/api-client-react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { useAuth } from "@/context/auth";
 import { useColors } from "@/hooks/useColors";
 
 function formatPhone(raw: string): string {
@@ -35,10 +36,25 @@ export default function RegisterScreen() {
     price: string;
   }>();
 
+  const { isAuthenticated } = useAuth();
+  const { data: authData } = useGetCurrentAuthUser({
+    query: { enabled: isAuthenticated },
+  });
+  const authUser = authData?.user ?? null;
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (authUser) {
+      if (authUser.firstName) setFirstName(authUser.firstName);
+      if (authUser.lastName) setLastName(authUser.lastName);
+      if (authUser.email) setEmail(authUser.email);
+    }
+  }, [authUser]);
+
   const [quantity, setQuantity] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
