@@ -351,3 +351,23 @@
     inset: -1px;
   }
 }
+
+/* Hero gradient animation */
+@keyframes heroBgCycle {
+  0%   { background-position: 0% 50%; }
+  25%  { background-position: 50% 0%; }
+  50%  { background-position: 100% 50%; }
+  75%  { background-position: 50% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+.hero-gradient-bg {
+  background: linear-gradient(
+    -45deg,
+    #0D1020, #181D37, #252D55, #5C4610,
+    #181D37, #1a2850, #252D55, #5C4610,
+    #181D37, #0D1020
+  );
+  background-size: 600% 600%;
+  animation: heroBgCycle 18s ease infinite;
+}

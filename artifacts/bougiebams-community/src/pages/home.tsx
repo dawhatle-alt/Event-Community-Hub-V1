@@ -24,30 +24,38 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col items-center">
       {/* Hero Section */}
-      <section className="w-full relative overflow-hidden bg-[#faf8f5] pt-12 pb-24 md:pt-24 md:pb-32">
-        <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+      <section className="w-full relative overflow-hidden hero-gradient-bg pt-12 pb-24 md:pt-24 md:pb-32">
+        {/* Floating depth orbs */}
+        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 520, height: 520, top: "-15%", left: "55%", background: "radial-gradient(circle, #C9A22740 0%, transparent 70%)", filter: "blur(80px)" }} animate={{ x: [0, 80, 0, -48, 0], y: [0, 30, 60, 18, 0], opacity: [0.45, 0.7, 0.45, 0.65, 0.45] }} transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 600, height: 600, top: "30%", left: "-8%", background: "radial-gradient(circle, #252D55cc 0%, transparent 70%)", filter: "blur(90px)" }} animate={{ x: [0, 60, 0, -36, 0], y: [0, 40, 80, 24, 0], opacity: [0.4, 0.6, 0.4, 0.55, 0.4] }} transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
+        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 400, height: 400, top: "60%", left: "10%", background: "radial-gradient(circle, #C9A22726 0%, transparent 70%)", filter: "blur(70px)" }} animate={{ x: [0, -50, 0, 30, 0], y: [0, -20, -40, -12, 0], opacity: [0.35, 0.55, 0.35, 0.5, 0.35] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 6 }} />
+        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 360, height: 360, top: "55%", left: "70%", background: "radial-gradient(circle, #8B691433 0%, transparent 70%)", filter: "blur(65px)" }} animate={{ x: [0, -60, 0, 36, 0], y: [0, 25, 50, 15, 0], opacity: [0.3, 0.5, 0.3, 0.45, 0.3] }} transition={{ duration: 22, repeat: Infinity, ease: "easeInOut", delay: 9 }} />
+        {/* Vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 100% 80% at 50% 50%, transparent 30%, #0D102088 100%)" }} />
+
+        <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10">
           <div className="flex flex-col space-y-8 z-10">
-            <div className="inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-medium bg-background/50 backdrop-blur w-fit">
+            <div className="inline-flex items-center rounded-full border border-[#C9A227]/25 px-4 py-1.5 text-sm font-medium bg-[#C9A227]/[0.07] backdrop-blur w-fit">
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-              Premium mahjong experiences for everyone
+              <span className="text-[#FAF8F5]/75">Premium mahjong experiences for everyone</span>
             </div>
 
-            <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-foreground leading-[1.1]">
+            <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-[#FAF8F5] leading-[1.1]">
               You're invited to <br />
               <span className="text-primary italic">something special</span>.
             </h1>
 
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-md font-light">
+            <p className="text-lg text-[#FAF8F5]/55 leading-relaxed max-w-md font-light">
               BougieBams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <AnimatedGradientBorder className="inline-block">
-                <Button size="lg" className="w-full rounded-xl bg-foreground text-background hover:bg-foreground/90 font-medium px-8 h-14 text-base" asChild>
+                <Button size="lg" className="w-full rounded-xl bg-[#181D37] text-[#FAF8F5] hover:bg-[#181D37]/90 font-medium px-8 h-14 text-base" asChild>
                   <Link href="/events">Explore Events</Link>
                 </Button>
               </AnimatedGradientBorder>
-              <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-foreground/20 hover:bg-foreground/5 font-medium px-8 h-14 text-base" asChild>
+              <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
                 <Link href="/about">Our Story</Link>
               </Button>
             </div>
