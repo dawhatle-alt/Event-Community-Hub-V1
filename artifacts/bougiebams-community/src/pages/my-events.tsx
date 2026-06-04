@@ -2,9 +2,10 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { Calendar, MapPin, Users, LogIn, X } from "lucide-react";
+import { Calendar, MapPin, Users, LogIn, X, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -105,13 +106,43 @@ export default function MyEvents() {
   const upcoming = items.filter((i) => new Date(i.event.date) >= now);
   const past = items.filter((i) => new Date(i.event.date) < now);
 
+  const initials = user
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "U"
+    : "U";
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Member";
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <div className="mb-10">
-        <h1 className="font-serif text-3xl md:text-4xl font-semibold mb-2">My Events</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {user?.firstName || "friend"}! Here are your registrations.
-        </p>
+      {/* Profile card */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-5 bg-card border border-border rounded-2xl px-6 py-5 mb-10"
+      >
+        <Avatar className="h-16 w-16 shrink-0">
+          {user?.profileImageUrl && (
+            <AvatarImage src={user.profileImageUrl} alt={fullName} />
+          )}
+          <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl md:text-3xl font-semibold leading-tight truncate">
+            {fullName}
+          </h1>
+          {user?.email && (
+            <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{user.email}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <div className="mb-8">
+        <h2 className="font-serif text-xl font-semibold">My Registrations</h2>
+        <p className="text-muted-foreground text-sm mt-1">Your upcoming and past event registrations.</p>
       </div>
 
       {fetching && (
