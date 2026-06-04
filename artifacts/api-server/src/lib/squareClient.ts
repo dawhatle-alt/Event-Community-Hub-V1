@@ -5,9 +5,12 @@ export function getSquareClient(): SquareClient {
   if (!accessToken) {
     throw new Error("SQUARE_ACCESS_TOKEN environment variable is required");
   }
+  const env = (process.env.SQUARE_ENVIRONMENT ?? "sandbox").toLowerCase();
+  const environment =
+    env === "production" ? SquareEnvironment.Production : SquareEnvironment.Sandbox;
   return new SquareClient({
     token: accessToken,
-    environment: SquareEnvironment.Production,
+    environment,
   });
 }
 
