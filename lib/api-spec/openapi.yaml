@@ -281,6 +281,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/RegistrationStats"
 
+  /stripe/webhook:
+    post:
+      operationId: handleStripeWebhook
+      tags: [registrations]
+      summary: Stripe webhook endpoint
+      description: |
+        Receives Stripe webhook events. Must be registered BEFORE express.json()
+        middleware so the raw Buffer body is preserved for signature verification.
+        Handles checkout.session.completed to mark registrations paid and
+        decrement spots_remaining.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookPayload"
+      responses:
+        "200":
+          description: Webhook received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+        "400":
+          description: Invalid webhook payload or signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /storage/uploads/request-url:
     post:
       tags: [Storage]
@@ -379,6 +412,11 @@ paths:
 
 components:
   schemas:
+    WebhookPayload:
+      type: object
+      description: Raw Stripe webhook event payload
+      additionalProperties: true
+
     HealthStatus:
       type: object
       properties:

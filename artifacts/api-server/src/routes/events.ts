@@ -92,6 +92,15 @@ router.get("/events/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Enforce published check — drafts only accessible to admin
+  const authHeader = req.headers.authorization;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const isAdmin = adminPassword && authHeader === `Bearer ${adminPassword}`;
+  if (!event.published && !isAdmin) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+
   res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 

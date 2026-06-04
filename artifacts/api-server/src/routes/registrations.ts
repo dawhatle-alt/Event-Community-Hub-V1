@@ -116,11 +116,9 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       })
       .returning();
 
-    // Decrement spots_remaining
-    await db
-      .update(eventsTable)
-      .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
-      .where(eq(eventsTable.id, eventId));
+    // NOTE: spots_remaining is NOT decremented here — only on payment confirmation
+    // via webhook (checkout.session.completed). This prevents sell-outs from
+    // abandoned/unpaid sessions.
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],

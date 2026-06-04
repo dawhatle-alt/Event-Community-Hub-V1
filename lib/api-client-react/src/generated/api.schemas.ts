@@ -5,6 +5,11 @@
  * BougieBams Community & Events API
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Raw Stripe webhook event payload
+ */
+export interface WebhookPayload { [key: string]: unknown }
+
 export interface HealthStatus {
   status: string;
 }
@@ -184,5 +189,9 @@ upcoming?: boolean | null;
 
 export type GetRegistrationBySessionParams = {
 sessionId: string;
+};
+
+export type HandleStripeWebhook200 = {
+  received?: boolean;
 };
 

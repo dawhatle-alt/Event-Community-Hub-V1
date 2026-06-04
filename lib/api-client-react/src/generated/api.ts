@@ -27,13 +27,15 @@ import type {
   EventInput,
   EventUpdate,
   GetRegistrationBySessionParams,
+  HandleStripeWebhook200,
   HealthStatus,
   ListEventsParams,
   Registration,
   RegistrationConfirmation,
   RegistrationStats,
   UploadUrlRequest,
-  UploadUrlResponse
+  UploadUrlResponse,
+  WebhookPayload
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -965,6 +967,82 @@ export function useGetRegistrationStats<TData = Awaited<ReturnType<typeof getReg
 
 
 
+
+export const getHandleStripeWebhookUrl = () => {
+
+
+
+
+  return `/api/stripe/webhook`
+}
+
+/**
+ * Receives Stripe webhook events. Must be registered BEFORE express.json()
+middleware so the raw Buffer body is preserved for signature verification.
+Handles checkout.session.completed to mark registrations paid and
+decrement spots_remaining.
+
+ * @summary Stripe webhook endpoint
+ */
+export const handleStripeWebhook = async (webhookPayload: WebhookPayload, options?: RequestInit): Promise<HandleStripeWebhook200> => {
+
+  return customFetch<HandleStripeWebhook200>(getHandleStripeWebhookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      webhookPayload,)
+  }
+);}
+
+
+
+
+export const getHandleStripeWebhookMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleStripeWebhook>>, TError,{data: BodyType<WebhookPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof handleStripeWebhook>>, TError,{data: BodyType<WebhookPayload>}, TContext> => {
+
+const mutationKey = ['handleStripeWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof handleStripeWebhook>>, {data: BodyType<WebhookPayload>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  handleStripeWebhook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HandleStripeWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof handleStripeWebhook>>>
+    export type HandleStripeWebhookMutationBody = BodyType<WebhookPayload>
+    export type HandleStripeWebhookMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Stripe webhook endpoint
+ */
+export const useHandleStripeWebhook = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleStripeWebhook>>, TError,{data: BodyType<WebhookPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof handleStripeWebhook>>,
+        TError,
+        {data: BodyType<WebhookPayload>},
+        TContext
+      > => {
+      return useMutation(getHandleStripeWebhookMutationOptions(options));
+    }
 
 export const getRequestUploadUrlUrl = () => {
 

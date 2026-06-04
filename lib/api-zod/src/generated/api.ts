@@ -312,6 +312,21 @@ export const GetRegistrationStatsResponse = zod.object({
 
 
 /**
+ * Receives Stripe webhook events. Must be registered BEFORE express.json()
+middleware so the raw Buffer body is preserved for signature verification.
+Handles checkout.session.completed to mark registrations paid and
+decrement spots_remaining.
+
+ * @summary Stripe webhook endpoint
+ */
+export const HandleStripeWebhookBody = zod.record(zod.string(), zod.unknown()).describe('Raw Stripe webhook event payload')
+
+export const HandleStripeWebhookResponse = zod.object({
+  "received": zod.boolean().optional()
+})
+
+
+/**
  * Returns a presigned GCS URL for direct upload. The client sends JSON
 metadata here, then uploads the file directly to the returned URL.
 

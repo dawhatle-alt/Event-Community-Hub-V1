@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db, registrationsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, registrationsTable, eventsTable } from "@workspace/db";
 import { logger } from "./logger";
 
 export class WebhookHandlers {
@@ -38,6 +38,7 @@ export class WebhookHandlers {
       const paymentStatus: string = session.payment_status;
 
       if (paymentStatus === "paid") {
+        // Mark registration as paid
         const updated = await db
           .update(registrationsTable)
           .set({ status: "paid" })
@@ -45,7 +46,18 @@ export class WebhookHandlers {
           .returning();
 
         if (updated.length > 0) {
-          logger.info({ sessionId, registrationId: updated[0].id }, "Registration marked paid via webhook");
+          const reg = updated[0];
+          logger.info({ sessionId, registrationId: reg.id }, "Registration marked paid via webhook");
+
+          // Decrement spots_remaining on confirmed payment (not at checkout creation)
+          await db
+            .update(eventsTable)
+            .set({
+              spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${reg.quantity})`
+            })
+            .where(eq(eventsTable.id, reg.eventId));
+
+          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots decremented after payment confirmation");
         } else {
           logger.warn({ sessionId }, "Webhook: no registration found for session");
         }
