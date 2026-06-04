@@ -60,14 +60,14 @@ export default function ConfirmationScreen() {
 
       {error && (
         <View style={styles.center}>
-          <View style={[styles.iconCircle, { backgroundColor: `${colors.primary}20` }]}>
-            <Feather name="check-circle" size={40} color={colors.primary} />
+          <View style={[styles.iconCircle, { backgroundColor: `${colors.destructive}15` }]}>
+            <Feather name="alert-circle" size={40} color={colors.destructive} />
           </View>
           <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
-            You&apos;re registered!
+            Something went wrong
           </Text>
           <Text style={[styles.successSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Your registration is confirmed. Check your email for details and a confirmation.
+            We couldn&apos;t load your registration details. If you completed payment, check your email for a confirmation.
           </Text>
           <Pressable
             testID="go-home-button"

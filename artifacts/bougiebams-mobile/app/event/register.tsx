@@ -79,7 +79,12 @@ export default function RegisterScreen() {
       {
         onSuccess: async (response) => {
           setSubmitted(true);
-          if (response.url) {
+          const isCheckoutUrl =
+            response.url &&
+            (response.url.includes("square") ||
+              response.url.includes("checkout") ||
+              response.url.includes("payment"));
+          if (isCheckoutUrl) {
             if (Platform.OS === "web") {
               window.open(response.url, "_blank");
             } else {
