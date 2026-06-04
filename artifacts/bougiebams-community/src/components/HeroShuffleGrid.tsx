@@ -6,42 +6,37 @@ import { cn } from "@/lib/utils";
 const tiles = [
   {
     id: "logo",
-    type: "logo",
+    type: "logo" as const,
   },
   {
     id: "brunch",
-    type: "gradient",
+    type: "photo" as const,
     label: "Bougie Brunch",
-    bg: "linear-gradient(135deg, #8B6914 0%, #C49A2A 50%, #F0D060 100%)",
-    icon: "🥂",
+    src: "/mahjong-table.jpeg",
   },
   {
     id: "wine",
-    type: "gradient",
+    type: "photo" as const,
     label: "Wine Tastings",
-    bg: "linear-gradient(135deg, #1a1f3a 0%, #2d3561 50%, #4a5490 100%)",
-    icon: "🍷",
+    src: "/event-boss-moves.jpeg",
   },
   {
     id: "art",
-    type: "gradient",
+    type: "photo" as const,
     label: "Arts & Culture",
-    bg: "linear-gradient(135deg, #6B4226 0%, #A0642A 50%, #C49A6C 100%)",
-    icon: "🎨",
+    src: "/event-rose.jpeg",
   },
   {
     id: "wellness",
-    type: "gradient",
+    type: "photo" as const,
     label: "Wellness",
-    bg: "linear-gradient(135deg, #2C4A3E 0%, #3D6B5A 50%, #5E9E85 100%)",
-    icon: "✨",
+    src: "/event-spa.jpeg",
   },
   {
     id: "connect",
-    type: "gradient",
+    type: "photo" as const,
     label: "Connection",
-    bg: "linear-gradient(135deg, #4a1a2a 0%, #7a2d45 50%, #B05070 100%)",
-    icon: "💫",
+    src: "/mahjong-tiles.jpeg",
   },
 ];
 
@@ -89,14 +84,16 @@ export function HeroShuffleGrid({ className }: { className?: string }) {
                 />
               </div>
             ) : (
-              <div
-                className="w-full h-full flex flex-col items-center justify-center gap-3"
-                style={{ background: tile.bg }}
-              >
-                <span className="text-5xl drop-shadow-sm">{tile.icon}</span>
+              <div className="w-full h-full relative">
+                <img
+                  src={tile.src}
+                  alt={tile.label}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <span
-                  className="text-sm font-medium tracking-widest uppercase"
-                  style={{ color: "rgba(255,255,255,0.85)" }}
+                  className="absolute bottom-3 left-0 right-0 text-center text-xs font-medium tracking-widest uppercase"
+                  style={{ color: "rgba(255,255,255,0.9)" }}
                 >
                   {tile.label}
                 </span>
