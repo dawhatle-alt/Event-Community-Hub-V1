@@ -412,6 +412,65 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
   res.json({ success: true });
 });
 
+// Admin-only: reinstate a cancelled registration
+router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid registration id" });
+    return;
+  }
+
+  type TxResult =
+    | { outcome: "not_found" }
+    | { outcome: "not_cancelled" }
+    | { outcome: "ok"; quantity: number; eventId: number };
+
+  const result = await db.transaction(async (tx): Promise<TxResult> => {
+    const locked = await tx.execute(
+      sql`SELECT id, status, quantity, event_id FROM registrations WHERE id = ${id} FOR UPDATE`
+    );
+    const reg = (locked.rows?.[0] ?? null) as {
+      id: number;
+      status: string;
+      quantity: number;
+      event_id: number;
+    } | null;
+
+    if (!reg) return { outcome: "not_found" };
+    if (reg.status !== "cancelled") return { outcome: "not_cancelled" };
+
+    await tx
+      .update(registrationsTable)
+      .set({ status: "paid" })
+      .where(eq(registrationsTable.id, id));
+
+    return {
+      outcome: "ok",
+      quantity: Number(reg.quantity),
+      eventId: Number(reg.event_id),
+    };
+  });
+
+  if (result.outcome === "not_found") {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  if (result.outcome === "not_cancelled") {
+    res.status(400).json({ error: "Registration is not cancelled" });
+    return;
+  }
+
+  // Decrement spotsRemaining since we're restoring a paid registration
+  await db
+    .update(eventsTable)
+    .set({
+      spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${result.quantity})`,
+    })
+    .where(eq(eventsTable.id, result.eventId));
+
+  res.json({ success: true });
+});
+
 // Admin-only: registration stats
 router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<void> => {
   const [totals] = await db
@@ -421,6 +480,11 @@ router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<
     })
     .from(registrationsTable)
     .where(eq(registrationsTable.status, "paid"));
+
+  const [cancellationCount] = await db
+    .select({ total: count(registrationsTable.id) })
+    .from(registrationsTable)
+    .where(eq(registrationsTable.status, "cancelled"));
 
   const [eventCounts] = await db
     .select({ total: count(eventsTable.id) })
@@ -440,6 +504,7 @@ router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<
   res.json({
     totalRegistrations: Number(totals?.totalRegistrations ?? 0),
     totalRevenue: Number(totals?.totalRevenue ?? 0),
+    totalCancellations: Number(cancellationCount?.total ?? 0),
     totalEvents: Number(eventCounts?.total ?? 0),
     upcomingEvents: Number(upcomingCount?.upcoming ?? 0),
     recentRegistrations: recentRegs.map((r) => ({ ...r, totalAmount: Number(r.totalAmount) })),

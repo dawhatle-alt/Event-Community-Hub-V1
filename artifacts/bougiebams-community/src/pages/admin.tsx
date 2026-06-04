@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,12 +95,58 @@ function AdminLoginGate({ onAuth }: { onAuth: (pw: string) => void }) {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  if (status === "paid") return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-green-100 text-green-700">{status}</span>;
+  if (status === "cancelled") return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-red-100 text-red-600">{status}</span>;
+  return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-yellow-100 text-yellow-700">{status}</span>;
+}
+
 function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
   const [open, setOpen] = useState(false);
+  const [reinstating, setReinstating] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const queryKey = ["event-registrations", eventId];
   const { data: regs, isLoading } = useListEventRegistrations(eventId, {
     request: { headers: adminHeaders },
-    query: { enabled: open, queryKey: undefined as any },
+    query: { enabled: open, queryKey: queryKey as any },
   });
+
+  const counts = useMemo(() => {
+    if (!regs) return { paid: 0, pending: 0, cancelled: 0 };
+    return regs.reduce(
+      (acc, r) => {
+        if (r.status === "paid") acc.paid++;
+        else if (r.status === "cancelled") acc.cancelled++;
+        else acc.pending++;
+        return acc;
+      },
+      { paid: 0, pending: 0, cancelled: 0 }
+    );
+  }, [regs]);
+
+  const handleReinstate = async (regId: number) => {
+    if (!confirm("Reinstate this registration? This will mark it as paid and reduce available spots by the registered quantity.")) return;
+    setReinstating(regId);
+    try {
+      const res = await fetch(`/api/registrations/${regId}/reinstate`, {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: "Failed to reinstate", description: err.error ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Registration reinstated" });
+      queryClient.invalidateQueries({ queryKey });
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setReinstating(null);
+    }
+  };
 
   return (
     <div className="border-t border-border mt-2 pt-2">
@@ -110,6 +156,13 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
       >
         {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         Registrations
+        {regs && regs.length > 0 && (
+          <span className="ml-1 flex gap-1">
+            {counts.paid > 0 && <span className="bg-green-100 text-green-700 rounded px-1">{counts.paid} paid</span>}
+            {counts.pending > 0 && <span className="bg-yellow-100 text-yellow-700 rounded px-1">{counts.pending} pending</span>}
+            {counts.cancelled > 0 && <span className="bg-red-100 text-red-600 rounded px-1">{counts.cancelled} cancelled</span>}
+          </span>
+        )}
       </button>
       {open && (
         <div className="mt-2 text-xs space-y-1">
@@ -119,10 +172,27 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
             <p className="text-muted-foreground">No registrations yet.</p>
           ) : (
             regs.map((r) => (
-              <div key={r.id} className="flex items-center justify-between bg-muted/40 rounded px-2 py-1">
-                <span className="font-medium">{r.firstName} {r.lastName}</span>
-                <span className="text-muted-foreground">{r.email}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${r.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{r.status}</span>
+              <div
+                key={r.id}
+                className={`flex items-center justify-between rounded px-2 py-1 gap-2 ${r.status === "cancelled" ? "bg-red-50/60 opacity-80" : "bg-muted/40"}`}
+              >
+                <span className={`font-medium ${r.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
+                  {r.firstName} {r.lastName}
+                </span>
+                <span className="text-muted-foreground truncate">{r.email}</span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <StatusBadge status={r.status} />
+                  {r.status === "cancelled" && (
+                    <button
+                      onClick={() => handleReinstate(r.id)}
+                      disabled={reinstating === r.id}
+                      title="Reinstate registration"
+                      className="ml-1 text-primary hover:text-primary/80 disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -379,7 +449,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
         ) : (
           <div className="space-y-8">
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-primary/10 rounded-xl"><DollarSign className="w-6 h-6 text-primary" /></div>
@@ -393,8 +463,17 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-primary/10 rounded-xl"><Users className="w-6 h-6 text-primary" /></div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Registrations</p>
+                    <p className="text-sm text-muted-foreground">Paid Registrations</p>
                     <h3 className="text-2xl font-bold">{stats?.totalRegistrations || 0}</h3>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-50 rounded-xl"><XCircle className="w-6 h-6 text-red-500" /></div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cancellations</p>
+                    <h3 className="text-2xl font-bold">{(stats as any)?.totalCancellations || 0}</h3>
                   </div>
                 </div>
               </div>
