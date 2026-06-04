@@ -1,16 +1,25 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar, Users, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { AnimatedGradientBorder } from "@/components/AnimatedGradientBorder";
 import { useListFeaturedEvents } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import img2 from "@assets/bb-image-2.png";
-import img5 from "@assets/bb-image-5.png";
 
 export default function Home() {
   const { data: featuredEvents, isLoading } = useListFeaturedEvents();
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubmitted(true);
+    }
+  };
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -22,16 +31,16 @@ export default function Home() {
               <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
               Curated experiences for elevated Black women
             </div>
-            
+
             <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-foreground leading-[1.1]">
               You're invited to <br />
               <span className="text-primary italic">something special</span>.
             </h1>
-            
+
             <p className="text-lg text-muted-foreground leading-relaxed max-w-md font-light">
               BougieBams is a private gathering space for brunches, wine tastings, and connections that feel rich, polished, and unmistakably ours.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <AnimatedGradientBorder className="inline-block">
                 <Button size="lg" className="w-full rounded-xl bg-foreground text-background hover:bg-foreground/90 font-medium px-8 h-14 text-base" asChild>
@@ -43,7 +52,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          
+
           <div className="relative">
             <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full"></div>
             <HeroShuffleGrid />
@@ -91,19 +100,25 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
               {featuredEvents?.slice(0, 2).map((event, i) => (
                 <Link key={event.id} href={`/events/${event.id}`}>
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
                     className="group cursor-pointer flex flex-col h-full bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300"
                   >
-                    <div className="relative aspect-[4/3] w-full overflow-hidden">
-                      <img 
-                        src={event.imageUrl || img2} 
-                        alt={event.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+                      {event.imageUrl ? (
+                        <img
+                          src={event.imageUrl}
+                          alt={event.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-foreground/10">
+                          <span className="font-serif text-5xl text-primary/30">BB</span>
+                        </div>
+                      )}
                       <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium border border-border/50 shadow-sm">
                         {format(new Date(event.date), "MMM d, yyyy")}
                       </div>
@@ -117,10 +132,9 @@ export default function Home() {
                       </div>
                       <h3 className="font-serif text-3xl font-medium mb-3 group-hover:text-primary transition-colors">{event.title}</h3>
                       <p className="text-muted-foreground line-clamp-2 mb-6 font-light">{event.description}</p>
-                      
                       <div className="mt-auto flex items-center text-sm text-muted-foreground gap-4">
                         <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {format(new Date(event.date), "h:mm a")}</span>
-                        <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {event.spotsRemaining} spots left</span>
+                        <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {event.spotsRemaining ?? event.capacity} spots left</span>
                       </div>
                     </div>
                   </motion.div>
@@ -131,13 +145,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Image Banner */}
-      <section className="w-full h-[60vh] min-h-[400px] relative">
-        <img src={img5} alt="BougieBams gathering" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-foreground/30 flex items-center justify-center">
-          <h2 className="font-serif text-4xl md:text-6xl text-background font-medium text-center px-4 max-w-4xl drop-shadow-lg">
-            Where luxury meets community.
-          </h2>
+      {/* Join the Community — Email Capture */}
+      <section className="w-full py-24 bg-foreground">
+        <div className="container mx-auto px-4 max-w-2xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="font-serif text-4xl md:text-5xl text-background font-medium mb-4">
+              Join the Community
+            </h2>
+            <p className="text-muted text-lg font-light mb-10">
+              Be the first to know about upcoming gatherings, exclusive member events, and early-access tickets.
+            </p>
+
+            {submitted ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-primary/20 border border-primary/30 rounded-2xl px-8 py-6 text-background"
+              >
+                <p className="font-serif text-2xl mb-2">You're on the list ✨</p>
+                <p className="text-muted text-sm">We'll be in touch with something special.</p>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <Input
+                  type="email"
+                  required
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 h-12 rounded-xl bg-background/10 border-background/20 text-background placeholder:text-muted focus-visible:ring-primary"
+                />
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="h-12 px-8 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium whitespace-nowrap"
+                >
+                  Join Us
+                </Button>
+              </form>
+            )}
+          </motion.div>
         </div>
       </section>
     </div>

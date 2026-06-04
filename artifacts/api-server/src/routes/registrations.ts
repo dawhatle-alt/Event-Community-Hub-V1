@@ -7,10 +7,12 @@ import {
   GetRegistrationBySessionQueryParams,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { requireAdminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
-router.get("/events/:id/registrations", async (req, res): Promise<void> => {
+// Admin-only: list registrations for an event
+router.get("/events/:id/registrations", requireAdminAuth, async (req, res): Promise<void> => {
   const params = ListEventRegistrationsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -66,7 +68,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
       : "http://localhost";
 
-    // Pre-create the registration as pending
     const [registration] = await db
       .insert(registrationsTable)
       .values({
@@ -94,7 +95,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       },
     });
 
-    // Update registration with stripe session id
     await db
       .update(registrationsTable)
       .set({ stripeSessionId: session.id })
@@ -102,7 +102,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
 
     res.json({ url: session.url!, sessionId: session.id });
   } catch (err: any) {
-    // Stripe not connected — create a free/confirmed registration directly
     if (
       err?.message?.includes("integration not connected") ||
       err?.message?.includes("Missing Replit environment")
@@ -110,7 +109,7 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
       logger.warn("Stripe not connected — creating free registration");
 
       const sessionId = `mock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const [registration] = await db
+      await db
         .insert(registrationsTable)
         .values({
           eventId,
@@ -148,7 +147,6 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
 
   const { sessionId } = query.data;
 
-  // If it's a real Stripe session, try to confirm it
   if (!sessionId.startsWith("mock_")) {
     try {
       const { getUncachableStripeClient } = await import("../lib/stripeClient");
@@ -188,7 +186,8 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/registrations/stats", async (_req, res): Promise<void> => {
+// Admin-only: registration stats
+router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<void> => {
   const [totals] = await db
     .select({
       totalRegistrations: count(registrationsTable.id),

@@ -9,6 +9,7 @@ import {
   UpdateEventParams,
   DeleteEventParams,
 } from "@workspace/api-zod";
+import { requireAdminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
@@ -86,7 +87,8 @@ router.get("/events/:id", async (req, res): Promise<void> => {
   res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 
-router.post("/events", async (req, res): Promise<void> => {
+// Admin-only write endpoints
+router.post("/events", requireAdminAuth, async (req, res): Promise<void> => {
   const parsed = CreateEventBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -97,7 +99,7 @@ router.post("/events", async (req, res): Promise<void> => {
   res.status(201).json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 
-router.patch("/events/:id", async (req, res): Promise<void> => {
+router.patch("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const params = UpdateEventParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -124,7 +126,7 @@ router.patch("/events/:id", async (req, res): Promise<void> => {
   res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 
-router.delete("/events/:id", async (req, res): Promise<void> => {
+router.delete("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const params = DeleteEventParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
