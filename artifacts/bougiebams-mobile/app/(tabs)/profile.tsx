@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAuth } from "@/context/auth";
 import { useColors } from "@/hooks/useColors";
 
 type TabFilter = "upcoming" | "past";
@@ -135,10 +136,13 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabFilter>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const { data: authData, isLoading: authLoading } = useGetCurrentAuthUser();
+  const { isAuthenticated, isLoading: authLoading, signIn, signOut } = useAuth();
+
+  const { data: authData, isLoading: userLoading } = useGetCurrentAuthUser();
   const user = authData?.user ?? null;
 
   const {
@@ -147,7 +151,7 @@ export default function ProfileScreen() {
     error: regsError,
     refetch,
   } = useGetMyRegistrations({
-    query: { enabled: !!user, retry: false },
+    query: { enabled: isAuthenticated, retry: false },
   });
 
   const onRefresh = async () => {
@@ -156,14 +160,21 @@ export default function ProfileScreen() {
     setRefreshing(false);
   };
 
-  const now = new Date();
+  const handleSignIn = async () => {
+    setSigningIn(true);
+    try {
+      await signIn();
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   const filtered = (registrations ?? []).filter((item) => {
     const eventDate = new Date(item.event.date);
     return activeTab === "upcoming" ? !isPast(eventDate) : isPast(eventDate);
   });
 
-  const isLoading = authLoading;
+  const isLoading = authLoading || (isAuthenticated && userLoading);
 
   if (isLoading) {
     return (
@@ -196,7 +207,7 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      {!user ? (
+      {!isAuthenticated ? (
         /* ── Not signed in ── */
         <ScrollView
           contentContainerStyle={[
@@ -234,6 +245,35 @@ export default function ProfileScreen() {
             >
               Your registrations and profile information will appear here once you&apos;re signed in.
             </Text>
+            <Pressable
+              testID="sign-in-button"
+              style={({ pressed }) => [
+                styles.signInBtn,
+                {
+                  backgroundColor: colors.primary,
+                  borderRadius: colors.radius,
+                  opacity: pressed || signingIn ? 0.75 : 1,
+                },
+              ]}
+              onPress={handleSignIn}
+              disabled={signingIn}
+            >
+              {signingIn ? (
+                <ActivityIndicator color={colors.navy} size="small" />
+              ) : (
+                <>
+                  <Feather name="log-in" size={16} color={colors.navy} />
+                  <Text
+                    style={[
+                      styles.signInBtnText,
+                      { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    Sign In
+                  </Text>
+                </>
+              )}
+            </Pressable>
           </View>
 
           <View
@@ -296,7 +336,7 @@ export default function ProfileScreen() {
                   <Feather name="user" size={32} color={colors.primary} />
                 </View>
                 <View style={styles.profileInfo}>
-                  {(user.firstName || user.lastName) && (
+                  {user && (user.firstName || user.lastName) && (
                     <Text
                       style={[
                         styles.profileName,
@@ -306,7 +346,7 @@ export default function ProfileScreen() {
                       {[user.firstName, user.lastName].filter(Boolean).join(" ")}
                     </Text>
                   )}
-                  {user.email && (
+                  {user?.email && (
                     <Text
                       style={[
                         styles.profileEmail,
@@ -316,6 +356,21 @@ export default function ProfileScreen() {
                       {user.email}
                     </Text>
                   )}
+                  <Pressable
+                    testID="sign-out-button"
+                    style={({ pressed }) => [styles.signOutBtn, { opacity: pressed ? 0.6 : 1 }]}
+                    onPress={signOut}
+                  >
+                    <Feather name="log-out" size={13} color={colors.mutedForeground} />
+                    <Text
+                      style={[
+                        styles.signOutText,
+                        { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                      ]}
+                    >
+                      Sign out
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
 
@@ -639,5 +694,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 22,
+  },
+  signInBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  signInBtnText: {
+    fontSize: 15,
+  },
+  signOutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  signOutText: {
+    fontSize: 13,
   },
 });
