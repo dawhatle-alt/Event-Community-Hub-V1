@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
-import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, X } from "lucide-react";
 import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ export default function EventDetail() {
     phone: "",
     quantity: 1
   });
+  const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -151,6 +152,21 @@ export default function EventDetail() {
                 </Button>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {isAuthenticated && user && !prefillNoteDismissed && (
+                    <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2.5 text-xs text-foreground/80">
+                      <span className="flex-1 leading-relaxed">
+                        Signed in as <Link href="/my-events" className="font-medium text-primary hover:underline">{user.firstName} {user.lastName}</Link> — fields pre-filled from your account.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPrefillNoteDismissed(true)}
+                        className="mt-0.5 text-foreground/40 hover:text-foreground/70 transition-colors flex-shrink-0"
+                        aria-label="Dismiss"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <Input id="firstName" required value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="bg-background" />
