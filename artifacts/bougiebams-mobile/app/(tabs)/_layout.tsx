@@ -21,6 +21,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "calendar", selected: "calendar.fill" }} />
         <Label>Events</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon sf={{ default: "person.circle", selected: "person.circle.fill" }} />
+        <Label>Profile</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -86,6 +90,18 @@ function ClassicTabLayout() {
               <SymbolView name="calendar" tintColor={color} size={24} />
             ) : (
               <Feather name="calendar" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.circle" tintColor={color} size={24} />
+            ) : (
+              <Feather name="user" size={22} color={color} />
             ),
         }}
       />
