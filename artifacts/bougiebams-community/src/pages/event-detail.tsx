@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import img3 from "@assets/bb-image-3.png";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -75,12 +74,18 @@ export default function EventDetail() {
   return (
     <div className="w-full bg-background min-h-screen pb-24">
       <div className="relative h-[40vh] min-h-[300px] w-full">
-        <img 
-          src={event.imageUrl || img3} 
-          alt={event.title} 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-background/20" />
+        {event.imageUrl ? (
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #181D37 0%, #2a3160 50%, #1a1f3e 100%)" }}>
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 30% 60%, #C9A227 0%, transparent 50%), radial-gradient(circle at 75% 30%, #C9A227 0%, transparent 40%)" }} />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 
       <div className="container mx-auto px-4 max-w-5xl -mt-32 relative z-10">
