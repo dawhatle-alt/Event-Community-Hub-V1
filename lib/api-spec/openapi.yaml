@@ -123,6 +123,43 @@ paths:
                 items:
                   type: string
 
+  /events/{id}/register:
+    post:
+      operationId: registerForEvent
+      tags: [registrations]
+      summary: Register for an event (alias for POST /registrations/checkout)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSessionInput"
+      responses:
+        "200":
+          description: Checkout session or confirmation URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSessionResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /events/{id}:
     get:
       operationId: getEvent
@@ -137,6 +174,35 @@ paths:
       responses:
         "200":
           description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    put:
+      operationId: updateEventPut
+      tags: [events]
+      summary: Update an event (admin, PUT alias)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
           content:
             application/json:
               schema:
@@ -216,6 +282,34 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Registration"
+
+  /registrations:
+    get:
+      operationId: listRegistrations
+      tags: [registrations]
+      summary: List registrations for an event (admin)
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Filter registrations by event ID
+      responses:
+        "200":
+          description: List of registrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Registration"
+        "400":
+          description: Missing or invalid eventId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /registrations/checkout:
     post:

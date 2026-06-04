@@ -119,7 +119,12 @@ router.post("/events", requireAdminAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const [event] = await db.insert(eventsTable).values(parsed.data as any).returning();
+  const insertData = {
+    ...parsed.data,
+    // Initialize spotsRemaining to capacity if not explicitly provided
+    spotsRemaining: (parsed.data as any).spotsRemaining ?? parsed.data.capacity,
+  };
+  const [event] = await db.insert(eventsTable).values(insertData as any).returning();
   res.status(201).json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
 });
 

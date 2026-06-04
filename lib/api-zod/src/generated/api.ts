@@ -112,6 +112,34 @@ export const ListEventCategoriesResponse = zod.array(ListEventCategoriesResponse
 
 
 /**
+ * @summary Register for an event (alias for POST /registrations/checkout)
+ */
+export const RegisterForEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+export const registerForEventBodyQuantityDefault = 1;
+
+
+
+export const RegisterForEventBody = zod.object({
+  "eventId": zod.number(),
+  "firstName": zod.string().min(1),
+  "lastName": zod.string().min(1),
+  "email": zod.string().email(),
+  "phone": zod.string().nullish(),
+  "quantity": zod.number().min(1).default(registerForEventBodyQuantityDefault)
+})
+
+export const RegisterForEventResponse = zod.object({
+  "url": zod.string().url(),
+  "sessionId": zod.string()
+})
+
+
+/**
  * @summary Get a single event
  */
 export const GetEventParams = zod.object({
@@ -119,6 +147,57 @@ export const GetEventParams = zod.object({
 })
 
 export const GetEventResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "date": zod.coerce.date(),
+  "endDate": zod.coerce.date().nullish(),
+  "location": zod.string(),
+  "address": zod.string().nullish(),
+  "price": zod.number().describe('Price in dollars'),
+  "capacity": zod.number(),
+  "spotsRemaining": zod.number().nullish(),
+  "imageUrl": zod.string().nullable(),
+  "category": zod.string(),
+  "tags": zod.string().nullish().describe('Comma-separated tags'),
+  "featured": zod.boolean(),
+  "published": zod.boolean(),
+  "stripePriceId": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update an event (admin, PUT alias)
+ */
+export const UpdateEventPutParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const updateEventPutBodyPriceMin = 0;
+
+
+
+
+export const UpdateEventPutBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "endDate": zod.coerce.date().nullish(),
+  "location": zod.string().optional(),
+  "address": zod.string().nullish(),
+  "price": zod.number().min(updateEventPutBodyPriceMin).optional(),
+  "capacity": zod.number().min(1).optional(),
+  "imageUrl": zod.string().nullish(),
+  "category": zod.string().optional(),
+  "tags": zod.string().nullish(),
+  "featured": zod.boolean().optional(),
+  "published": zod.boolean().optional(),
+  "stripePriceId": zod.string().nullish()
+})
+
+export const UpdateEventPutResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string(),
@@ -219,6 +298,29 @@ export const ListEventRegistrationsResponseItem = zod.object({
   "createdAt": zod.coerce.date()
 })
 export const ListEventRegistrationsResponse = zod.array(ListEventRegistrationsResponseItem)
+
+
+/**
+ * @summary List registrations for an event (admin)
+ */
+export const ListRegistrationsQueryParams = zod.object({
+  "eventId": zod.coerce.number().describe('Filter registrations by event ID')
+})
+
+export const ListRegistrationsResponseItem = zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "email": zod.string().email(),
+  "phone": zod.string().nullish(),
+  "quantity": zod.number().optional(),
+  "totalAmount": zod.number().optional(),
+  "stripeSessionId": zod.string().nullish(),
+  "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "createdAt": zod.coerce.date()
+})
+export const ListRegistrationsResponse = zod.array(ListRegistrationsResponseItem)
 
 
 /**

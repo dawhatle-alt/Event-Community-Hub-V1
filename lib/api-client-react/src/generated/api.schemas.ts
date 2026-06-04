@@ -192,6 +192,13 @@ upcoming?: boolean | null;
 search?: string | null;
 };
 
+export type ListRegistrationsParams = {
+/**
+ * Filter registrations by event ID
+ */
+eventId: number;
+};
+
 export type GetRegistrationBySessionParams = {
 sessionId: string;
 };

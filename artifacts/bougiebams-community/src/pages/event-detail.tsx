@@ -139,7 +139,7 @@ export default function EventDetail() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="quantity">Number of Tickets</Label>
-                    <Input id="quantity" type="number" min="1" max={event.spotsRemaining || 10} required value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value, 10) || 1})} className="bg-background" />
+                    <Input id="quantity" type="number" min="1" max={event.spotsRemaining ?? event.capacity} required value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value, 10) || 1})} className="bg-background" />
                   </div>
                   
                   <Button 

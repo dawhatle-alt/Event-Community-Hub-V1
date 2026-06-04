@@ -30,6 +30,7 @@ import type {
   HandleStripeWebhook200,
   HealthStatus,
   ListEventsParams,
+  ListRegistrationsParams,
   Registration,
   RegistrationConfirmation,
   RegistrationStats,
@@ -440,6 +441,78 @@ export function useListEventCategories<TData = Awaited<ReturnType<typeof listEve
 
 
 
+export const getRegisterForEventUrl = (id: number,) => {
+
+
+
+
+  return `/api/events/${id}/register`
+}
+
+/**
+ * @summary Register for an event (alias for POST /registrations/checkout)
+ */
+export const registerForEvent = async (id: number,
+    checkoutSessionInput: CheckoutSessionInput, options?: RequestInit): Promise<CheckoutSessionResponse> => {
+
+  return customFetch<CheckoutSessionResponse>(getRegisterForEventUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      checkoutSessionInput,)
+  }
+);}
+
+
+
+
+export const getRegisterForEventMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerForEvent>>, TError,{id: number;data: BodyType<CheckoutSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerForEvent>>, TError,{id: number;data: BodyType<CheckoutSessionInput>}, TContext> => {
+
+const mutationKey = ['registerForEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerForEvent>>, {id: number;data: BodyType<CheckoutSessionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  registerForEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterForEventMutationResult = NonNullable<Awaited<ReturnType<typeof registerForEvent>>>
+    export type RegisterForEventMutationBody = BodyType<CheckoutSessionInput>
+    export type RegisterForEventMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Register for an event (alias for POST /registrations/checkout)
+ */
+export const useRegisterForEvent = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerForEvent>>, TError,{id: number;data: BodyType<CheckoutSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerForEvent>>,
+        TError,
+        {id: number;data: BodyType<CheckoutSessionInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterForEventMutationOptions(options));
+    }
+
 export const getGetEventUrl = (id: number,) => {
 
 
@@ -516,6 +589,78 @@ export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError
 
 
 
+
+export const getUpdateEventPutUrl = (id: number,) => {
+
+
+
+
+  return `/api/events/${id}`
+}
+
+/**
+ * @summary Update an event (admin, PUT alias)
+ */
+export const updateEventPut = async (id: number,
+    eventUpdate: EventUpdate, options?: RequestInit): Promise<Event> => {
+
+  return customFetch<Event>(getUpdateEventPutUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      eventUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateEventPutMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEventPut>>, TError,{id: number;data: BodyType<EventUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEventPut>>, TError,{id: number;data: BodyType<EventUpdate>}, TContext> => {
+
+const mutationKey = ['updateEventPut'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEventPut>>, {id: number;data: BodyType<EventUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateEventPut(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEventPutMutationResult = NonNullable<Awaited<ReturnType<typeof updateEventPut>>>
+    export type UpdateEventPutMutationBody = BodyType<EventUpdate>
+    export type UpdateEventPutMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Update an event (admin, PUT alias)
+ */
+export const useUpdateEventPut = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEventPut>>, TError,{id: number;data: BodyType<EventUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEventPut>>,
+        TError,
+        {id: number;data: BodyType<EventUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateEventPutMutationOptions(options));
+    }
 
 export const getUpdateEventUrl = (id: number,) => {
 
@@ -724,6 +869,90 @@ export function useListEventRegistrations<TData = Awaited<ReturnType<typeof list
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListEventRegistrationsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRegistrationsUrl = (params: ListRegistrationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/registrations?${stringifiedParams}` : `/api/registrations`
+}
+
+/**
+ * @summary List registrations for an event (admin)
+ */
+export const listRegistrations = async (params: ListRegistrationsParams, options?: RequestInit): Promise<Registration[]> => {
+
+  return customFetch<Registration[]>(getListRegistrationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRegistrationsQueryKey = (params?: ListRegistrationsParams,) => {
+    return [
+    `/api/registrations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRegistrationsQueryOptions = <TData = Awaited<ReturnType<typeof listRegistrations>>, TError = ErrorType<ErrorEnvelope>>(params: ListRegistrationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRegistrationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRegistrations>>> = ({ signal }) => listRegistrations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRegistrations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRegistrationsQueryResult = NonNullable<Awaited<ReturnType<typeof listRegistrations>>>
+export type ListRegistrationsQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary List registrations for an event (admin)
+ */
+
+export function useListRegistrations<TData = Awaited<ReturnType<typeof listRegistrations>>, TError = ErrorType<ErrorEnvelope>>(
+ params: ListRegistrationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRegistrationsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

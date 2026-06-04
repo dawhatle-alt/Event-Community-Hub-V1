@@ -16,6 +16,7 @@ export * from './getRegistrationBySessionParams';
 export * from './handleStripeWebhook200';
 export * from './healthStatus';
 export * from './listEventsParams';
+export * from './listRegistrationsParams';
 export * from './registration';
 export * from './registrationConfirmation';
 export * from './registrationStats';
