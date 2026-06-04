@@ -6,32 +6,25 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-// Register Stripe webhook route BEFORE express.json() middleware
-// The webhook needs the raw Buffer body, not parsed JSON
+// Register Square webhook route BEFORE express.json() middleware
+// The webhook needs the raw string body for signature verification
 app.post(
-  "/api/stripe/webhook",
-  express.raw({ type: "application/json" }),
+  "/api/square/webhook",
+  express.text({ type: "application/json" }),
   async (req, res): Promise<void> => {
-    const signature = req.headers["stripe-signature"];
-    if (!signature) {
-      res.status(400).json({ error: "Missing stripe-signature" });
-      return;
-    }
-
-    const sig = Array.isArray(signature) ? signature[0] : signature;
-
-    if (!Buffer.isBuffer(req.body)) {
-      logger.error("Stripe webhook: body is not a Buffer — express.json() must have run first");
-      res.status(500).json({ error: "Webhook processing error" });
-      return;
-    }
+    const signature = req.headers["x-square-hmacsha256-signature"] as string | undefined;
+    const notificationUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}/api/square/webhook`;
 
     try {
       const { WebhookHandlers } = await import("./lib/webhookHandlers");
-      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      await WebhookHandlers.processSquareWebhook(
+        typeof req.body === "string" ? req.body : JSON.stringify(req.body),
+        signature ?? "",
+        notificationUrl
+      );
       res.status(200).json({ received: true });
     } catch (error: any) {
-      logger.error({ err: error }, "Stripe webhook error");
+      logger.error({ err: error }, "Square webhook error");
       res.status(400).json({ error: "Webhook processing error" });
     }
   }

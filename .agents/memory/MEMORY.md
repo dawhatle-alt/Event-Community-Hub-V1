@@ -1,0 +1,1 @@
+- [Square SDK patterns](square-sdk.md) — SquareClient/SquareEnvironment exports; correct API paths for payment links and orders.

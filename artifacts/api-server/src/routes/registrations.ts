@@ -51,7 +51,6 @@ router.get("/events/:id/registrations", requireAdminAuth, async (req, res): Prom
 // POST /events/:id/register — alias for /registrations/checkout that reads eventId from path
 router.post("/events/:id/register", async (req, res): Promise<void> => {
   req.body = { ...req.body, eventId: Number(req.params.id) };
-  // Fall through to checkout handler below (DRY via shared handler fn)
   return checkoutHandler(req, res);
 });
 
@@ -74,7 +73,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  // Server-side capacity enforcement: prevent overbooking
+  // Server-side capacity enforcement
   const spotsAvailable = event.spotsRemaining ?? event.capacity;
   if (spotsAvailable < quantity) {
     res.status(400).json({ error: `Only ${spotsAvailable} spot(s) remaining for this event.` });
@@ -87,7 +86,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
     : "http://localhost";
 
-  // Free events: skip Stripe entirely, confirm immediately
+  // Free events: skip Square entirely, confirm immediately
   if (Number(event.price) === 0) {
     const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     await db.insert(registrationsTable).values({
@@ -114,99 +113,64 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  // If Stripe is connected, use it; otherwise create a mock registration
-  try {
-    const { getUncachableStripeClient } = await import("../lib/stripeClient");
-    const stripe = await getUncachableStripeClient();
+  // Square Payment Links checkout
+  const { getSquareClient, getSquareLocationId } = await import("../lib/squareClient");
+  const square = getSquareClient();
+  const locationId = getSquareLocationId();
 
-    const priceId = event.stripePriceId;
-    const lineItems = priceId
-      ? [{ price: priceId, quantity }]
-      : [
-          {
-            price_data: {
-              currency: "usd",
-              unit_amount: Math.round(Number(event.price) * 100),
-              product_data: { name: event.title },
-            },
-            quantity,
-          },
-        ];
+  const idempotencyKey = `reg_${eventId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-    const [registration] = await db
-      .insert(registrationsTable)
-      .values({
-        eventId,
-        firstName,
-        lastName,
-        email,
-        phone: phone ?? null,
-        quantity,
-        totalAmount: String(totalAmount),
-        status: "pending",
-      })
-      .returning();
+  // Create a pending registration first
+  const [registration] = await db
+    .insert(registrationsTable)
+    .values({
+      eventId,
+      firstName,
+      lastName,
+      email,
+      phone: phone ?? null,
+      quantity,
+      totalAmount: String(totalAmount),
+      status: "pending",
+    })
+    .returning();
 
-    // NOTE: spots_remaining is NOT decremented here — only on payment confirmation
-    // via webhook (checkout.session.completed). This prevents sell-outs from
-    // abandoned/unpaid sessions.
+  // Use quickPay for a simple hosted checkout — one item, no order management overhead
+  const amountCents = BigInt(Math.round(Number(event.price) * 100 * quantity));
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: "payment",
-      success_url: `${baseUrl}/events/confirmation?sessionId={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/events/${eventId}`,
-      customer_email: email,
-      metadata: {
-        registrationId: String(registration.id),
-        eventId: String(eventId),
+  const response = await square.checkout.paymentLinks.create({
+    idempotencyKey,
+    quickPay: {
+      name: `${event.title}${quantity > 1 ? ` x${quantity}` : ""}`,
+      priceMoney: {
+        amount: amountCents,
+        currency: "USD",
       },
-    });
+      locationId,
+    },
+    checkoutOptions: {
+      redirectUrl: `${baseUrl}/events/confirmation?sessionId=${registration.id}`,
+      askForShippingAddress: false,
+    },
+    prePopulatedData: {
+      buyerEmail: email,
+    },
+  });
 
-    await db
-      .update(registrationsTable)
-      .set({ stripeSessionId: session.id })
-      .where(eq(registrationsTable.id, registration.id));
-
-    res.json({ url: session.url!, sessionId: session.id });
-  } catch (err: any) {
-    if (
-      err?.message?.includes("integration not connected") ||
-      err?.message?.includes("Missing Replit environment")
-    ) {
-      logger.warn("Stripe not connected — creating mock registration");
-
-      const sessionId = `mock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      await db
-        .insert(registrationsTable)
-        .values({
-          eventId,
-          firstName,
-          lastName,
-          email,
-          phone: phone ?? null,
-          quantity,
-          totalAmount: String(totalAmount),
-          stripeSessionId: sessionId,
-          status: event.price === "0" || Number(event.price) === 0 ? "paid" : "pending",
-        })
-        .returning();
-
-      // Decrement spots_remaining
-      await db
-        .update(eventsTable)
-        .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
-        .where(eq(eventsTable.id, eventId));
-
-      res.json({
-        url: `${baseUrl}/events/confirmation?sessionId=${sessionId}`,
-        sessionId,
-      });
-      return;
-    }
-    throw err;
+  const paymentLink = response.paymentLink;
+  if (!paymentLink?.url || !paymentLink?.orderId) {
+    throw new Error("Square did not return a payment link URL");
   }
+
+  // Store the Square order ID in the stripeSessionId column (reused as generic provider session ID)
+  await db
+    .update(registrationsTable)
+    .set({ stripeSessionId: paymentLink.orderId })
+    .where(eq(registrationsTable.id, registration.id));
+
+  logger.info({ orderId: paymentLink.orderId, registrationId: registration.id }, "Square payment link created");
+
+  res.json({ url: paymentLink.url, sessionId: String(registration.id) });
 }
 
 router.get("/registrations/confirmation", async (req, res): Promise<void> => {
@@ -218,27 +182,46 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
 
   const { sessionId } = query.data;
 
-  if (!sessionId.startsWith("mock_")) {
-    try {
-      const { getUncachableStripeClient } = await import("../lib/stripeClient");
-      const stripe = await getUncachableStripeClient();
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+  // sessionId can be: free_xxx, numeric registration id (from Square redirect), or Square order ID
+  // Try to find by stripeSessionId first, then by registration id (numeric)
+  let registration = (
+    await db
+      .select()
+      .from(registrationsTable)
+      .where(eq(registrationsTable.stripeSessionId, sessionId))
+      .limit(1)
+  )[0];
 
-      if (session.payment_status === "paid") {
-        await db
-          .update(registrationsTable)
-          .set({ status: "paid" })
-          .where(eq(registrationsTable.stripeSessionId, sessionId));
+  // Square redirect uses registration.id as sessionId param
+  if (!registration && /^\d+$/.test(sessionId)) {
+    const regId = parseInt(sessionId, 10);
+    registration = (
+      await db
+        .select()
+        .from(registrationsTable)
+        .where(eq(registrationsTable.id, regId))
+        .limit(1)
+    )[0];
+
+    // If still pending, check Square order status
+    if (registration && registration.status === "pending" && registration.stripeSessionId) {
+      try {
+        const { getSquareClient } = await import("../lib/squareClient");
+        const square = getSquareClient();
+        const orderResp = await square.orders.get({ orderId: registration.stripeSessionId });
+        const order = orderResp.order;
+        if (order?.state === "COMPLETED") {
+          await db
+            .update(registrationsTable)
+            .set({ status: "paid" })
+            .where(eq(registrationsTable.id, registration.id));
+          registration = { ...registration, status: "paid" };
+        }
+      } catch (err) {
+        logger.warn({ err }, "Could not verify Square order status");
       }
-    } catch {
-      // Stripe not connected — just return what we have
     }
   }
-
-  const [registration] = await db
-    .select()
-    .from(registrationsTable)
-    .where(eq(registrationsTable.stripeSessionId, sessionId));
 
   if (!registration) {
     res.status(404).json({ error: "Registration not found" });

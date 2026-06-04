@@ -1,55 +1,68 @@
 import { eq, sql } from "drizzle-orm";
 import { db, registrationsTable, eventsTable } from "@workspace/db";
 import { logger } from "./logger";
+import { createHmac, timingSafeEqual } from "crypto";
+
+/**
+ * Verify Square webhook signature.
+ * Square signs with HMAC-SHA256 over (notificationUrl + rawBody).
+ */
+export function verifySquareWebhookSignature(
+  rawBody: string,
+  signature: string,
+  webhookSignatureKey: string,
+  notificationUrl: string
+): boolean {
+  const payload = notificationUrl + rawBody;
+  const hmac = createHmac("sha256", webhookSignatureKey).update(payload).digest("base64");
+  try {
+    return timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
 
 export class WebhookHandlers {
-  static async processWebhook(payload: Buffer, signature: string): Promise<void> {
-    if (!Buffer.isBuffer(payload)) {
-      throw new Error(
-        'STRIPE WEBHOOK ERROR: Payload must be a Buffer. ' +
-        'This usually means express.json() parsed the body before reaching this handler. ' +
-        'FIX: Ensure webhook route is registered BEFORE app.use(express.json()).'
-      );
-    }
+  static async processSquareWebhook(rawBody: string, signature: string, notificationUrl: string): Promise<void> {
+    const webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
 
-    let stripe: any;
-    try {
-      const { getUncachableStripeClient } = await import('./stripeClient');
-      stripe = await getUncachableStripeClient();
-    } catch {
-      throw new Error("Stripe not connected");
-    }
-
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      throw new Error("STRIPE_WEBHOOK_SECRET is not set. Webhook signature verification is required.");
+    // If a webhook signature key is configured, verify the request
+    if (webhookSignatureKey) {
+      const isValid = verifySquareWebhookSignature(rawBody, signature, webhookSignatureKey, notificationUrl);
+      if (!isValid) {
+        throw new Error("Square webhook signature verification failed");
+      }
+    } else {
+      logger.warn("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping webhook signature verification");
     }
 
     let event: any;
     try {
-      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-    } catch (err: any) {
-      throw new Error(`Webhook signature verification failed: ${err.message}`);
+      event = JSON.parse(rawBody);
+    } catch {
+      throw new Error("Invalid JSON in webhook payload");
     }
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const sessionId: string = session.id;
-      const paymentStatus: string = session.payment_status;
+    // Square payment completed event
+    if (event.type === "payment.completed" || event.type === "payment.updated") {
+      const payment = event.data?.object?.payment;
+      if (!payment) return;
 
-      if (paymentStatus === "paid") {
-        // Mark registration as paid
+      const orderId: string = payment.order_id;
+      const status: string = payment.status;
+
+      if (status === "COMPLETED" && orderId) {
+        // Find the registration by Square order ID (stored in stripeSessionId column)
         const updated = await db
           .update(registrationsTable)
           .set({ status: "paid" })
-          .where(eq(registrationsTable.stripeSessionId, sessionId))
+          .where(eq(registrationsTable.stripeSessionId, orderId))
           .returning();
 
         if (updated.length > 0) {
           const reg = updated[0];
-          logger.info({ sessionId, registrationId: reg.id }, "Registration marked paid via webhook");
+          logger.info({ orderId, registrationId: reg.id }, "Registration marked paid via Square webhook");
 
-          // Decrement spots_remaining on confirmed payment (not at checkout creation)
           await db
             .update(eventsTable)
             .set({
@@ -57,10 +70,34 @@ export class WebhookHandlers {
             })
             .where(eq(eventsTable.id, reg.eventId));
 
-          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots decremented after payment confirmation");
+          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots decremented after Square payment confirmation");
         } else {
-          logger.warn({ sessionId }, "Webhook: no registration found for session");
+          logger.warn({ orderId }, "Square webhook: no registration found for order");
         }
+      }
+    }
+
+    // Square checkout completed — also handle via checkout.order.completed
+    if (event.type === "checkout.order.completed") {
+      const orderId: string | undefined = event.data?.object?.checkout?.order_id;
+      if (!orderId) return;
+
+      const updated = await db
+        .update(registrationsTable)
+        .set({ status: "paid" })
+        .where(eq(registrationsTable.stripeSessionId, orderId))
+        .returning();
+
+      if (updated.length > 0) {
+        const reg = updated[0];
+        logger.info({ orderId, registrationId: reg.id }, "Registration marked paid via Square checkout webhook");
+
+        await db
+          .update(eventsTable)
+          .set({
+            spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${reg.quantity})`
+          })
+          .where(eq(eventsTable.id, reg.eventId));
       }
     }
   }
