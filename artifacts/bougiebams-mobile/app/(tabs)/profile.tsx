@@ -75,7 +75,7 @@ function RegistrationCard({ item }: { item: RegistrationWithEvent }) {
         },
       ]}
       onPress={() =>
-        router.push({ pathname: "/event/[id]", params: { id: String(event.id) } })
+        router.push({ pathname: "/registration/[id]", params: { id: String(registration.id) } })
       }
     >
       <View style={styles.cardHeader}>
