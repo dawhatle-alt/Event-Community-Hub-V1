@@ -330,6 +330,7 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     | { outcome: "not_found" }
     | { outcome: "forbidden" }
     | { outcome: "already_cancelled" }
+    | { outcome: "event_passed" }
     | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number };
 
   // Use a transaction with FOR UPDATE to lock the row, capturing the pre-update status
@@ -337,7 +338,10 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
   // and write and causing a stale prevStatus decision outside the transaction.
   const result = await db.transaction(async (tx): Promise<TxResult> => {
     const locked = await tx.execute(
-      sql`SELECT id, user_id, status, quantity, event_id FROM registrations WHERE id = ${id} FOR UPDATE`
+      sql`SELECT r.id, r.user_id, r.status, r.quantity, r.event_id, e.date AS event_date
+          FROM registrations r
+          JOIN events e ON e.id = r.event_id
+          WHERE r.id = ${id} FOR UPDATE OF r`
     );
     const reg = (locked.rows?.[0] ?? null) as {
       id: number;
@@ -345,11 +349,15 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
       status: string;
       quantity: number;
       event_id: number;
+      event_date: string | Date | null;
     } | null;
 
     if (!reg) return { outcome: "not_found" };
     if (reg.user_id !== req.user.id) return { outcome: "forbidden" };
     if (reg.status === "cancelled") return { outcome: "already_cancelled" };
+
+    const eventDate = reg.event_date ? new Date(reg.event_date) : null;
+    if (eventDate && eventDate < new Date()) return { outcome: "event_passed" };
 
     await tx
       .update(registrationsTable)
@@ -374,6 +382,10 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
   }
   if (result.outcome === "already_cancelled") {
     res.status(400).json({ error: "Registration is already cancelled" });
+    return;
+  }
+  if (result.outcome === "event_passed") {
+    res.status(400).json({ error: "Cannot cancel a registration for an event that has already passed" });
     return;
   }
 
