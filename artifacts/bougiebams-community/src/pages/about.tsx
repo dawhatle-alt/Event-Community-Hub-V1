@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import img4 from "@assets/bb-image-4.png";
+import mahjongTiles from "/mahjong-tiles.jpeg";
 import img1 from "@assets/bb-image-1.png";
 import mahjongTable from "/mahjong-table.jpeg";
 
@@ -38,7 +38,7 @@ export default function About() {
               className="relative"
             >
               <div className="aspect-[3/4] rounded-full overflow-hidden border-8 border-background shadow-2xl relative z-10">
-                <img src={img4} alt="Mahjong gathering" className="w-full h-full object-cover" />
+                <img src={mahjongTiles} alt="Mahjong tiles and dice" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-primary/20 blur-3xl -z-10"></div>
             </motion.div>
