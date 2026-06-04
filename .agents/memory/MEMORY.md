@@ -1,1 +1,3 @@
 - [Square SDK patterns](square-sdk.md) — SquareClient/SquareEnvironment exports; correct API paths for payment links and orders.
+- [React version in workspace](react-version.md) — workspace pnpm override pins React; must update root package.json AND catalog together.
+- [Expo React Compiler compatibility](expo-react-compiler.md) — expo-router v6 requires React 19; babel reactCompiler must be disabled when on React 18.
