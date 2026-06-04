@@ -8,7 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
-import { sendRegistrationConfirmation } from "../lib/email";
+import { sendRegistrationConfirmation, sendCancellationConfirmation } from "../lib/email";
 const router: IRouter = Router();
 
 // Authenticated user: list their own registrations with event details
@@ -392,6 +392,22 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
       })
       .where(eq(eventsTable.id, result.eventId));
   }
+
+  // Send cancellation confirmation email (non-blocking — never fail the cancellation if email fails)
+  Promise.all([
+    db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1),
+    db.select().from(eventsTable).where(eq(eventsTable.id, result.eventId)).limit(1),
+  ]).then(([[reg], [event]]) => {
+    if (reg && event) {
+      sendCancellationConfirmation({
+        to: reg.email,
+        firstName: reg.firstName,
+        eventTitle: event.title,
+        eventDate: event.date,
+        quantity: result.quantity,
+      }).catch(() => {});
+    }
+  }).catch(() => {});
 
   res.json({ success: true });
 });
