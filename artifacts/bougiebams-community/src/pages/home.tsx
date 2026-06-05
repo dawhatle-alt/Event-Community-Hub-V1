@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { AnimatedGradientBorder } from "@/components/AnimatedGradientBorder";
+import { SpotlightBackground } from "@/components/SpotlightBackground";
 import { useListFeaturedEvents } from "@workspace/api-client-react";
 import { format } from "date-fns";
 
@@ -24,49 +25,43 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col items-center">
       {/* Hero Section */}
-      <section className="w-full relative overflow-hidden hero-gradient-bg pt-12 pb-24 md:pt-24 md:pb-32">
-        {/* Floating depth orbs — CSS-animated to avoid rasterization pixelation */}
-        <div className="hero-orb hero-orb-1" style={{ width: 520, height: 520, top: "-15%", left: "55%", background: "radial-gradient(circle, #C9A22740 0%, transparent 70%)", filter: "blur(80px)", opacity: 0.55 }} />
-        <div className="hero-orb hero-orb-2" style={{ width: 600, height: 600, top: "30%", left: "-8%", background: "radial-gradient(circle, #252D55cc 0%, transparent 70%)", filter: "blur(90px)", opacity: 0.5 }} />
-        <div className="hero-orb hero-orb-3" style={{ width: 400, height: 400, top: "60%", left: "10%", background: "radial-gradient(circle, #C9A22726 0%, transparent 70%)", filter: "blur(70px)", opacity: 0.45 }} />
-        <div className="hero-orb hero-orb-4" style={{ width: 360, height: 360, top: "55%", left: "70%", background: "radial-gradient(circle, #8B691433 0%, transparent 70%)", filter: "blur(65px)", opacity: 0.4 }} />
-        {/* Vignette */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 100% 80% at 50% 50%, transparent 30%, #0D102088 100%)" }} />
+      <SpotlightBackground>
+        <div className="pt-12 pb-24 md:pt-24 md:pb-32">
+          <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="flex flex-col space-y-8">
+              <div className="inline-flex items-center rounded-full border border-[#C9A227]/25 px-4 py-1.5 text-sm font-medium bg-[#C9A227]/[0.07] backdrop-blur w-fit">
+                <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
+                <span className="text-[#FAF8F5]/75">Premium mahjong experiences for everyone</span>
+              </div>
 
-        <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="flex flex-col space-y-8 z-10">
-            <div className="inline-flex items-center rounded-full border border-[#C9A227]/25 px-4 py-1.5 text-sm font-medium bg-[#C9A227]/[0.07] backdrop-blur w-fit">
-              <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-              <span className="text-[#FAF8F5]/75">Premium mahjong experiences for everyone</span>
-            </div>
+              <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-[#FAF8F5] leading-[1.1]">
+                You're invited to <br />
+                <span className="text-primary italic">something special</span>.
+              </h1>
 
-            <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-[#FAF8F5] leading-[1.1]">
-              You're invited to <br />
-              <span className="text-primary italic">something special</span>.
-            </h1>
+              <p className="text-lg text-[#FAF8F5]/55 leading-relaxed max-w-md font-light">
+                BougieBams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
+              </p>
 
-            <p className="text-lg text-[#FAF8F5]/55 leading-relaxed max-w-md font-light">
-              BougieBams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <AnimatedGradientBorder className="inline-block">
-                <Button size="lg" className="w-full rounded-xl bg-[#181D37] text-[#FAF8F5] hover:bg-[#181D37]/90 font-medium px-8 h-14 text-base" asChild>
-                  <Link href="/events">Explore Events</Link>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <AnimatedGradientBorder className="inline-block">
+                  <Button size="lg" className="w-full rounded-xl bg-[#181D37] text-[#FAF8F5] hover:bg-[#181D37]/90 font-medium px-8 h-14 text-base" asChild>
+                    <Link href="/events">Explore Events</Link>
+                  </Button>
+                </AnimatedGradientBorder>
+                <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
+                  <Link href="/about">Our Story</Link>
                 </Button>
-              </AnimatedGradientBorder>
-              <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
-                <Link href="/about">Our Story</Link>
-              </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full"></div>
-            <HeroShuffleGrid />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full"></div>
+              <HeroShuffleGrid />
+            </div>
           </div>
         </div>
-      </section>
+      </SpotlightBackground>
 
       {/* Custom Table Setup Section */}
       <section className="w-full py-24 bg-foreground text-background">

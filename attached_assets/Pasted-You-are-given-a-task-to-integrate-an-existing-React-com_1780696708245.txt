@@ -1,0 +1,154 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+spotlight-background.tsx
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+
+// Individual Spotlight element
+const Spotlight = ({ className, ...props }) => {
+  return (
+    <motion.div
+      className={`spotlight ${className}`}
+      {...props}
+    />
+  );
+};
+
+// SpotlightBackground container
+const SpotlightBackground = ({ children }) => {
+  return (
+    <div className="spotlight-container">
+      <div className="spotlight-overlay">
+        <Spotlight
+          initial={{ x: "-50%", y: "-50%", rotate: "0deg" }}
+          animate={{
+            x: ["-50%", "-30%", "-70%", "-50%"],
+            y: ["-50%", "-70%", "-30%", "-50%"],
+            rotate: ["0deg", "15deg", "-15deg", "0deg"],
+          }}
+          transition={{
+            duration: 12,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "mirror",
+          }}
+          className="spotlight-left"
+        />
+
+        <Spotlight
+          initial={{ x: "0%", y: "0%", rotate: "0deg" }}
+          animate={{
+            x: ["0%", "20%", "-20%", "0%"],
+            y: ["0%", "30%", "10%", "0%"],
+            rotate: ["-20deg", "0deg", "20deg", "-20deg"],
+          }}
+          transition={{
+            duration: 15,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "mirror",
+            delay: 3,
+          }}
+          className="spotlight-mid"
+        />
+
+        <Spotlight
+          initial={{ x: "0%", y: "0%", rotate: "10deg" }}
+          animate={{
+            x: ["0%", "-30%", "10%", "0%"],
+            y: ["0%", "-20%", "20%", "0%"],
+            rotate: ["10deg", "-10deg", "25deg", "10deg"],
+          }}
+          transition={{
+            duration: 18,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "mirror",
+            delay: 5,
+          }}
+          className="spotlight-right"
+        />
+      </div>
+
+      <div className="spotlight-content">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export default SpotlightBackground;
+
+
+demo.tsx
+"use client";
+
+import React from "react";
+import { motion } from "framer-motion";
+import SpotlightBackground from "@/components/ui/spotlight-background";
+
+const DemoOne = () => {
+  return (
+    <SpotlightBackground>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{
+          delay: 0.3,
+          duration: 0.8,
+          ease: "easeInOut",
+        }}
+        className="spotlight-inner"
+      >
+        <h1 className="spotlight-title">
+          Spotlight Background
+        </h1>
+        <p className="spotlight-description">
+          A dramatic and eye-catching animated background effect.
+        </p>
+        <button className="spotlight-button">
+          Get Started
+        </button>
+      </motion.div>
+    </SpotlightBackground>
+  );
+};
+
+export default DemoOne;
+
+```
+
+Install NPM dependencies:
+```bash
+framer-motion
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them
