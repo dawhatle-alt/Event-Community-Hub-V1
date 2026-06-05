@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useListEvents,
   useCreateEvent,
@@ -15,7 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid } from "lucide-react";
+import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -198,6 +199,77 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function HeroTilesSection() {
+  const { toast } = useToast();
+  const [tiles, setTiles] = useState<TileConfig[]>(() => getHeroTiles());
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => { setTiles(getHeroTiles()); }, []);
+
+  const update = (idx: number, field: keyof TileConfig, value: string) => {
+    setTiles(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
+    setDirty(true);
+  };
+
+  const save = () => {
+    saveHeroTiles(tiles);
+    setDirty(false);
+    toast({ title: "Hero tiles saved" });
+  };
+
+  const reset = () => {
+    setTiles(DEFAULT_TILES);
+    saveHeroTiles(DEFAULT_TILES);
+    setDirty(false);
+    toast({ title: "Reset to defaults" });
+  };
+
+  return (
+    <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="w-5 h-5 text-primary" />
+          <h3 className="font-serif text-xl font-medium">Home Page Tiles</h3>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="rounded-xl text-muted-foreground" onClick={reset}>Reset defaults</Button>
+          <Button size="sm" className="rounded-xl" disabled={!dirty} onClick={save}>Save changes</Button>
+        </div>
+      </div>
+      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {tiles.map((tile, idx) => (
+          <div key={tile.id} className="flex flex-col gap-2">
+            <div className="aspect-[4/5] relative rounded-xl overflow-hidden border border-border bg-muted">
+              <img src={tile.src} alt={tile.label} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <span className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-medium tracking-widest uppercase text-white/90">
+                {tile.label}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              <Input
+                value={tile.label}
+                onChange={e => update(idx, "label", e.target.value)}
+                className="h-8 text-sm rounded-lg"
+                placeholder="Label"
+              />
+              <select
+                value={tile.src}
+                onChange={e => update(idx, "src", e.target.value)}
+                className="w-full h-8 text-sm rounded-lg border border-input bg-background px-2 focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {AVAILABLE_PHOTOS.map(p => (
+                  <option key={p.src} value={p.src}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -487,6 +559,8 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                 </div>
               </div>
             </div>
+
+            <HeroTilesSection />
 
             {/* Events List with per-event registration panels */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
