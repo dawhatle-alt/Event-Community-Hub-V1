@@ -371,3 +371,43 @@
   background-size: 600% 600%;
   animation: heroBgCycle 18s ease infinite;
 }
+
+@keyframes orbDrift1 {
+  0%   { transform: translate(0px, 0px); }
+  25%  { transform: translate(80px, 30px); }
+  50%  { transform: translate(0px, 60px); }
+  75%  { transform: translate(-48px, 18px); }
+  100% { transform: translate(0px, 0px); }
+}
+@keyframes orbDrift2 {
+  0%   { transform: translate(0px, 0px); }
+  25%  { transform: translate(60px, 40px); }
+  50%  { transform: translate(0px, 80px); }
+  75%  { transform: translate(-36px, 24px); }
+  100% { transform: translate(0px, 0px); }
+}
+@keyframes orbDrift3 {
+  0%   { transform: translate(0px, 0px); }
+  25%  { transform: translate(-50px, -20px); }
+  50%  { transform: translate(0px, -40px); }
+  75%  { transform: translate(30px, -12px); }
+  100% { transform: translate(0px, 0px); }
+}
+@keyframes orbDrift4 {
+  0%   { transform: translate(0px, 0px); }
+  25%  { transform: translate(-60px, 25px); }
+  50%  { transform: translate(0px, 50px); }
+  75%  { transform: translate(36px, 15px); }
+  100% { transform: translate(0px, 0px); }
+}
+
+.hero-orb {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.hero-orb-1 { animation: orbDrift1 20s ease-in-out infinite; }
+.hero-orb-2 { animation: orbDrift2 25s ease-in-out infinite 3s; }
+.hero-orb-3 { animation: orbDrift3 18s ease-in-out infinite 6s; }
+.hero-orb-4 { animation: orbDrift4 22s ease-in-out infinite 9s; }

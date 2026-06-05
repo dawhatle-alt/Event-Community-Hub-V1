@@ -25,11 +25,11 @@ export default function Home() {
     <div className="w-full flex flex-col items-center">
       {/* Hero Section */}
       <section className="w-full relative overflow-hidden hero-gradient-bg pt-12 pb-24 md:pt-24 md:pb-32">
-        {/* Floating depth orbs */}
-        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 520, height: 520, top: "-15%", left: "55%", background: "radial-gradient(circle, #C9A22740 0%, transparent 70%)", filter: "blur(80px)" }} animate={{ x: [0, 80, 0, -48, 0], y: [0, 30, 60, 18, 0], opacity: [0.45, 0.7, 0.45, 0.65, 0.45] }} transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }} />
-        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 600, height: 600, top: "30%", left: "-8%", background: "radial-gradient(circle, #252D55cc 0%, transparent 70%)", filter: "blur(90px)" }} animate={{ x: [0, 60, 0, -36, 0], y: [0, 40, 80, 24, 0], opacity: [0.4, 0.6, 0.4, 0.55, 0.4] }} transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
-        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 400, height: 400, top: "60%", left: "10%", background: "radial-gradient(circle, #C9A22726 0%, transparent 70%)", filter: "blur(70px)" }} animate={{ x: [0, -50, 0, 30, 0], y: [0, -20, -40, -12, 0], opacity: [0.35, 0.55, 0.35, 0.5, 0.35] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 6 }} />
-        <motion.div className="absolute pointer-events-none rounded-full" style={{ width: 360, height: 360, top: "55%", left: "70%", background: "radial-gradient(circle, #8B691433 0%, transparent 70%)", filter: "blur(65px)" }} animate={{ x: [0, -60, 0, 36, 0], y: [0, 25, 50, 15, 0], opacity: [0.3, 0.5, 0.3, 0.45, 0.3] }} transition={{ duration: 22, repeat: Infinity, ease: "easeInOut", delay: 9 }} />
+        {/* Floating depth orbs — CSS-animated to avoid rasterization pixelation */}
+        <div className="hero-orb hero-orb-1" style={{ width: 520, height: 520, top: "-15%", left: "55%", background: "radial-gradient(circle, #C9A22740 0%, transparent 70%)", filter: "blur(80px)", opacity: 0.55 }} />
+        <div className="hero-orb hero-orb-2" style={{ width: 600, height: 600, top: "30%", left: "-8%", background: "radial-gradient(circle, #252D55cc 0%, transparent 70%)", filter: "blur(90px)", opacity: 0.5 }} />
+        <div className="hero-orb hero-orb-3" style={{ width: 400, height: 400, top: "60%", left: "10%", background: "radial-gradient(circle, #C9A22726 0%, transparent 70%)", filter: "blur(70px)", opacity: 0.45 }} />
+        <div className="hero-orb hero-orb-4" style={{ width: 360, height: 360, top: "55%", left: "70%", background: "radial-gradient(circle, #8B691433 0%, transparent 70%)", filter: "blur(65px)", opacity: 0.4 }} />
         {/* Vignette */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 100% 80% at 50% 50%, transparent 30%, #0D102088 100%)" }} />
 
