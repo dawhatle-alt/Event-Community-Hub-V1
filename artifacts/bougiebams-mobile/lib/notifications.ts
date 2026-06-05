@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 Notifications.setNotificationHandler({
@@ -90,6 +91,90 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 
   const { status } = await Notifications.requestPermissionsAsync();
   return status === "granted";
+}
+
+/**
+ * Get the Expo push token for this device.
+ * Returns null on web, simulators without credentials, or if permissions are not granted.
+ */
+export async function getExpoPushToken(): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== "granted") return null;
+
+  try {
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+    const tokenData = projectId
+      ? await Notifications.getExpoPushTokenAsync({ projectId })
+      : await Notifications.getExpoPushTokenAsync();
+    return tokenData.data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Send the device push token to the API server so the server can deliver
+ * push notifications even when the app is not open.
+ * Silently no-ops if the token cannot be obtained or the request fails.
+ */
+export async function registerPushTokenWithServer(
+  apiBaseUrl: string,
+  getAuthToken: () => Promise<string | null>
+): Promise<void> {
+  if (Platform.OS === "web") return;
+
+  const token = await getExpoPushToken();
+  if (!token) return;
+
+  const authToken = await getAuthToken();
+  if (!authToken) return;
+
+  try {
+    await fetch(`${apiBaseUrl}/api/notifications/push-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    // Non-critical — don't surface errors to the user
+  }
+}
+
+/**
+ * Remove the device push token from the API server (call on sign-out).
+ * Silently no-ops if anything fails.
+ */
+export async function unregisterPushTokenFromServer(
+  apiBaseUrl: string,
+  getAuthToken: () => Promise<string | null>
+): Promise<void> {
+  if (Platform.OS === "web") return;
+
+  const token = await getExpoPushToken();
+  if (!token) return;
+
+  const authToken = await getAuthToken();
+  if (!authToken) return;
+
+  try {
+    await fetch(`${apiBaseUrl}/api/notifications/push-token`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    // Non-critical
+  }
 }
 
 export async function scheduleConfirmationNotification(event: {

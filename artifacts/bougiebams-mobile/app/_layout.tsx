@@ -16,8 +16,9 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setBaseUrl } from "@workspace/api-client-react";
-import { AuthProvider } from "@/context/auth";
+import { AuthProvider, useAuth } from "@/context/auth";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import { useRouter, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
@@ -27,7 +28,19 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { requestNotificationPermissions } from "@/lib/notifications";
+import { requestNotificationPermissions, registerPushTokenWithServer } from "@/lib/notifications";
+
+const API_BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const TOKEN_KEY = "bb_session_token";
+
+async function getStoredAuthToken(): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
 
 // Set API base URL for Expo (runs outside the web proxy)
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -39,6 +52,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const notificationResponseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
@@ -60,6 +74,13 @@ function RootLayoutNav() {
       notificationResponseListener.current?.remove();
     };
   }, [router]);
+
+  // Register the device push token with the server whenever the user is signed in.
+  // This ensures the server can deliver push notifications even when the app is closed.
+  useEffect(() => {
+    if (!isAuthenticated || Platform.OS === "web") return;
+    registerPushTokenWithServer(API_BASE_URL, getStoredAuthToken);
+  }, [isAuthenticated]);
 
   return (
     <Stack>
