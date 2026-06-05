@@ -4,6 +4,7 @@ import * as WebBrowser from "expo-web-browser";
 import {
   setAuthTokenGetter,
   useExchangeMobileAuthorizationCode,
+  useGetCurrentAuthUser,
   useLogoutMobileSession,
 } from "@workspace/api-client-react";
 import React, {
@@ -129,6 +130,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     queryClient.invalidateQueries();
   }, [logoutMutation, queryClient]);
+
+  // Detect server-side session expiry: if the auth user endpoint returns 401
+  // while we still have a stored token, the session has expired — sign out
+  // automatically so the user isn't left in a broken "signed in" state.
+  const { error: authUserError } = useGetCurrentAuthUser({
+    query: {
+      enabled: tokenLoaded && !!token && Platform.OS !== "web",
+      retry: (_, error) => {
+        const status = (error as { status?: number })?.status;
+        return status !== 401;
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!authUserError) return;
+    const status = (authUserError as { status?: number })?.status;
+    if (status === 401 && token) {
+      signOut();
+    }
+  }, [authUserError, token, signOut]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
