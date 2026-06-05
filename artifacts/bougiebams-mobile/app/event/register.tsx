@@ -78,6 +78,9 @@ export default function RegisterScreen() {
     if (!lastName.trim()) newErrors.lastName = "Last name is required";
     if (!email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Enter a valid email";
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length > 0 && phoneDigits.length < 10)
+      newErrors.phone = "Enter a complete phone number";
     return newErrors;
   };
 
@@ -263,16 +266,21 @@ export default function RegisterScreen() {
             <TextInput
               ref={phoneRef}
               testID="phone-input"
-              style={[styles.input, fieldStyle(false)]}
+              style={[styles.input, fieldStyle(!!errors.phone)]}
               placeholder="(555) 000-0000"
               placeholderTextColor={colors.mutedForeground}
               value={phone}
-              onChangeText={(v) => setPhone(formatPhone(v))}
+              onChangeText={(v) => { setPhone(formatPhone(v)); setErrors((e) => ({ ...e, phone: "" })); }}
               keyboardType="phone-pad"
               autoComplete="tel"
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
             />
+            {errors.phone && (
+              <Text style={[styles.errorText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
+                {errors.phone}
+              </Text>
+            )}
           </View>
         </View>
 
