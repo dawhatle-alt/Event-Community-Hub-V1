@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import mahjongTiles from "/mahjong-tiles.jpeg";
-import img1 from "@assets/bb-image-1.png";
 import mahjongTable from "/mahjong-table.jpeg";
 
 export default function About() {
@@ -90,7 +89,7 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative">
               <div className="absolute inset-0 bg-secondary rounded-3xl translate-x-4 translate-y-4 -z-10"></div>
-              <img src={img1} alt="Founder" className="rounded-3xl w-full h-auto shadow-lg" />
+              <img src="/event-boss-moves.jpeg" alt="BougieBams gathering" className="rounded-3xl w-full h-auto shadow-lg" />
             </div>
             <div className="order-1 md:order-2">
               <h2 className="font-serif text-4xl md:text-5xl font-medium mb-6">The Vision</h2>
