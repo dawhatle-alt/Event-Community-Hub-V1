@@ -208,7 +208,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-foreground text-background py-16 mt-auto">
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
-            <img src={logoPath} alt="BougieBams" className="h-12 w-auto mb-6 brightness-0 invert opacity-90" />
+            <img src={logoPath} alt="BougieBams" className="h-12 w-auto mb-6 opacity-90" style={{ mixBlendMode: "screen" }} />
             <p className="text-muted text-sm leading-relaxed max-w-sm">
               A luxury, intimate mahjong community for everyone. Curated gatherings, rich connections, and elevated experiences.
             </p>
