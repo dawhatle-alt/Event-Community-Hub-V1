@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import {
+  saveReminderIdentifier,
   scheduleConfirmationNotification,
   scheduleDayBeforeReminder,
 } from "@/lib/notifications";
@@ -49,7 +50,17 @@ export default function ConfirmationScreen() {
       };
 
       scheduleConfirmationNotification(event);
-      scheduleDayBeforeReminder(event);
+      scheduleDayBeforeReminder(event).then((identifier) => {
+        if (identifier && data.registration) {
+          saveReminderIdentifier(
+            data.registration.id,
+            event.id,
+            event.title,
+            event.date,
+            identifier
+          );
+        }
+      });
     }
   }, [data]);
 

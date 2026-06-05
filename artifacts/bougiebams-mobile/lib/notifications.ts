@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -10,6 +11,76 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
+
+const REMINDERS_STORAGE_KEY = "bb_reminder_identifiers";
+
+export type ReminderRecord = {
+  registrationId: number;
+  eventId: number;
+  eventTitle: string;
+  eventDate: string;
+  notificationIdentifier: string;
+};
+
+async function loadReminderRecords(): Promise<ReminderRecord[]> {
+  try {
+    const raw = await AsyncStorage.getItem(REMINDERS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveReminderRecords(records: ReminderRecord[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    // silently fail
+  }
+}
+
+export async function saveReminderIdentifier(
+  registrationId: number,
+  eventId: number,
+  eventTitle: string,
+  eventDate: string,
+  notificationIdentifier: string
+): Promise<void> {
+  const records = await loadReminderRecords();
+  const filtered = records.filter((r) => r.registrationId !== registrationId);
+  filtered.push({ registrationId, eventId, eventTitle, eventDate, notificationIdentifier });
+  await saveReminderRecords(filtered);
+}
+
+export async function removeReminderByRegistrationId(registrationId: number): Promise<void> {
+  const records = await loadReminderRecords();
+  const updated = records.filter((r) => r.registrationId !== registrationId);
+  await saveReminderRecords(updated);
+}
+
+export async function getPendingReminders(): Promise<ReminderRecord[]> {
+  if (Platform.OS === "web") return [];
+
+  const records = await loadReminderRecords();
+  if (records.length === 0) return [];
+
+  let scheduled: Notifications.NotificationRequest[] = [];
+  try {
+    scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  } catch {
+    return [];
+  }
+
+  const scheduledIds = new Set(scheduled.map((n) => n.identifier));
+
+  const stillPending = records.filter((r) => scheduledIds.has(r.notificationIdentifier));
+
+  if (stillPending.length !== records.length) {
+    await saveReminderRecords(stillPending);
+  }
+
+  return stillPending;
+}
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === "web") return false;

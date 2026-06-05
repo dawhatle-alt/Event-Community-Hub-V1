@@ -6,9 +6,10 @@ import {
   useGetMyRegistrations,
 } from "@workspace/api-client-react";
 import type { RegistrationWithEvent } from "@workspace/api-client-react";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -22,6 +23,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth";
 import { useColors } from "@/hooks/useColors";
+import {
+  cancelEventReminder,
+  getPendingReminders,
+  removeReminderByRegistrationId,
+  type ReminderRecord,
+} from "@/lib/notifications";
 
 type TabFilter = "upcoming" | "past";
 
@@ -130,6 +137,61 @@ function RegistrationCard({ item }: { item: RegistrationWithEvent }) {
   );
 }
 
+function ReminderRow({
+  reminder,
+  onCancel,
+}: {
+  reminder: ReminderRecord;
+  onCancel: (reminder: ReminderRecord) => void;
+}) {
+  const colors = useColors();
+  const reminderDate = new Date(reminder.eventDate);
+  reminderDate.setDate(reminderDate.getDate() - 1);
+  reminderDate.setHours(9, 0, 0, 0);
+
+  return (
+    <View
+      style={[
+        styles.reminderRow,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: colors.radius,
+        },
+      ]}
+    >
+      <View style={[styles.reminderIcon, { backgroundColor: `${colors.primary}18` }]}>
+        <Feather name="bell" size={16} color={colors.primary} />
+      </View>
+      <View style={styles.reminderInfo}>
+        <Text
+          style={[styles.reminderTitle, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+          numberOfLines={1}
+        >
+          {reminder.eventTitle}
+        </Text>
+        <Text style={[styles.reminderMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          {format(reminderDate, "EEE, MMM d · h:mm a")}
+        </Text>
+      </View>
+      <Pressable
+        testID={`cancel-reminder-${reminder.registrationId}`}
+        style={({ pressed }) => [
+          styles.cancelBtn,
+          {
+            backgroundColor: `${colors.destructive}12`,
+            borderRadius: colors.radius - 2,
+            opacity: pressed ? 0.6 : 1,
+          },
+        ]}
+        onPress={() => onCancel(reminder)}
+      >
+        <Feather name="x" size={14} color={colors.destructive} />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -137,6 +199,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabFilter>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -154,9 +217,43 @@ export default function ProfileScreen() {
     query: { enabled: isAuthenticated, retry: false },
   });
 
+  const loadAndCleanReminders = useCallback(async (currentRegistrations: typeof registrations) => {
+    if (Platform.OS === "web") return;
+    const pending = await getPendingReminders();
+
+    if (currentRegistrations && pending.length > 0) {
+      const cancelledIds = new Set(
+        currentRegistrations
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter((r: any) => r.registration.status === "cancelled")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((r: any) => r.registration.id)
+      );
+
+      for (const reminder of pending) {
+        if (cancelledIds.has(reminder.registrationId)) {
+          await cancelEventReminder(reminder.notificationIdentifier);
+          await removeReminderByRegistrationId(reminder.registrationId);
+        }
+      }
+
+      const cleaned = pending.filter((r) => !cancelledIds.has(r.registrationId));
+      setReminders(cleaned);
+    } else {
+      setReminders(pending);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAndCleanReminders(registrations);
+    }
+  }, [isAuthenticated, registrations, loadAndCleanReminders]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    const [result] = await Promise.all([refetch()]);
+    await loadAndCleanReminders(result.data);
     setRefreshing(false);
   };
 
@@ -169,7 +266,29 @@ export default function ProfileScreen() {
     }
   };
 
-  const filtered = (registrations ?? []).filter((item) => {
+  const handleCancelReminder = (reminder: ReminderRecord) => {
+    Alert.alert(
+      "Cancel Reminder",
+      `Remove the reminder for "${reminder.eventTitle}"?`,
+      [
+        { text: "Keep It", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            await cancelEventReminder(reminder.notificationIdentifier);
+            await removeReminderByRegistrationId(reminder.registrationId);
+            setReminders((prev) =>
+              prev.filter((r) => r.registrationId !== reminder.registrationId)
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filtered = (registrations ?? []).filter((item: any) => {
     const eventDate = new Date(item.event.date);
     return activeTab === "upcoming" ? !isPast(eventDate) : isPast(eventDate);
   });
@@ -374,6 +493,37 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
+              {/* Reminders section */}
+              {reminders.length > 0 && (
+                <View style={styles.remindersSection}>
+                  <Text
+                    style={[
+                      styles.sectionTitle,
+                      { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
+                    ]}
+                  >
+                    Reminders
+                  </Text>
+                  <View style={styles.remindersList}>
+                    {reminders.map((reminder) => (
+                      <ReminderRow
+                        key={reminder.registrationId}
+                        reminder={reminder}
+                        onCancel={handleCancelReminder}
+                      />
+                    ))}
+                  </View>
+                  <Text
+                    style={[
+                      styles.remindersHint,
+                      { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                    ]}
+                  >
+                    Day-before reminders for your upcoming events.
+                  </Text>
+                </View>
+              )}
+
               {/* Section title + tabs */}
               <Text
                 style={[
@@ -565,6 +715,52 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  remindersSection: {
+    marginBottom: 20,
+    gap: 8,
+  },
+  remindersList: {
+    gap: 8,
+  },
+  reminderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderWidth: 1,
+  },
+  reminderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  reminderInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  reminderTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  reminderMeta: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  cancelBtn: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  remindersHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 28,
