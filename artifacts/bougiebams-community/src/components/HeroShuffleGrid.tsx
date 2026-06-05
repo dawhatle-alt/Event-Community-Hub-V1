@@ -1,5 +1,5 @@
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import logoPath from "@assets/bougiebams-logo.png";
 import { cn } from "@/lib/utils";
 
@@ -61,15 +61,11 @@ export function HeroShuffleGrid({ className }: { className?: string }) {
 
   return (
     <div className={cn("grid grid-cols-2 md:grid-cols-3 gap-4", className)}>
-      <AnimatePresence mode="popLayout">
         {sorted.map((tile) => (
           <motion.div
             key={tile.id}
             layout
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             className="aspect-[4/5] relative overflow-hidden rounded-2xl shadow-md"
           >
             {tile.type === "logo" ? (
@@ -101,7 +97,6 @@ export function HeroShuffleGrid({ className }: { className?: string }) {
             )}
           </motion.div>
         ))}
-      </AnimatePresence>
     </div>
   );
 }
