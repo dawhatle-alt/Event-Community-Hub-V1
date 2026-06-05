@@ -210,7 +210,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="col-span-1 md:col-span-2">
             <img src={logoPath} alt="BougieBams" className="h-12 w-auto mb-6 brightness-0 invert opacity-90" />
             <p className="text-muted text-sm leading-relaxed max-w-sm">
-              A luxury, intimate event community for Black women. Curated gatherings, rich connections, and elevated experiences.
+              A luxury, intimate mahjong community for everyone. Curated gatherings, rich connections, and elevated experiences.
             </p>
           </div>
           <div>
