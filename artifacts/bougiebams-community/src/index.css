@@ -362,14 +362,7 @@
 }
 
 .hero-gradient-bg {
-  background: linear-gradient(
-    -45deg,
-    #0D1020, #181D37, #252D55, #5C4610,
-    #181D37, #1a2850, #252D55, #5C4610,
-    #181D37, #0D1020
-  );
-  background-size: 600% 600%;
-  animation: heroBgCycle 18s ease infinite;
+  background: linear-gradient(135deg, #0D1020 0%, #181D37 40%, #252D55 70%, #1a1500 100%);
 }
 
 @keyframes orbDrift1 {
