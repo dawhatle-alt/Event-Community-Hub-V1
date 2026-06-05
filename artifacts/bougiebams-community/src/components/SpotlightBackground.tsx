@@ -38,8 +38,8 @@ function Beam({ top, left, color, width, height, initialRotate, animateRotate, d
 
 export function SpotlightBackground({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ position: "relative", width: "100%", overflow: "hidden", background: "linear-gradient(135deg, #0D1020 0%, #181D37 45%, #1e2444 75%, #130e00 100%)" }}>
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }} aria-hidden>
+    <div style={{ position: "relative", width: "100%", background: "linear-gradient(135deg, #0D1020 0%, #181D37 45%, #1e2444 75%, #130e00 100%)" }}>
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }} aria-hidden>
         <Beam
           top="-20%"
           left="15%"
