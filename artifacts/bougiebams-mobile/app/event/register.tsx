@@ -172,6 +172,7 @@ export default function RegisterScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        bottomOffset={120}
       >
         {/* Form */}
         <View style={styles.section}>
