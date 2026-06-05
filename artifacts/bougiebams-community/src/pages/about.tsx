@@ -133,7 +133,7 @@ export default function About() {
               <p className="text-base text-muted-foreground font-light leading-relaxed mb-6">
                 "I started BougieBams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
               </p>
-              <div className="font-serif text-lg font-medium">— The Founder</div>
+              <div className="font-serif text-lg font-medium">— Patsy Miller, Founder</div>
             </div>
           </div>
         </div>
