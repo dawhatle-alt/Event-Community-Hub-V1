@@ -2,10 +2,12 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { Calendar, MapPin, Users, LogIn, X, Mail } from "lucide-react";
+import { Calendar, MapPin, Users, LogIn, X, Mail, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -45,11 +47,25 @@ interface RegistrationWithEvent {
   event: Event;
 }
 
+interface ProfileOverride {
+  firstName: string | null | undefined;
+  lastName: string | null | undefined;
+  email: string | null | undefined;
+}
+
 export default function MyEvents() {
   const { user, isLoading, isAuthenticated, login } = useAuth();
   const [items, setItems] = useState<RegistrationWithEvent[]>([]);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [profileOverride, setProfileOverride] = useState<ProfileOverride | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -79,6 +95,54 @@ export default function MyEvents() {
     );
   }
 
+  function startEditing() {
+    const firstName = profileOverride?.firstName ?? user?.firstName ?? "";
+    const lastName = profileOverride?.lastName ?? user?.lastName ?? "";
+    const email = profileOverride?.email ?? user?.email ?? "";
+    setEditFirstName(firstName || "");
+    setEditLastName(lastName || "");
+    setEditEmail(email || "");
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setEditing(false);
+    setSaveError(null);
+  }
+
+  async function saveProfile() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: editFirstName.trim() || undefined,
+          lastName: editLastName.trim() || undefined,
+          email: editEmail.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json() as { user: { firstName: string | null; lastName: string | null; email: string | null } };
+      setProfileOverride({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        email: data.user.email,
+      });
+      setEditing(false);
+    } catch (err: any) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
@@ -106,10 +170,11 @@ export default function MyEvents() {
   const upcoming = items.filter((i) => new Date(i.event.date) >= now);
   const past = items.filter((i) => new Date(i.event.date) < now);
 
-  const initials = user
-    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "U"
-    : "U";
-  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Member";
+  const displayFirstName = profileOverride?.firstName ?? user?.firstName;
+  const displayLastName = profileOverride?.lastName ?? user?.lastName;
+  const displayEmail = profileOverride?.email ?? user?.email;
+  const initials = `${displayFirstName?.[0] ?? ""}${displayLastName?.[0] ?? ""}`.toUpperCase() || "U";
+  const fullName = [displayFirstName, displayLastName].filter(Boolean).join(" ") || "Member";
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -117,27 +182,111 @@ export default function MyEvents() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-5 bg-card border border-border rounded-2xl px-6 py-5 mb-10"
+        className="bg-card border border-border rounded-2xl px-6 py-5 mb-10"
       >
-        <Avatar className="h-16 w-16 shrink-0">
-          {user?.profileImageUrl && (
-            <AvatarImage src={user.profileImageUrl} alt={fullName} />
-          )}
-          <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <h1 className="font-serif text-2xl md:text-3xl font-semibold leading-tight truncate">
-            {fullName}
-          </h1>
-          {user?.email && (
-            <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{user.email}</span>
+        {!editing ? (
+          <div className="flex items-center gap-5">
+            <Avatar className="h-16 w-16 shrink-0">
+              {user?.profileImageUrl && (
+                <AvatarImage src={user.profileImageUrl} alt={fullName} />
+              )}
+              <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-serif text-2xl md:text-3xl font-semibold leading-tight truncate">
+                {fullName}
+              </h1>
+              {displayEmail && (
+                <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{displayEmail}</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={startEditing}
+            >
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Edit
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-serif text-lg font-semibold">Edit Profile</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full text-muted-foreground"
+                onClick={cancelEditing}
+                disabled={saving}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-first-name">First name</Label>
+                <Input
+                  id="edit-first-name"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="First name"
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-last-name">Last name</Label>
+                <Input
+                  id="edit-last-name"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Last name"
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+            {saveError && (
+              <p className="text-destructive text-sm">{saveError}</p>
+            )}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={saveProfile}
+                disabled={saving}
+                size="sm"
+                className="rounded-full px-6"
+              >
+                <Check className="h-4 w-4 mr-1.5" />
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full"
+                onClick={cancelEditing}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       <div className="mb-8">

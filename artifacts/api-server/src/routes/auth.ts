@@ -7,12 +7,15 @@ import {
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
   getSessionId,
   createSession,
   deleteSession,
+  updateSession,
+  getSession,
   SESSION_COOKIE,
   SESSION_TTL,
   ISSUER_URL,
@@ -88,6 +91,81 @@ router.get("/auth/user", (req: Request, res: Response) => {
       user: req.isAuthenticated() ? req.user : null,
     }),
   );
+});
+
+router.patch("/auth/profile", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const firstName = typeof body.firstName === "string" ? body.firstName.trim() : undefined;
+  const lastName = typeof body.lastName === "string" ? body.lastName.trim() : undefined;
+  const email = typeof body.email === "string" ? body.email.trim() : undefined;
+
+  if (firstName === undefined && lastName === undefined && email === undefined) {
+    res.status(400).json({ error: "At least one field must be provided" });
+    return;
+  }
+
+  if (firstName !== undefined && (firstName.length === 0 || firstName.length > 100)) {
+    res.status(400).json({ error: "First name must be between 1 and 100 characters" });
+    return;
+  }
+  if (lastName !== undefined && (lastName.length === 0 || lastName.length > 100)) {
+    res.status(400).json({ error: "Last name must be between 1 and 100 characters" });
+    return;
+  }
+  if (email !== undefined) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 254) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
+  }
+
+  const userId = req.user.id;
+
+  const updateValues: Record<string, unknown> = { updatedAt: new Date() };
+  if (firstName !== undefined) updateValues.firstName = firstName;
+  if (lastName !== undefined) updateValues.lastName = lastName;
+  if (email !== undefined) updateValues.email = email;
+
+  const [updatedUser] = await db
+    .update(usersTable)
+    .set(updateValues)
+    .where(eq(usersTable.id, userId))
+    .returning();
+
+  if (!updatedUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const sid = getSessionId(req);
+  if (sid) {
+    const session = await getSession(sid);
+    if (session) {
+      session.user = {
+        ...session.user,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+      };
+      await updateSession(sid, session);
+    }
+  }
+
+  res.json({
+    user: {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      profileImageUrl: updatedUser.profileImageUrl,
+    },
+  });
 });
 
 router.get("/login", async (req: Request, res: Response) => {
