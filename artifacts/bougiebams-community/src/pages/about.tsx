@@ -1,8 +1,26 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import mahjongTiles from "/mahjong-tiles.jpeg";
 import mahjongTable from "/mahjong-table.jpeg";
 
+const venuePhotos = [
+  "/event-boss-moves.jpeg",
+  "/event-rose.jpeg",
+  "/mahjong-table.jpeg",
+  "/mahjong-tiles.jpeg",
+  "/event-spa.jpeg",
+];
+
 export default function About() {
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhotoIndex((i) => (i + 1) % venuePhotos.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="w-full bg-background">
       <section className="py-20 md:py-32 overflow-hidden">
@@ -84,19 +102,38 @@ export default function About() {
         </div>
       </motion.section>
 
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="order-2 md:order-1 relative">
-              <div className="absolute inset-0 bg-secondary rounded-3xl translate-x-4 translate-y-4 -z-10"></div>
-              <img src="/event-boss-moves.jpeg" alt="BougieBams gathering" className="rounded-3xl w-full h-auto shadow-lg" />
+      <section className="py-14 bg-background">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
+              <AnimatePresence mode="crossfade">
+                <motion.img
+                  key={venuePhotos[photoIndex]}
+                  src={venuePhotos[photoIndex]}
+                  alt="BougieBams venue"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                />
+              </AnimatePresence>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {venuePhotos.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPhotoIndex(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === photoIndex ? "bg-white w-4" : "bg-white/50"}`}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="order-1 md:order-2">
-              <h2 className="font-serif text-4xl md:text-5xl font-medium mb-6">The Vision</h2>
-              <p className="text-lg text-muted-foreground font-light leading-relaxed mb-8">
+            <div>
+              <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">The Vision</h2>
+              <p className="text-base text-muted-foreground font-light leading-relaxed mb-6">
                 "I started BougieBams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
               </p>
-              <div className="font-serif text-xl font-medium">— The Founder</div>
+              <div className="font-serif text-lg font-medium">— The Founder</div>
             </div>
           </div>
         </div>
