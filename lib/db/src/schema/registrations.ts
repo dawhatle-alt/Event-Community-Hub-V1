@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, timestamp, varchar, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, numeric, timestamp, varchar, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { eventsTable } from "./events";
@@ -16,9 +16,21 @@ export const registrationsTable = pgTable("registrations", {
   stripeSessionId: text("stripe_session_id"),
   status: text("status").notNull().default("pending"),
   confirmationEmailSent: boolean("confirmation_email_sent").notNull().default(false),
+  feedbackToken: text("feedback_token"),
+  feedbackSentAt: timestamp("feedback_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedbackResponsesTable = pgTable("feedback_responses", {
+  id: serial("id").primaryKey(),
+  registrationId: integer("registration_id").notNull().references(() => registrationsTable.id),
+  eventId: integer("event_id").notNull().references(() => eventsTable.id),
+  rating: integer("rating").notNull(),
+  comments: text("comments"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertRegistrationSchema = createInsertSchema(registrationsTable).omit({ id: true, createdAt: true });
 export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;
 export type Registration = typeof registrationsTable.$inferSelect;
+export type FeedbackResponse = typeof feedbackResponsesTable.$inferSelect;

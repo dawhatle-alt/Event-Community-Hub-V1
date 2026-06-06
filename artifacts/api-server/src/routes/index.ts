@@ -5,6 +5,7 @@ import eventsRouter from "./events";
 import registrationsRouter from "./registrations";
 import storageRouter from "./storage";
 import notificationsRouter from "./notifications";
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(eventsRouter);
 router.use(registrationsRouter);
 router.use(storageRouter);
 router.use(notificationsRouter);
+router.use(feedbackRouter);
 
 export default router;

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -197,6 +197,120 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
               </div>
             ))
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface FeedbackResponse {
+  id: number;
+  rating: number;
+  comments: string | null;
+  submittedAt: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <span className="flex gap-0.5">
+      {[1,2,3,4,5].map(s => (
+        <Star key={s} className={`w-3 h-3 ${s <= rating ? "fill-[#C9A227] stroke-[#C9A227]" : "fill-none stroke-muted-foreground"}`} />
+      ))}
+    </span>
+  );
+}
+
+function EventFeedbackPanel({ event, adminHeaders }: { event: any; adminHeaders: Record<string, string> }) {
+  const isPast = new Date(event.date) < new Date();
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [responses, setResponses] = useState<FeedbackResponse[] | null>(null);
+  const [loadingResponses, setLoadingResponses] = useState(false);
+  const { toast } = useToast();
+
+  const fetchResponses = async () => {
+    setLoadingResponses(true);
+    try {
+      const res = await fetch(`/api/admin/events/${event.id}/feedback`, { headers: adminHeaders });
+      if (res.ok) setResponses(await res.json());
+    } catch { /* ignore */ }
+    finally { setLoadingResponses(false); }
+  };
+
+  const toggleOpen = () => {
+    if (!open && responses === null) fetchResponses();
+    setOpen(o => !o);
+  };
+
+  const handleSend = async () => {
+    if (!confirm(`Send a feedback survey email to all paid attendees of "${event.title}"? Anyone already sent a survey will be skipped.`)) return;
+    setSending(true);
+    try {
+      const res = await fetch(`/api/admin/events/${event.id}/send-feedback`, {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      const body = await res.json();
+      if (res.ok) {
+        toast({ title: `Survey sent to ${body.sent} attendee${body.sent !== 1 ? "s" : ""}${body.skipped ? ` (${body.skipped} skipped)` : ""}` });
+        fetchResponses();
+      } else {
+        toast({ title: "Failed to send", description: body.error ?? "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setSending(false); }
+  };
+
+  if (!isPast) return null;
+
+  return (
+    <div className="border-t border-border mt-2 pt-2">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={toggleOpen}
+          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+        >
+          {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          <MessageSquare className="w-3 h-3" />
+          Feedback
+          {responses !== null && responses.length > 0 && (
+            <span className="ml-1 bg-primary/10 text-primary rounded px-1">{responses.length} response{responses.length !== 1 ? "s" : ""}</span>
+          )}
+          {responses !== null && responses.length === 0 && (
+            <span className="ml-1 text-muted-foreground">(none yet)</span>
+          )}
+        </button>
+        <button
+          onClick={handleSend}
+          disabled={sending}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-medium disabled:opacity-50 transition-colors"
+          title="Send feedback survey to paid attendees"
+        >
+          <Send className="w-3 h-3" />
+          {sending ? "Sending…" : "Send Survey"}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-2 text-xs space-y-1">
+          {loadingResponses ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : !responses?.length ? (
+            <p className="text-muted-foreground">No feedback responses yet.</p>
+          ) : responses.map(r => (
+            <div key={r.id} className="bg-muted/40 rounded px-2 py-1.5 space-y-0.5">
+              <div className="flex items-center gap-2">
+                <StarDisplay rating={r.rating} />
+                <span className="text-muted-foreground">
+                  {r.firstName} {r.lastName} · {new Date(r.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+              {r.comments && <p className="text-foreground/80 leading-relaxed pl-0.5">"{r.comments}"</p>}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -594,6 +708,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                       </div>
                     </div>
                     <EventRegistrationsPanel eventId={event.id} adminHeaders={adminHeaders} />
+                    <EventFeedbackPanel event={event} adminHeaders={adminHeaders} />
                   </div>
                 ))}
               </div>
