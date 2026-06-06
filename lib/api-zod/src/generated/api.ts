@@ -152,7 +152,8 @@ export const CreateEventBody = zod.object({
   "tags": zod.string().nullish(),
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
-  "stripePriceId": zod.string().nullish()
+  "stripePriceId": zod.string().nullish(),
+  "autoSendFeedback": zod.boolean().optional()
 })
 
 
@@ -324,7 +325,8 @@ export const UpdateEventBody = zod.object({
   "tags": zod.string().nullish(),
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
-  "stripePriceId": zod.string().nullish()
+  "stripePriceId": zod.string().nullish(),
+  "autoSendFeedback": zod.boolean().optional()
 })
 
 export const UpdateEventResponse = zod.object({

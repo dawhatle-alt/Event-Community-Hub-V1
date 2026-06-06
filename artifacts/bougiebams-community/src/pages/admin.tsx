@@ -400,6 +400,7 @@ const BLANK_FORM = {
   imageUrl: "",
   featured: false,
   published: false,
+  autoSendFeedback: false,
 };
 
 function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; onLogout: () => void }) {
@@ -469,6 +470,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
       imageUrl: event.imageUrl || "",
       featured: event.featured,
       published: event.published,
+      autoSendFeedback: (event as any).autoSendFeedback ?? false,
     });
   };
 
@@ -620,6 +622,14 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                     onCheckedChange={(c) => setFormData({ ...formData, featured: !!c })}
                   />
                   <Label htmlFor="featured">Featured on Homepage</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="autoSendFeedback"
+                    checked={(formData as any).autoSendFeedback ?? false}
+                    onCheckedChange={(c) => setFormData({ ...formData, autoSendFeedback: !!c } as any)}
+                  />
+                  <Label htmlFor="autoSendFeedback">Auto-send feedback survey the day after event</Label>
                 </div>
               </div>
 

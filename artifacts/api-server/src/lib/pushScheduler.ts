@@ -1,6 +1,8 @@
 import { db, eventsTable, registrationsTable, pushTokensTable } from "@workspace/db";
-import { eq, and, gte, lt, inArray } from "drizzle-orm";
+import { eq, and, gte, lt, inArray, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm";
+import { sendFeedbackSurvey } from "./email";
+import { randomUUID } from "crypto";
 import { logger } from "./logger";
 
 const EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send";
@@ -173,6 +175,93 @@ export async function sendDayBeforeReminders(): Promise<number> {
   return successCount;
 }
 
+/**
+ * Find all events that ended yesterday (or started yesterday if no endDate)
+ * and have autoSendFeedback=true, then send a survey to every paid registrant
+ * who hasn't already received one.
+ */
+export async function sendPostEventFeedbackSurveys(): Promise<number> {
+  const now = new Date();
+
+  // "Yesterday" window in UTC
+  const yesterdayStart = new Date(now);
+  yesterdayStart.setUTCHours(0, 0, 0, 0);
+  yesterdayStart.setUTCDate(yesterdayStart.getUTCDate() - 1);
+
+  const yesterdayEnd = new Date(yesterdayStart);
+  yesterdayEnd.setUTCDate(yesterdayEnd.getUTCDate() + 1);
+
+  // Events that started/ended yesterday with autoSendFeedback=true
+  const events = await db
+    .select()
+    .from(eventsTable)
+    .where(
+      and(
+        eq(eventsTable.autoSendFeedback, true),
+        gte(eventsTable.date, yesterdayStart),
+        lt(eventsTable.date, yesterdayEnd)
+      )
+    );
+
+  if (events.length === 0) {
+    logger.info("No auto-feedback events from yesterday — skipping");
+    return 0;
+  }
+
+  const baseUrl = process.env.REPLIT_DOMAINS
+    ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+    : "http://localhost";
+
+  let totalSent = 0;
+
+  for (const event of events) {
+    // Only paid registrants who haven't been sent a survey yet
+    const regs = await db
+      .select()
+      .from(registrationsTable)
+      .where(
+        and(
+          eq(registrationsTable.eventId, event.id),
+          eq(registrationsTable.status, "paid"),
+          isNull(registrationsTable.feedbackSentAt)
+        )
+      );
+
+    for (const reg of regs) {
+      let token = reg.feedbackToken;
+      if (!token) {
+        token = randomUUID();
+        await db
+          .update(registrationsTable)
+          .set({ feedbackToken: token })
+          .where(eq(registrationsTable.id, reg.id));
+      }
+
+      const ok = await sendFeedbackSurvey({
+        to: reg.email,
+        firstName: reg.firstName,
+        eventTitle: event.title,
+        eventDate: event.date,
+        surveyUrl: `${baseUrl}/feedback/${token}`,
+      });
+
+      if (ok) {
+        await db
+          .update(registrationsTable)
+          .set({ feedbackSentAt: new Date() })
+          .where(eq(registrationsTable.id, reg.id));
+        totalSent++;
+      } else {
+        logger.warn({ regId: reg.id, eventId: event.id }, "Auto-feedback: failed to send survey email");
+      }
+    }
+
+    logger.info({ eventId: event.id, title: event.title, sent: totalSent }, "Auto-feedback surveys sent for event");
+  }
+
+  return totalSent;
+}
+
 // --- Lightweight daily scheduler ---
 // Runs the job once per day around 9:00 AM UTC.
 // Uses a simple interval-based approach to avoid adding a cron dependency.
@@ -191,6 +280,10 @@ function schedulerTick(): void {
     logger.info("Scheduler: triggering day-before push reminders");
     sendDayBeforeReminders().catch((err) => {
       logger.error({ err }, "Scheduler: error sending day-before reminders");
+    });
+    logger.info("Scheduler: triggering post-event feedback surveys");
+    sendPostEventFeedbackSurveys().catch((err) => {
+      logger.error({ err }, "Scheduler: error sending post-event feedback surveys");
     });
   }
 }
