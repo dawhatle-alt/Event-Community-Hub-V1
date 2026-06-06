@@ -91,7 +91,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const { eventId, firstName, lastName, email, phone, quantity = 1 } = parsed.data;
+  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel } = parsed.data;
   const userId = req.isAuthenticated() ? req.user.id : null;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId));
@@ -127,6 +127,9 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       totalAmount: "0",
       stripeSessionId: sessionId,
       status: "paid",
+      seatingPreference: seatingPreference ?? null,
+      jokersPreference: jokersPreference ?? null,
+      skillLevel: skillLevel ?? null,
     }).returning();
 
     await db
@@ -180,6 +183,9 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       quantity,
       totalAmount: String(totalAmount),
       status: "pending",
+      seatingPreference: seatingPreference ?? null,
+      jokersPreference: jokersPreference ?? null,
+      skillLevel: skillLevel ?? null,
     })
     .returning();
 

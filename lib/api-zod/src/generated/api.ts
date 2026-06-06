@@ -463,7 +463,10 @@ export const CreateCheckoutSessionBody = zod.object({
   "lastName": zod.string().min(1),
   "email": zod.string().email(),
   "phone": zod.string().nullish(),
-  "quantity": zod.number().min(1).default(createCheckoutSessionBodyQuantityDefault)
+  "quantity": zod.number().min(1).default(createCheckoutSessionBodyQuantityDefault),
+  "seatingPreference": zod.string().nullish(),
+  "jokersPreference": zod.enum(["yes", "no", "open"]).nullish(),
+  "skillLevel": zod.enum(["learn", "learning", "intermediate", "advanced"]).nullish()
 })
 
 export const CreateCheckoutSessionResponse = zod.object({

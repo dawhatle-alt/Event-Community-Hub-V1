@@ -5,6 +5,8 @@ import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@wor
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -26,7 +28,10 @@ export default function EventDetail() {
     lastName: "",
     email: "",
     phone: "",
-    quantity: 1
+    quantity: 1,
+    seatingPreference: "",
+    jokersPreference: "" as "" | "yes" | "no" | "open",
+    skillLevel: "" as "" | "learn" | "learning" | "intermediate" | "advanced",
   });
   const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(false);
 
@@ -61,7 +66,10 @@ export default function EventDetail() {
           lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone || undefined,
-          quantity: formData.quantity
+          quantity: formData.quantity,
+          seatingPreference: formData.seatingPreference || undefined,
+          jokersPreference: (formData.jokersPreference || undefined) as "yes" | "no" | "open" | undefined,
+          skillLevel: (formData.skillLevel || undefined) as "learn" | "learning" | "intermediate" | "advanced" | undefined,
         }
       },
       {
@@ -183,7 +191,71 @@ export default function EventDetail() {
                     <Label htmlFor="quantity">Number of Tickets</Label>
                     <Input id="quantity" type="number" min="1" max={event.spotsRemaining ?? event.capacity} required value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value, 10) || 1})} className="bg-background" />
                   </div>
-                  
+
+                  <div className="space-y-2">
+                    <Label htmlFor="seatingPreference">
+                      Do you prefer to sit with someone you know?
+                      <span className="block text-xs text-muted-foreground font-normal mt-0.5">If yes, provide their name(s)</span>
+                    </Label>
+                    <Textarea
+                      id="seatingPreference"
+                      placeholder="e.g. Jane Smith, Michelle Lee"
+                      value={formData.seatingPreference}
+                      onChange={e => setFormData({...formData, seatingPreference: e.target.value})}
+                      className="bg-background resize-none"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Do you want to play with blanks and 10 jokers?</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">No guarantees</p>
+                    <RadioGroup
+                      value={formData.jokersPreference}
+                      onValueChange={v => setFormData({...formData, jokersPreference: v as typeof formData.jokersPreference})}
+                      className="space-y-1 pt-1"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="yes" id="jokers-yes" />
+                        <Label htmlFor="jokers-yes" className="font-normal cursor-pointer">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="no" id="jokers-no" />
+                        <Label htmlFor="jokers-no" className="font-normal cursor-pointer">No</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="open" id="jokers-open" />
+                        <Label htmlFor="jokers-open" className="font-normal cursor-pointer">I'm open to either</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>What is your skill level?</Label>
+                    <RadioGroup
+                      value={formData.skillLevel}
+                      onValueChange={v => setFormData({...formData, skillLevel: v as typeof formData.skillLevel})}
+                      className="space-y-1 pt-1"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="learn" id="skill-learn" />
+                        <Label htmlFor="skill-learn" className="font-normal cursor-pointer">I want to learn how to play</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="learning" id="skill-learning" />
+                        <Label htmlFor="skill-learning" className="font-normal cursor-pointer">I'm still learning</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="intermediate" id="skill-intermediate" />
+                        <Label htmlFor="skill-intermediate" className="font-normal cursor-pointer">Intermediate</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="advanced" id="skill-advanced" />
+                        <Label htmlFor="skill-advanced" className="font-normal cursor-pointer">Advanced</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full h-14 text-lg rounded-xl mt-4"

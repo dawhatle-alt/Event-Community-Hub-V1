@@ -18,6 +18,9 @@ export const registrationsTable = pgTable("registrations", {
   confirmationEmailSent: boolean("confirmation_email_sent").notNull().default(false),
   feedbackToken: text("feedback_token").unique(),
   feedbackSentAt: timestamp("feedback_sent_at", { withTimezone: true }),
+  seatingPreference: text("seating_preference"),
+  jokersPreference: text("jokers_preference"),
+  skillLevel: text("skill_level"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

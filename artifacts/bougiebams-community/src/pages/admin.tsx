@@ -175,25 +175,40 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
             regs.map((r) => (
               <div
                 key={r.id}
-                className={`flex items-center justify-between rounded px-2 py-1 gap-2 ${r.status === "cancelled" ? "bg-red-50/60 opacity-80" : "bg-muted/40"}`}
+                className={`rounded px-2 py-1.5 ${r.status === "cancelled" ? "bg-red-50/60 opacity-80" : "bg-muted/40"}`}
               >
-                <span className={`font-medium ${r.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
-                  {r.firstName} {r.lastName}
-                </span>
-                <span className="text-muted-foreground truncate">{r.email}</span>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <StatusBadge status={r.status} />
-                  {r.status === "cancelled" && (
-                    <button
-                      onClick={() => handleReinstate(r.id)}
-                      disabled={reinstating === r.id}
-                      title="Reinstate registration"
-                      className="ml-1 text-primary hover:text-primary/80 disabled:opacity-50"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </button>
-                  )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`font-medium ${r.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
+                    {r.firstName} {r.lastName}
+                  </span>
+                  <span className="text-muted-foreground truncate">{r.email}</span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <StatusBadge status={r.status} />
+                    {r.status === "cancelled" && (
+                      <button
+                        onClick={() => handleReinstate(r.id)}
+                        disabled={reinstating === r.id}
+                        title="Reinstate registration"
+                        className="ml-1 text-primary hover:text-primary/80 disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {((r as any).seatingPreference || (r as any).jokersPreference || (r as any).skillLevel) && (
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-0.5">
+                    {(r as any).seatingPreference && (
+                      <span><span className="font-medium text-foreground/70">Seating:</span> {(r as any).seatingPreference}</span>
+                    )}
+                    {(r as any).jokersPreference && (
+                      <span><span className="font-medium text-foreground/70">Jokers:</span> {{ yes: "Yes", no: "No", open: "Open to either" }[(r as any).jokersPreference] ?? (r as any).jokersPreference}</span>
+                    )}
+                    {(r as any).skillLevel && (
+                      <span><span className="font-medium text-foreground/70">Skill:</span> {{ learn: "Want to learn", learning: "Still learning", intermediate: "Intermediate", advanced: "Advanced" }[(r as any).skillLevel] ?? (r as any).skillLevel}</span>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}
