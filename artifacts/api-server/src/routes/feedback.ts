@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db, eventsTable, registrationsTable, feedbackResponsesTable } from "@workspace/db";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { sendFeedbackSurvey } from "../lib/email";
@@ -31,15 +31,19 @@ router.post("/admin/events/:id/send-feedback", requireAdminAuth, async (req, res
     ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
     : "http://localhost";
 
-  const paidRegs = await db
+  const allPaidRegs = await db
     .select()
     .from(registrationsTable)
     .where(and(eq(registrationsTable.eventId, eventId), eq(registrationsTable.status, "paid")));
 
-  let sent = 0;
-  let skipped = 0;
+  // Only send to attendees who haven't received a survey yet
+  const pendingRegs = allPaidRegs.filter((r) => r.feedbackSentAt === null);
+  const alreadySent = allPaidRegs.length - pendingRegs.length;
 
-  for (const reg of paidRegs) {
+  let sent = 0;
+  let skipped = alreadySent;
+
+  for (const reg of pendingRegs) {
     let token = reg.feedbackToken;
 
     if (!token) {
@@ -72,7 +76,7 @@ router.post("/admin/events/:id/send-feedback", requireAdminAuth, async (req, res
     }
   }
 
-  res.json({ sent, skipped, total: paidRegs.length });
+  res.json({ sent, skipped, total: allPaidRegs.length });
 });
 
 // Public: look up a survey token — returns event info and whether already submitted
