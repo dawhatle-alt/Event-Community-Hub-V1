@@ -451,6 +451,13 @@ function RegistrationCard({
               </Button>
             </Link>
           )}
+          {isPast && (
+            <Link href={`/events/${event.id}`}>
+              <Button variant="ghost" size="sm" className="rounded-full text-xs text-muted-foreground hover:text-foreground">
+                View Event
+              </Button>
+            </Link>
+          )}
           {canCancel && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
