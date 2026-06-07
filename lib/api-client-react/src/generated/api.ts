@@ -22,6 +22,7 @@ import type {
 import type {
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  CancelRegistration200,
   CheckoutSessionInput,
   CheckoutSessionResponse,
   ErrorEnvelope,
@@ -1511,6 +1512,76 @@ export function useGetMyRegistrations<TData = Awaited<ReturnType<typeof getMyReg
 
 
 
+
+export const getCancelRegistrationUrl = (id: number,) => {
+
+
+
+
+  return `/api/registrations/${id}`
+}
+
+/**
+ * @summary Cancel a registration (authenticated user, own registrations only)
+ */
+export const cancelRegistration = async (id: number, options?: RequestInit): Promise<CancelRegistration200> => {
+
+  return customFetch<CancelRegistration200>(getCancelRegistrationUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getCancelRegistrationMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelRegistration>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['cancelRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelRegistration>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelRegistration(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof cancelRegistration>>>
+
+    export type CancelRegistrationMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Cancel a registration (authenticated user, own registrations only)
+ */
+export const useCancelRegistration = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelRegistration>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCancelRegistrationMutationOptions(options));
+    }
 
 export const getCreateCheckoutSessionUrl = () => {
 

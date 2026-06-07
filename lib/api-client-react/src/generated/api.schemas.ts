@@ -260,6 +260,10 @@ export type ListRegistrationsParams = {
 eventId: number;
 };
 
+export type CancelRegistration200 = {
+  success?: boolean;
+};
+
 export type GetRegistrationBySessionParams = {
 sessionId: string;
 };

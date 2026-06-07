@@ -1,10 +1,16 @@
 import { Feather } from "@expo/vector-icons";
-import { format } from "date-fns";
+import { format, isPast } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useGetMyRegistrations } from "@workspace/api-client-react";
-import React from "react";
+import {
+  useGetMyRegistrations,
+  useCancelRegistration,
+  getGetMyRegistrationsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -21,6 +27,8 @@ export default function RegistrationDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const [cancelling, setCancelling] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -28,6 +36,8 @@ export default function RegistrationDetailScreen() {
   const { data: registrations, isLoading, error } = useGetMyRegistrations({
     query: { retry: false },
   });
+
+  const { mutateAsync: cancelRegistration } = useCancelRegistration();
 
   const item = registrations?.find(
     (r) => String(r.registration.id) === String(id)
@@ -58,6 +68,42 @@ export default function RegistrationDetailScreen() {
   };
 
   const status = statusConfig[registration?.status ?? ""] ?? statusConfig.pending;
+
+  const isUpcoming = event ? !isPast(new Date(event.date)) : false;
+  const canCancel =
+    registration?.status !== "cancelled" && isUpcoming;
+
+  function handleCancelPress() {
+    Alert.alert(
+      "Cancel Registration",
+      "Are you sure you want to cancel your registration? This action cannot be undone.",
+      [
+        { text: "Keep Registration", style: "cancel" },
+        {
+          text: "Cancel Registration",
+          style: "destructive",
+          onPress: confirmCancel,
+        },
+      ]
+    );
+  }
+
+  async function confirmCancel() {
+    if (!registration) return;
+    setCancelling(true);
+    try {
+      await cancelRegistration({ id: registration.id });
+      await queryClient.invalidateQueries({
+        queryKey: getGetMyRegistrationsQueryKey(),
+      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      Alert.alert("Cancellation Failed", message);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -215,6 +261,31 @@ export default function RegistrationDetailScreen() {
             </Text>
           </Pressable>
 
+          {/* Cancel registration button — only for upcoming, non-cancelled registrations */}
+          {canCancel && (
+            <Pressable
+              testID="cancel-registration-button"
+              disabled={cancelling}
+              style={({ pressed }) => [
+                styles.cancelBtn,
+                {
+                  borderColor: colors.destructive,
+                  borderRadius: colors.radius,
+                  opacity: pressed || cancelling ? 0.6 : 1,
+                },
+              ]}
+              onPress={handleCancelPress}
+            >
+              {cancelling ? (
+                <ActivityIndicator size="small" color={colors.destructive} />
+              ) : (
+                <Text style={[styles.cancelBtnText, { color: colors.destructive, fontFamily: "Inter_500Medium" }]}>
+                  Cancel Registration
+                </Text>
+              )}
+            </Pressable>
+          )}
+
           <Pressable onPress={() => router.back()}>
             <Text style={[styles.secondaryLink, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
               Back to profile
@@ -311,6 +382,14 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
+  },
+  cancelBtn: {
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  cancelBtnText: {
+    fontSize: 15,
   },
   secondaryLink: {
     textAlign: "center",

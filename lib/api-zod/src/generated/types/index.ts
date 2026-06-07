@@ -10,6 +10,7 @@ export * from './authorizationSessionHeaderParameter';
 export * from './authUser';
 export * from './authUserEnvelope';
 export * from './beginBrowserLoginParams';
+export * from './cancelRegistration200';
 export * from './checkoutSessionInput';
 export * from './checkoutSessionResponse';
 export * from './errorEnvelope';

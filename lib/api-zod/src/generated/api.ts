@@ -449,6 +449,22 @@ export const GetMyRegistrationsResponse = zod.array(GetMyRegistrationsResponseIt
 
 
 /**
+ * @summary Cancel a registration (authenticated user, own registrations only)
+ */
+export const CancelRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CancelRegistrationHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const CancelRegistrationResponse = zod.object({
+  "success": zod.boolean().optional()
+})
+
+
+/**
  * @summary Create a Stripe Checkout session for event registration
  */
 
