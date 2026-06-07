@@ -32,7 +32,9 @@ export default function EventDetail() {
     seatingPreference: "",
     jokersPreference: "" as "" | "yes" | "no" | "open",
     skillLevel: "" as "" | "learn" | "learning" | "intermediate" | "advanced",
+    couponCode: "",
   });
+  const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(false);
 
   useEffect(() => {
@@ -45,6 +47,28 @@ export default function EventDetail() {
       }));
     }
   }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    if (!formData.couponCode) {
+      setCouponStatus("idle");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const base = (import.meta.env.BASE_URL ?? "").replace(/\/$/, "");
+        const res = await fetch(`${base}/api/events/${eventId}/validate-coupon`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: formData.couponCode }),
+        });
+        const data = await res.json();
+        setCouponStatus(data.valid ? "valid" : "invalid");
+      } catch {
+        setCouponStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.couponCode, eventId]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -70,6 +94,7 @@ export default function EventDetail() {
           seatingPreference: formData.seatingPreference || undefined,
           jokersPreference: (formData.jokersPreference || undefined) as "yes" | "no" | "open" | undefined,
           skillLevel: (formData.skillLevel || undefined) as "learn" | "learning" | "intermediate" | "advanced" | undefined,
+          couponCode: formData.couponCode || undefined,
         }
       },
       {
@@ -254,6 +279,29 @@ export default function EventDetail() {
                         <Label htmlFor="skill-advanced" className="font-normal cursor-pointer">Advanced</Label>
                       </div>
                     </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="couponCode" className="text-sm font-medium">
+                      Coupon Code{" "}
+                      <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="couponCode"
+                      placeholder="Enter code for free registration"
+                      value={formData.couponCode}
+                      onChange={e => {
+                        setFormData({ ...formData, couponCode: e.target.value.toUpperCase() });
+                        setCouponStatus("idle");
+                      }}
+                      className={`bg-background ${couponStatus === "valid" ? "border-green-500 focus-visible:ring-green-500" : couponStatus === "invalid" ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    />
+                    {couponStatus === "valid" && (
+                      <p className="text-xs text-green-600 dark:text-green-400 font-medium">✓ Coupon applied — this event is FREE</p>
+                    )}
+                    {couponStatus === "invalid" && (
+                      <p className="text-xs text-destructive">That code isn't valid for this event</p>
+                    )}
                   </div>
 
                   <Button 

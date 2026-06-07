@@ -55,6 +55,7 @@ export default function RegisterScreen() {
     }
   }, [authUser]);
 
+  const [couponCode, setCouponCode] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -104,6 +105,7 @@ export default function RegisterScreen() {
           email: email.trim(),
           phone: phone.replace(/\D/g, "") || null,
           quantity,
+          couponCode: couponCode.trim() || undefined,
         },
       },
       {
@@ -126,9 +128,10 @@ export default function RegisterScreen() {
             params: { sessionId: response.sessionId },
           });
         },
-        onError: () => {
+        onError: (err: unknown) => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setErrors({ submit: "Something went wrong. Please try again." });
+          const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          setErrors({ submit: msg ?? "Something went wrong. Please try again." });
         },
       }
     );
@@ -281,6 +284,27 @@ export default function RegisterScreen() {
                 {errors.phone}
               </Text>
             )}
+          </View>
+        </View>
+
+        {/* Coupon Code */}
+        <View style={[styles.section, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 24 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
+            Coupon Code
+          </Text>
+          <View>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+              Have a code? (optional)
+            </Text>
+            <TextInput
+              style={[styles.input, fieldStyle(false), { letterSpacing: 1.5 }]}
+              placeholder="ENTER CODE"
+              placeholderTextColor={colors.mutedForeground}
+              value={couponCode}
+              onChangeText={(v) => setCouponCode(v.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
           </View>
         </View>
 

@@ -5,6 +5,8 @@
  * BougieBams Community & Events API
  * OpenAPI spec version: 0.1.0
  */
+import type { CheckoutSessionInputJokersPreference } from './checkoutSessionInputJokersPreference';
+import type { CheckoutSessionInputSkillLevel } from './checkoutSessionInputSkillLevel';
 
 export interface CheckoutSessionInput {
   eventId: number;
@@ -17,4 +19,13 @@ export interface CheckoutSessionInput {
   phone?: string | null;
   /** @minimum 1 */
   quantity: number;
+  /** @nullable */
+  seatingPreference?: string | null;
+  jokersPreference?: CheckoutSessionInputJokersPreference;
+  skillLevel?: CheckoutSessionInputSkillLevel;
+  /**
+     * Optional coupon code for a free registration
+     * @nullable
+     */
+  couponCode?: string | null;
 }

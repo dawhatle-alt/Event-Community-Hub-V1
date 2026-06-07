@@ -20,6 +20,7 @@ export const eventsTable = pgTable("events", {
   published: boolean("published").notNull().default(false),
   stripePriceId: text("stripe_price_id"),
   autoSendFeedback: boolean("auto_send_feedback").notNull().default(false),
+  couponCode: text("coupon_code"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

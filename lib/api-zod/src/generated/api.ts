@@ -124,6 +124,7 @@ export const ListEventsResponseItem = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
@@ -153,7 +154,7 @@ export const CreateEventBody = zod.object({
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish(),
-  "autoSendFeedback": zod.boolean().optional()
+  "couponCode": zod.string().nullish()
 })
 
 
@@ -178,6 +179,7 @@ export const ListFeaturedEventsResponseItem = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 export const ListFeaturedEventsResponse = zod.array(ListFeaturedEventsResponseItem)
@@ -210,7 +212,11 @@ export const RegisterForEventBody = zod.object({
   "lastName": zod.string().min(1),
   "email": zod.string().email(),
   "phone": zod.string().nullish(),
-  "quantity": zod.number().min(1).default(registerForEventBodyQuantityDefault)
+  "quantity": zod.number().min(1).default(registerForEventBodyQuantityDefault),
+  "seatingPreference": zod.string().nullish(),
+  "jokersPreference": zod.enum(['yes', 'no', 'open']).nullish(),
+  "skillLevel": zod.enum(['learn', 'learning', 'intermediate', 'advanced']).nullish(),
+  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration')
 })
 
 export const RegisterForEventResponse = zod.object({
@@ -243,6 +249,7 @@ export const GetEventResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -274,7 +281,8 @@ export const UpdateEventPutBody = zod.object({
   "tags": zod.string().nullish(),
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
-  "stripePriceId": zod.string().nullish()
+  "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish()
 })
 
 export const UpdateEventPutResponse = zod.object({
@@ -294,6 +302,7 @@ export const UpdateEventPutResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -326,7 +335,7 @@ export const UpdateEventBody = zod.object({
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish(),
-  "autoSendFeedback": zod.boolean().optional()
+  "couponCode": zod.string().nullish()
 })
 
 export const UpdateEventResponse = zod.object({
@@ -346,6 +355,7 @@ export const UpdateEventResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -442,6 +452,7 @@ export const GetMyRegistrationsResponseItem = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 })
@@ -481,8 +492,9 @@ export const CreateCheckoutSessionBody = zod.object({
   "phone": zod.string().nullish(),
   "quantity": zod.number().min(1).default(createCheckoutSessionBodyQuantityDefault),
   "seatingPreference": zod.string().nullish(),
-  "jokersPreference": zod.enum(["yes", "no", "open"]).nullish(),
-  "skillLevel": zod.enum(["learn", "learning", "intermediate", "advanced"]).nullish()
+  "jokersPreference": zod.enum(['yes', 'no', 'open']).nullish(),
+  "skillLevel": zod.enum(['learn', 'learning', 'intermediate', 'advanced']).nullish(),
+  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration')
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
@@ -529,6 +541,7 @@ export const GetRegistrationBySessionResponse = zod.object({
   "featured": zod.boolean(),
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
+  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
   "createdAt": zod.coerce.date()
 })
 })

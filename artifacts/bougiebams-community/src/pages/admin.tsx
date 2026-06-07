@@ -416,6 +416,7 @@ const BLANK_FORM = {
   featured: false,
   published: false,
   autoSendFeedback: false,
+  couponCode: "",
 };
 
 function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; onLogout: () => void }) {
@@ -486,6 +487,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
       featured: event.featured,
       published: event.published,
       autoSendFeedback: (event as any).autoSendFeedback ?? false,
+      couponCode: (event as any).couponCode ?? "",
     });
   };
 
@@ -646,6 +648,19 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                   />
                   <Label htmlFor="autoSendFeedback">Auto-send feedback survey the day after event</Label>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="couponCode">
+                  Coupon Code
+                  <span className="block text-xs font-normal text-muted-foreground mt-0.5">Optional — anyone who enters this code registers for free</span>
+                </Label>
+                <Input
+                  id="couponCode"
+                  placeholder="e.g. BOUGIE2025"
+                  value={(formData as any).couponCode ?? ""}
+                  onChange={e => setFormData({ ...formData, couponCode: e.target.value.toUpperCase() } as any)}
+                />
               </div>
 
               <Button

@@ -12,6 +12,8 @@ export * from './authUserEnvelope';
 export * from './beginBrowserLoginParams';
 export * from './cancelRegistration200';
 export * from './checkoutSessionInput';
+export * from './checkoutSessionInputJokersPreference';
+export * from './checkoutSessionInputSkillLevel';
 export * from './checkoutSessionResponse';
 export * from './errorEnvelope';
 export * from './event';

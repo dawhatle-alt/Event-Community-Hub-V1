@@ -53,11 +53,15 @@ router.get("/events", async (req, res): Promise<void> => {
     .where(conditions.length > 0 ? sql`${sql.join(conditions, sql` AND `)}` : undefined)
     .orderBy(asc(eventsTable.date));
 
-  const mapped = events.map((e) => ({
-    ...e,
-    price: Number(e.price),
-    spotsRemaining: e.spotsRemaining ?? null,
-  }));
+  const isAdmin = isAdminRequest(req);
+  const mapped = events.map((e) => {
+    const { couponCode: _coupon, ...rest } = e;
+    return {
+      ...(isAdmin ? e : rest),
+      price: Number(e.price),
+      spotsRemaining: e.spotsRemaining ?? null,
+    };
+  });
 
   res.json(mapped);
 });
@@ -71,11 +75,10 @@ router.get("/events/featured", async (_req, res): Promise<void> => {
     .orderBy(asc(eventsTable.date))
     .limit(6);
 
-  const mapped = events.map((e) => ({
-    ...e,
-    price: Number(e.price),
-    spotsRemaining: e.spotsRemaining ?? null,
-  }));
+  const mapped = events.map((e) => {
+    const { couponCode: _coupon, ...rest } = e;
+    return { ...rest, price: Number(e.price), spotsRemaining: e.spotsRemaining ?? null };
+  });
 
   res.json(mapped);
 });
@@ -108,7 +111,12 @@ router.get("/events/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
+  const { couponCode: _coupon, ...publicEvent } = event;
+  res.json({
+    ...(isAdminRequest(req) ? event : publicEvent),
+    price: Number(event.price),
+    spotsRemaining: event.spotsRemaining ?? null,
+  });
 });
 
 // Admin-only write endpoints
@@ -182,6 +190,27 @@ router.put("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {
   }
 
   res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
+});
+
+// Public: validate a coupon code for an event (returns valid: bool, never exposes the code)
+router.post("/events/:id/validate-coupon", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid event id" });
+    return;
+  }
+  const { code } = req.body;
+  if (!code || typeof code !== "string") {
+    res.status(400).json({ error: "code is required" });
+    return;
+  }
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, id));
+  if (!event || (!event.published && !isAdminRequest(req))) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  const valid = !!(event.couponCode && event.couponCode.trim().toUpperCase() === code.trim().toUpperCase());
+  res.json({ valid });
 });
 
 router.delete("/events/:id", requireAdminAuth, async (req, res): Promise<void> => {

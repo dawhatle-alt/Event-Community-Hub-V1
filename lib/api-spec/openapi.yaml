@@ -824,6 +824,9 @@ components:
           type: boolean
         stripePriceId:
           type: ["string", "null"]
+        couponCode:
+          type: ["string", "null"]
+          description: Per-event coupon code (admin only)
         createdAt:
           type: string
           format: date-time
@@ -865,6 +868,8 @@ components:
           type: boolean
         stripePriceId:
           type: ["string", "null"]
+        couponCode:
+          type: ["string", "null"]
 
     EventUpdate:
       type: object
@@ -901,6 +906,8 @@ components:
         published:
           type: boolean
         stripePriceId:
+          type: ["string", "null"]
+        couponCode:
           type: ["string", "null"]
 
     Registration:
@@ -972,6 +979,19 @@ components:
           type: integer
           minimum: 1
           default: 1
+        seatingPreference:
+          type: ["string", "null"]
+        jokersPreference:
+          nullable: true
+          type: string
+          enum: [yes, no, open]
+        skillLevel:
+          nullable: true
+          type: string
+          enum: [learn, learning, intermediate, advanced]
+        couponCode:
+          type: ["string", "null"]
+          description: Optional coupon code for a free registration
 
     CheckoutSessionResponse:
       type: object

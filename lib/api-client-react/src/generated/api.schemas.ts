@@ -79,6 +79,11 @@ export interface Event {
   published: boolean;
   /** @nullable */
   stripePriceId?: string | null;
+  /**
+     * Per-event coupon code (admin only)
+     * @nullable
+     */
+  couponCode?: string | null;
   createdAt: string;
 }
 
@@ -105,6 +110,8 @@ export interface EventInput {
   published?: boolean;
   /** @nullable */
   stripePriceId?: string | null;
+  /** @nullable */
+  couponCode?: string | null;
 }
 
 export interface EventUpdate {
@@ -130,6 +137,8 @@ export interface EventUpdate {
   published?: boolean;
   /** @nullable */
   stripePriceId?: string | null;
+  /** @nullable */
+  couponCode?: string | null;
 }
 
 export type RegistrationStatus = typeof RegistrationStatus[keyof typeof RegistrationStatus];
@@ -167,6 +176,25 @@ export interface RegistrationWithEvent {
   event: Event;
 }
 
+export type CheckoutSessionInputJokersPreference = typeof CheckoutSessionInputJokersPreference[keyof typeof CheckoutSessionInputJokersPreference] | null;
+
+
+export const CheckoutSessionInputJokersPreference = {
+  yes: 'yes',
+  no: 'no',
+  open: 'open',
+} as const;
+
+export type CheckoutSessionInputSkillLevel = typeof CheckoutSessionInputSkillLevel[keyof typeof CheckoutSessionInputSkillLevel] | null;
+
+
+export const CheckoutSessionInputSkillLevel = {
+  learn: 'learn',
+  learning: 'learning',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
 export interface CheckoutSessionInput {
   eventId: number;
   /** @minLength 1 */
@@ -178,6 +206,15 @@ export interface CheckoutSessionInput {
   phone?: string | null;
   /** @minimum 1 */
   quantity: number;
+  /** @nullable */
+  seatingPreference?: string | null;
+  jokersPreference?: CheckoutSessionInputJokersPreference;
+  skillLevel?: CheckoutSessionInputSkillLevel;
+  /**
+     * Optional coupon code for a free registration
+     * @nullable
+     */
+  couponCode?: string | null;
 }
 
 export interface CheckoutSessionResponse {

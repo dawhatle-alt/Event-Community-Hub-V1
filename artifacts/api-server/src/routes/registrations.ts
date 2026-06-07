@@ -91,7 +91,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel } = parsed.data;
+  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode } = parsed.data;
   const userId = req.isAuthenticated() ? req.user.id : null;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId));
@@ -107,14 +107,22 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const totalAmount = Number(event.price) * quantity;
+  // Coupon code validation: if code provided but doesn't match, reject immediately
+  const couponApplied = !!(couponCode && event.couponCode &&
+    event.couponCode.trim().toUpperCase() === couponCode.trim().toUpperCase());
+  if (couponCode && !couponApplied) {
+    res.status(400).json({ error: "Invalid coupon code." });
+    return;
+  }
 
-  const baseUrl = process.env.REPLIT_DOMAINS
-    ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-    : "http://localhost";
+  const effectivePrice = couponApplied ? 0 : Number(event.price);
+  const totalAmount = effectivePrice * quantity;
 
-  // Free events: skip Square entirely, confirm immediately
-  if (Number(event.price) === 0) {
+  const baseUrl = process.env.WEBHOOK_BASE_URL ||
+    (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "http://localhost");
+
+  // Free events or valid coupon: skip Square entirely, confirm immediately
+  if (effectivePrice === 0) {
     const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const [freeReg] = await db.insert(registrationsTable).values({
       eventId,

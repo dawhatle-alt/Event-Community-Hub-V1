@@ -29,4 +29,6 @@ export interface EventUpdate {
   published?: boolean;
   /** @nullable */
   stripePriceId?: string | null;
+  /** @nullable */
+  couponCode?: string | null;
 }

@@ -33,5 +33,10 @@ export interface Event {
   published: boolean;
   /** @nullable */
   stripePriceId?: string | null;
+  /**
+     * Per-event coupon code (admin only)
+     * @nullable
+     */
+  couponCode?: string | null;
   createdAt: Date;
 }
