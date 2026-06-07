@@ -15,7 +15,9 @@ app.post(
   express.text({ type: "application/json" }),
   async (req, res): Promise<void> => {
     const signature = req.headers["x-square-hmacsha256-signature"] as string | undefined;
-    const notificationUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}/api/square/webhook`;
+    const notificationUrl = process.env.WEBHOOK_BASE_URL
+      ? `${process.env.WEBHOOK_BASE_URL}/api/square/webhook`
+      : `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}/api/square/webhook`;
 
     try {
       const { WebhookHandlers } = await import("./lib/webhookHandlers");
