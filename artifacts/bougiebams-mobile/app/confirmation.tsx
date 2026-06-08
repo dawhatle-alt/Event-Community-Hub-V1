@@ -104,7 +104,7 @@ export default function ConfirmationScreen() {
       <ImageBackground
         source={zebraBanner}
         style={[styles.bannerHeader, { paddingTop: topPad + 24 }]}
-        imageStyle={{ resizeMode: "cover" }}
+        imageStyle={{ resizeMode: "cover", transform: [{ translateX: -80 }] }}
       >
         <View style={styles.bannerOverlay} />
         {isLoading && (

@@ -232,6 +232,7 @@ const styles = StyleSheet.create({
   },
   headerBannerImage: {
     resizeMode: "cover",
+    transform: [{ translateX: -80 }],
   },
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,

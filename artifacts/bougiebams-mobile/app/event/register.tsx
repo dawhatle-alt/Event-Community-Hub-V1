@@ -153,7 +153,7 @@ export default function RegisterScreen() {
       <ImageBackground
         source={zebraBanner}
         style={[styles.header, { paddingTop: topPad + 12, borderBottomColor: colors.border }]}
-        imageStyle={{ resizeMode: "cover" }}
+        imageStyle={{ resizeMode: "cover", transform: [{ translateX: -80 }] }}
       >
         <View style={styles.headerOverlay} />
         <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>

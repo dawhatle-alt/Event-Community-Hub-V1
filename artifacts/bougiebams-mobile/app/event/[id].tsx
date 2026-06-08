@@ -90,6 +90,7 @@ export default function EventDetailScreen() {
                 source={require("@/assets/bougie-zebra-banner.png")}
                 style={styles.heroImage}
                 contentFit="cover"
+                contentPosition={{ left: "70%" }}
               />
             ) : (
               <Image
