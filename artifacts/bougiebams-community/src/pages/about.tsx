@@ -152,7 +152,7 @@ export default function About() {
             <div className="relative flex flex-col gap-3">
               <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
                 <img
-                  src="/patsy-mahj-bash.jpg"
+                  src="/patsy-atx-tournament.jpg"
                   alt="Patsy Miller — Founder & CEO of Bougie Bams"
                   className="w-full h-full object-cover object-top"
                 />
@@ -160,8 +160,8 @@ export default function About() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="aspect-square rounded-xl overflow-hidden shadow-md">
                   <img
-                    src="/patsy-atx-tournament.jpg"
-                    alt="Patsy at the ATX Mahjong Tournament"
+                    src="/patsy-mahj-bash.jpg"
+                    alt="Patsy at a Bougie Bams Mahj Bash"
                     className="w-full h-full object-cover object-top"
                   />
                 </div>

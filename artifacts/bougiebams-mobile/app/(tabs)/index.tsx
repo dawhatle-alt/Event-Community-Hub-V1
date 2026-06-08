@@ -173,7 +173,7 @@ export default function HomeScreen() {
         {/* Main photo */}
         <View style={styles.founderPhotoMain}>
           <Image
-            source={require("../../assets/patsy-mahj-bash.jpg")}
+            source={require("../../assets/patsy-atx-tournament.jpg")}
             style={styles.founderPhotoMainImg}
             resizeMode="cover"
           />
@@ -183,7 +183,7 @@ export default function HomeScreen() {
         <View style={styles.founderPhotoRow}>
           <View style={styles.founderPhotoThumb}>
             <Image
-              source={require("../../assets/patsy-atx-tournament.jpg")}
+              source={require("../../assets/patsy-mahj-bash.jpg")}
               style={styles.founderPhotoThumbImg}
               resizeMode="cover"
             />
