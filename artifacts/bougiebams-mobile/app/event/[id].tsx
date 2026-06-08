@@ -28,6 +28,18 @@ export default function EventDetailScreen() {
 
   const { data: event, isLoading, error } = useGetEvent(Number(id));
 
+  const openCalendar = () => {
+    if (!event) return;
+    const fmtCalDate = (d: Date) =>
+      d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const start = fmtCalDate(new Date(event.date));
+    const end = event.endDate
+      ? fmtCalDate(new Date(event.endDate))
+      : fmtCalDate(new Date(new Date(event.date).getTime() + 2 * 3600000));
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&location=${encodeURIComponent(event.address || event.location)}`;
+    Linking.openURL(url);
+  };
+
   const handleShare = async () => {
     if (!event) return;
     const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
@@ -186,6 +198,16 @@ export default function EventDetailScreen() {
               <Feather name="map-pin" size={14} color={colors.primary} />
               <Text style={[styles.pillText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
                 {event.location}
+              </Text>
+              <Feather name="external-link" size={11} color={colors.primary} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.pill, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.7 : 1 }]}
+              onPress={openCalendar}
+            >
+              <Feather name="calendar" size={14} color={colors.primary} />
+              <Text style={[styles.pillText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+                Add to Calendar
               </Text>
               <Feather name="external-link" size={11} color={colors.primary} />
             </Pressable>

@@ -44,6 +44,37 @@ export default function EventDetail() {
   );
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
 
+  const fmtCalDate = (d: Date) =>
+    d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+  const googleCalUrl = () => {
+    const start = fmtCalDate(new Date(event!.date));
+    const end = event!.endDate
+      ? fmtCalDate(new Date(event!.endDate))
+      : fmtCalDate(new Date(new Date(event!.date).getTime() + 2 * 3600000));
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event!.title)}&dates=${start}/${end}&details=${encodeURIComponent(event!.description || "")}&location=${encodeURIComponent(event!.address || event!.location)}`;
+  };
+
+  const downloadIcs = () => {
+    const start = fmtCalDate(new Date(event!.date));
+    const end = event!.endDate
+      ? fmtCalDate(new Date(event!.endDate))
+      : fmtCalDate(new Date(new Date(event!.date).getTime() + 2 * 3600000));
+    const ics = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//BougieBams//Events//EN",
+      "BEGIN:VEVENT",
+      `DTSTART:${start}`, `DTEND:${end}`,
+      `SUMMARY:${event!.title}`,
+      `DESCRIPTION:${(event!.description || "").replace(/\n/g, "\\n")}`,
+      `LOCATION:${event!.address || event!.location}`,
+      "END:VEVENT", "END:VCALENDAR",
+    ].join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    a.download = `${event!.title.replace(/[^a-z0-9]/gi, "-")}.ics`;
+    a.click();
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     const text = `Join me at ${event?.title}! ${url}`;
@@ -169,6 +200,23 @@ export default function EventDetail() {
                   <div>
                     <div className="font-medium text-foreground">{formatDateCT(event.date)}</div>
                     <div className="text-sm">{formatTimeRangeCT(event.date, event.endDate)}</div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <a
+                        href={googleCalUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        + Google Calendar
+                      </a>
+                      <span className="text-border">·</span>
+                      <button
+                        onClick={downloadIcs}
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        + Apple / .ics
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <a
