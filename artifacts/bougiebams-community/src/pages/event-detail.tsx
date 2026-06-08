@@ -183,15 +183,6 @@ export default function EventDetail() {
                 <Button className="w-full h-14 text-lg rounded-xl" disabled>
                   Sold Out
                 </Button>
-              ) : !isAuthenticated ? (
-                <div className="space-y-4 text-center py-2">
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    You need an account to reserve your spot. It only takes a moment.
-                  </p>
-                  <Button className="w-full h-14 text-lg rounded-xl" onClick={login}>
-                    Sign in to Register
-                  </Button>
-                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {isAuthenticated && user && !prefillNoteDismissed && (

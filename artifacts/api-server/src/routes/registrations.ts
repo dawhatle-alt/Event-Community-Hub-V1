@@ -117,11 +117,6 @@ router.post("/registrations/checkout", async (req, res): Promise<void> => {
 });
 
 async function checkoutHandler(req: any, res: any): Promise<void> {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "You must be signed in to register for an event." });
-    return;
-  }
-
   const parsed = CreateCheckoutSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -129,7 +124,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   }
 
   const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode } = parsed.data;
-  const userId = req.user.id;
+  const userId = req.isAuthenticated() ? req.user.id : null;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId));
   if (!event) {
