@@ -91,7 +91,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               );
             })}
 
-            {!isLoading && isAuthenticated ? (
+            {!isLoading && isAuthenticated && (
               <div className="ml-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -123,17 +123,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            ) : !isLoading ? (
-              <Button
-                size="sm"
-                className="ml-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 shadow-sm"
-                onClick={login}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Join Us
-              </Button>
-            ) : (
-              <div className="ml-4 h-9 w-9 rounded-full bg-muted animate-pulse" />
             )}
           </nav>
 
@@ -161,7 +150,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/events" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Events</Link>
                 <Link href="/about" className="text-lg font-medium p-2 hover:bg-muted rounded-md">About</Link>
                 <Link href="/contact" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Contact</Link>
-                {isAuthenticated ? (
+                {isAuthenticated && (
                   <>
                     <Link href="/my-events" className="text-lg font-medium p-2 hover:bg-muted rounded-md flex items-center gap-2">
                       <CalendarDays className="h-5 w-5" />
@@ -175,14 +164,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       Log out
                     </button>
                   </>
-                ) : (
-                  <button
-                    onClick={login}
-                    className="text-lg font-medium p-2 hover:bg-muted rounded-md flex items-center gap-2 text-left"
-                  >
-                    <LogIn className="h-5 w-5" />
-                    Log in / Join Us
-                  </button>
                 )}
               </nav>
             </motion.div>
