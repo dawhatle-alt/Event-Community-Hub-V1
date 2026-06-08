@@ -133,7 +133,7 @@ router.get("/waitlist/unsubscribe", async (req, res) => {
 <div style="background:#C9A227;height:6px;border-radius:6px 6px 0 0;margin:-48px -40px 40px"></div>
 <p style="font-size:13px;letter-spacing:3px;color:#9B8060;text-transform:uppercase;margin:0 0 16px">Bougie Bams</p>
 <h1 style="font-size:24px;color:#181D37;font-weight:normal;margin:0 0 12px">You've been removed</h1>
-<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0">You've been removed from the waitlist${event ? ` for <strong style="color:#374151">${event.title}</strong>` : ""}. We hope to see you at a future event!</p>
+<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0">You've been removed from the waitlist${event ? ` for <strong style="color:#374151">${event.title}</strong>` : ""}. You'll still hear from us about future Bougie Bams events — we hope to see you soon!</p>
 </div></body></html>`);
 });
 

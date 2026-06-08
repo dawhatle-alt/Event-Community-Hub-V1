@@ -670,7 +670,7 @@ function buildWaitlistConfirmationHtml(opts: WaitlistConfirmationOptions): strin
     </td></tr>
   </table>
   <p style="margin:0;font-size:13px;color:#9ca3af;font-family:Arial,sans-serif">Keep an eye on your inbox — we'll reach out as soon as a seat becomes available.</p>
-  ${unsubscribeUrl ? `<p style="margin:20px 0 0;font-size:11px;color:#d1d5db;font-family:Arial,sans-serif">Changed your mind? <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline">Remove me from the waitlist</a></p>` : ""}
+  ${unsubscribeUrl ? `<p style="margin:20px 0 0;font-size:11px;color:#d1d5db;font-family:Arial,sans-serif">Changed your mind? <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline">Remove me from this event's waitlist</a></p>` : ""}
 </td></tr>
 <tr><td style="background:#C9A227;padding:6px 0"></td></tr>
 </table></td></tr></table></body></html>`;
