@@ -17,6 +17,7 @@ export const registrationsTable = pgTable("registrations", {
   squarePaymentId: text("square_payment_id"),
   status: text("status").notNull().default("pending"),
   confirmationEmailSent: boolean("confirmation_email_sent").notNull().default(false),
+  cancellationEmailSent: boolean("cancellation_email_sent").notNull().default(false),
   feedbackToken: text("feedback_token").unique(),
   feedbackSentAt: timestamp("feedback_sent_at", { withTimezone: true }),
   seatingPreference: text("seating_preference"),

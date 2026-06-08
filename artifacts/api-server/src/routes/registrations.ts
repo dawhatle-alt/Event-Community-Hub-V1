@@ -647,13 +647,19 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1),
     db.select().from(eventsTable).where(eq(eventsTable.id, result.eventId)).limit(1),
   ]).then(([[reg], [event]]) => {
-    if (reg && event) {
+    if (reg && event && !reg.cancellationEmailSent) {
       sendCancellationConfirmation({
         to: reg.email,
         firstName: reg.firstName,
         eventTitle: event.title,
         eventDate: event.date,
         quantity: result.quantity,
+      }).then((sent) => {
+        if (sent) {
+          return db.update(registrationsTable)
+            .set({ cancellationEmailSent: true })
+            .where(and(eq(registrationsTable.id, id), eq(registrationsTable.cancellationEmailSent, false)));
+        }
       }).catch(() => {});
     }
   }).catch(() => {});
