@@ -49,9 +49,11 @@ export default function Home() {
                     <Link href="/events">Explore Events</Link>
                   </Button>
                 </AnimatedGradientBorder>
-                <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
-                  <Link href="/about">Our Story</Link>
-                </Button>
+                <AnimatedGradientBorder className="inline-block">
+                  <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
+                    <Link href="/about">Our Story</Link>
+                  </Button>
+                </AnimatedGradientBorder>
               </div>
             </div>
 
@@ -78,9 +80,11 @@ export default function Home() {
               <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
                 Choose from over <strong className="font-semibold text-primary">40 premium mats, tile sets, and racks</strong> to create a setup that's completely your own. Every detail is yours to customize — from the feel of the tiles to the look of the table — for an experience that's as unique as you are.
               </p>
-              <Button size="lg" variant="outline" className="rounded-xl border-background/30 text-background hover:bg-background/10 h-12 px-8" asChild>
-                <Link href="/events">Browse Upcoming Events</Link>
-              </Button>
+              <AnimatedGradientBorder className="inline-block">
+                <Button size="lg" variant="outline" className="rounded-xl border-background/30 text-background hover:bg-background/10 h-12 px-8" asChild>
+                  <Link href="/events">Browse Upcoming Events</Link>
+                </Button>
+              </AnimatedGradientBorder>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
