@@ -292,6 +292,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     },
     checkoutOptions: {
       redirectUrl: `${baseUrl}/events/confirmation?sessionId=pending`,
+      cancelUrl: `${baseUrl}/`,
       askForShippingAddress: false,
     },
     prePopulatedData: {
