@@ -1,7 +1,7 @@
 import { db, eventsTable, registrationsTable, pushTokensTable } from "@workspace/db";
 import { eq, and, gte, lt, inArray, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import { sendFeedbackSurvey } from "./email";
+import { sendFeedbackSurvey, sendReminderEmail } from "./email";
 import { randomUUID } from "crypto";
 import { logger } from "./logger";
 
@@ -262,6 +262,92 @@ export async function sendPostEventFeedbackSurveys(): Promise<number> {
   return totalSent;
 }
 
+/**
+ * Find all events happening roughly 48 hours from now (between 40h and 56h away)
+ * and send a reminder email to every paid registrant who hasn't received one yet.
+ *
+ * Returns the number of emails sent.
+ */
+export async function send48HourReminders(): Promise<number> {
+  const now = new Date();
+
+  // Window: events starting between 40 and 56 hours from now
+  const windowStart = new Date(now.getTime() + 40 * 60 * 60 * 1000);
+  const windowEnd   = new Date(now.getTime() + 56 * 60 * 60 * 1000);
+
+  logger.info(
+    { windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString() },
+    "Checking for events needing 48-hour reminder emails"
+  );
+
+  const upcomingEvents = await db
+    .select()
+    .from(eventsTable)
+    .where(
+      and(
+        eq(eventsTable.published, true),
+        gte(eventsTable.date, windowStart),
+        lt(eventsTable.date, windowEnd)
+      )
+    );
+
+  if (upcomingEvents.length === 0) {
+    logger.info("No events in the 48-hour reminder window — skipping");
+    return 0;
+  }
+
+  const eventIds = upcomingEvents.map((e) => e.id);
+
+  // Only paid registrants who haven't received a reminder yet
+  const regs = await db
+    .select()
+    .from(registrationsTable)
+    .where(
+      and(
+        inArray(registrationsTable.eventId, eventIds),
+        eq(registrationsTable.status, "paid"),
+        isNull(registrationsTable.reminderSentAt)
+      )
+    );
+
+  if (regs.length === 0) {
+    logger.info("No unsent reminders for upcoming events");
+    return 0;
+  }
+
+  const eventById = new Map(upcomingEvents.map((e) => [e.id, e]));
+  let totalSent = 0;
+
+  for (const reg of regs) {
+    const event = eventById.get(reg.eventId);
+    if (!event) continue;
+
+    const ok = await sendReminderEmail({
+      to: reg.email,
+      firstName: reg.firstName,
+      eventTitle: event.title,
+      eventDate: new Date(event.date),
+      eventEndDate: event.endDate ? new Date(event.endDate) : null,
+      eventLocation: event.location,
+      eventAddress: event.address,
+      quantity: reg.quantity,
+    });
+
+    if (ok) {
+      await db
+        .update(registrationsTable)
+        .set({ reminderSentAt: new Date() })
+        .where(eq(registrationsTable.id, reg.id));
+      totalSent++;
+    } else {
+      logger.warn({ regId: reg.id, eventId: event.id }, "48-hour reminder: failed to send email");
+    }
+  }
+
+  logger.info({ totalSent, total: regs.length }, "48-hour reminder emails complete");
+  return totalSent;
+}
+
 // --- Lightweight daily scheduler ---
 // Runs the job once per day around 9:00 AM UTC.
 // Uses a simple interval-based approach to avoid adding a cron dependency.
@@ -280,6 +366,10 @@ function schedulerTick(): void {
     logger.info("Scheduler: triggering day-before push reminders");
     sendDayBeforeReminders().catch((err) => {
       logger.error({ err }, "Scheduler: error sending day-before reminders");
+    });
+    logger.info("Scheduler: triggering 48-hour email reminders");
+    send48HourReminders().catch((err) => {
+      logger.error({ err }, "Scheduler: error sending 48-hour email reminders");
     });
     logger.info("Scheduler: triggering post-event feedback surveys");
     sendPostEventFeedbackSurveys().catch((err) => {

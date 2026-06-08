@@ -20,6 +20,7 @@ export const registrationsTable = pgTable("registrations", {
   cancellationEmailSent: boolean("cancellation_email_sent").notNull().default(false),
   feedbackToken: text("feedback_token").unique(),
   feedbackSentAt: timestamp("feedback_sent_at", { withTimezone: true }),
+  reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
   seatingPreference: text("seating_preference"),
   jokersPreference: text("jokers_preference"),
   skillLevel: text("skill_level"),

@@ -872,3 +872,175 @@ export async function sendRegistrationConfirmation(opts: ConfirmationEmailOption
     return false;
   }
 }
+
+// ── 48-hour reminder email ────────────────────────────────────────────────────
+
+export interface ReminderEmailOptions {
+  to: string;
+  firstName: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventEndDate?: Date | null;
+  eventLocation: string;
+  eventAddress?: string | null;
+  quantity: number;
+}
+
+function buildReminderHtml(opts: ReminderEmailOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  const locationBlock = eventAddress
+    ? `${eventLocation}<br><span style="color:#6b7280">${eventAddress}</span>`
+    : eventLocation;
+  const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
+
+  const gcalTitle = encodeURIComponent(eventTitle);
+  const gcalLocation = encodeURIComponent(eventAddress ? `${eventLocation}, ${eventAddress}` : eventLocation);
+  const gcalDetails = encodeURIComponent(`You're registered for ${eventTitle}!`);
+  const gcalStart = toIcsDate(eventDate);
+  const gcalEnd = eventEndDate
+    ? toIcsDate(eventEndDate)
+    : toIcsDate(new Date(eventDate.getTime() + 2 * 60 * 60 * 1000));
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}&location=${gcalLocation}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your event is in 2 days!</title>
+</head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:#181D37;padding:32px 40px;text-align:center;">
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.08em;color:#C9A227;text-transform:uppercase;">Bougie Bams</p>
+              <h1 style="margin:8px 0 0;font-size:26px;font-weight:700;color:#ffffff;">Your event is in 2 days! ✨</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 24px;font-size:16px;color:#374151;">Hi <strong>${firstName}</strong>,</p>
+              <p style="margin:0 0 28px;font-size:16px;color:#374151;line-height:1.6;">
+                Just a friendly reminder — <strong>${eventTitle}</strong> is coming up in two days. We're so excited to see you there!
+              </p>
+
+              <!-- Event details card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:24px 28px;">
+                    <h2 style="margin:0 0 20px;font-size:18px;font-weight:700;color:#181D37;">${eventTitle}</h2>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">📅</span></td>
+                        <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;">${dateStr}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">🕐</span></td>
+                        <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;">${timeStr}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">📍</span></td>
+                        <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;line-height:1.5;">${locationBlock}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">🎟️</span></td>
+                        <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;">${ticketLine}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Add to Calendar -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#C9A227;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:8px;">
+                      Add to Google Calendar
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0 24px;"/>
+              <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                Questions? Reply to this email and we'll be happy to help. See you soon! 🥂
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} Bougie Bams. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildReminderText(opts: ReminderEmailOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  const locationLine = eventAddress ? `${eventLocation}, ${eventAddress}` : eventLocation;
+  const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
+
+  return [
+    `Hi ${firstName},`,
+    "",
+    `Just a friendly reminder — ${eventTitle} is coming up in two days!`,
+    "",
+    "EVENT DETAILS",
+    "-------------",
+    `Event:    ${eventTitle}`,
+    `Date:     ${dateStr}`,
+    `Time:     ${timeStr}`,
+    `Location: ${locationLine}`,
+    `Tickets:  ${ticketLine}`,
+    "",
+    "We're so excited to see you there! Questions? Reply to this email.",
+    "",
+    "– The Bougie Bams Team 🥂",
+  ].join("\n");
+}
+
+export async function sendReminderEmail(opts: ReminderEmailOptions): Promise<boolean> {
+  const fromAddress = "Bougie Bams <events@bougiebams.com>";
+  try {
+    const connectors = new ReplitConnectors();
+    const payload = {
+      from: fromAddress,
+      to: [opts.to],
+      subject: `Reminder: ${opts.eventTitle} is in 2 days! ✨`,
+      html: buildReminderHtml(opts),
+      text: buildReminderText(opts),
+    };
+    const response = await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      logger.warn({ status: response.status, body }, "Resend reminder email delivery failed");
+      return false;
+    }
+    logger.info({ to: opts.to, event: opts.eventTitle }, "48-hour reminder email sent");
+    return true;
+  } catch (err) {
+    logger.warn({ err }, "Could not send 48-hour reminder email");
+    return false;
+  }
+}
