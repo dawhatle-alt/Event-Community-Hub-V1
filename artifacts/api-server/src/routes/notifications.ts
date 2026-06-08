@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db, pushTokensTable } from "@workspace/db";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
-import { sendDayBeforeReminders } from "../lib/pushScheduler";
+import { sendDayBeforeReminders, send48HourReminders } from "../lib/pushScheduler";
 
 const router: IRouter = Router();
 
@@ -64,7 +64,7 @@ router.delete("/notifications/push-token", async (req, res): Promise<void> => {
   }
 });
 
-// Admin-only: manually trigger day-before reminders (for testing / backfill)
+// Admin-only: manually trigger day-before push reminders (for testing / backfill)
 router.post("/notifications/send-reminders", requireAdminAuth, async (_req, res): Promise<void> => {
   try {
     const count = await sendDayBeforeReminders();
@@ -72,6 +72,17 @@ router.post("/notifications/send-reminders", requireAdminAuth, async (_req, res)
   } catch (err) {
     logger.error({ err }, "Failed to send reminders");
     res.status(500).json({ error: "Failed to send reminders" });
+  }
+});
+
+// Admin-only: manually trigger 48-hour email reminders (for testing / re-sending to new registrants)
+router.post("/notifications/send-48h-reminders", requireAdminAuth, async (_req, res): Promise<void> => {
+  try {
+    const count = await send48HourReminders();
+    res.json({ success: true, emailsSent: count });
+  } catch (err) {
+    logger.error({ err }, "Failed to send 48-hour reminder emails");
+    res.status(500).json({ error: "Failed to send 48-hour reminder emails" });
   }
 });
 
