@@ -45,7 +45,7 @@ export function HeroShuffleGrid({ className }: { className?: string }) {
           key={tile.id}
           layout
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-          className="aspect-[4/5] relative overflow-hidden rounded-2xl shadow-md"
+          className="aspect-[4/5] relative overflow-hidden rounded-2xl shadow-md border-2 border-primary/60"
         >
           <img src={tile.src} alt={tile.label} className="w-full h-full object-cover" />
         </motion.div>
