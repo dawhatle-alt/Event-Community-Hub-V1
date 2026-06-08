@@ -60,20 +60,20 @@ export default function Home() {
         </div>
       </SpotlightBackground>
 
-      {/* Custom Table Setup Section */}
+      {/* Style-Your-Own Table Section */}
       <section className="w-full py-24 bg-foreground text-background">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <div className="inline-flex items-center gap-2 text-primary text-sm font-medium uppercase tracking-widest mb-6">
                 <LayoutGrid className="w-4 h-4" />
-                Build Your Table
+                A Signature Event
               </div>
               <h2 className="font-serif text-4xl md:text-5xl font-medium leading-tight mb-6">
-                Your table, <span className="text-primary italic">your way.</span>
+                Style-Your-Own <span className="text-primary italic">Table Night.</span>
               </h2>
               <p className="text-lg font-light opacity-90 leading-relaxed mb-8">
-                Choose from over <strong className="font-semibold text-primary">40 premium mats, tile sets, and racks</strong> to create a setup that's completely your own. Every detail is yours to customize — from the feel of the tiles to the look of the table — for an experience that's as unique as you are.
+                One of our most-loved event formats — guests choose from over <strong className="font-semibold text-primary">40 premium mats, tile sets, and racks</strong> to build a setup that's completely their own. It's part game night, part art project, and entirely bougie. We host a rotating lineup of experiences, so there's always something new to discover.
               </p>
               <AnimatedGradientBorder className="inline-block">
                 <Button size="lg" className="rounded-xl bg-[#181D37] text-[#FAF8F5] hover:bg-[#181D37]/90 font-medium h-14 px-8 text-base" asChild>
@@ -83,15 +83,13 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: "🀄", label: "40+ Tile Sets", desc: "Hand-selected premium sets" },
-                { icon: "🎨", label: "Premium Mats", desc: "Luxurious playing surfaces" },
-                { icon: "🏮", label: "Styled Racks", desc: "Matching rack collections" },
-                { icon: "✨", label: "Full Curation", desc: "Every detail considered" },
-              ].map((item) => (
-                <div key={item.label} className="bg-background/10 rounded-2xl p-6 border border-background/10 hover:bg-background/15 transition-colors">
-                  <div className="text-3xl mb-3">{item.icon}</div>
-                  <div className="font-serif text-lg font-medium mb-1">{item.label}</div>
-                  <div className="text-sm opacity-70 font-light">{item.desc}</div>
+                `${import.meta.env.BASE_URL}bb-new-1.jpg`,
+                `${import.meta.env.BASE_URL}bb-new-3.jpg`,
+                `${import.meta.env.BASE_URL}bb-new-5.jpg`,
+                `${import.meta.env.BASE_URL}bb-new-6.jpg`,
+              ].map((src, i) => (
+                <div key={i} className="aspect-square rounded-2xl overflow-hidden border border-background/10">
+                  <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                 </div>
               ))}
             </div>
