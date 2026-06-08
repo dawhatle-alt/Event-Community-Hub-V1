@@ -8,7 +8,8 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
-import { sendRegistrationConfirmation, sendCancellationConfirmation, sendCancelLinksEmail } from "../lib/email";
+import { sendRegistrationConfirmation, sendCancellationConfirmation, sendCancelLinksEmail, sendWaitlistNotification } from "../lib/email";
+import { waitlistTable } from "@workspace/db";
 import { finalizePayment } from "../lib/finalizePayment";
 import { createHmac, timingSafeEqual } from "crypto";
 
@@ -52,6 +53,47 @@ function verifyCancelToken(token: string, registrationId: number, email: string)
   }
 }
 const router: IRouter = Router();
+
+/**
+ * After a spot is freed up, notify the first un-notified waitlist entry for the event.
+ * Non-blocking — never throws.
+ */
+async function notifyWaitlistOnSpotAvailable(eventId: number): Promise<void> {
+  try {
+    const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
+    if (!event) return;
+    const [entry] = await db
+      .select()
+      .from(waitlistTable)
+      .where(and(eq(waitlistTable.eventId, eventId), eq(waitlistTable.notified, false)))
+      .orderBy(sql`${waitlistTable.createdAt} ASC`)
+      .limit(1);
+    if (!entry) return;
+
+    const domain = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : "https://bougiebams.com";
+    const eventUrl = `${domain}/events/${eventId}`;
+
+    const sent = await sendWaitlistNotification({
+      to: entry.email,
+      firstName: entry.firstName,
+      eventTitle: event.title,
+      eventDate: new Date(event.date),
+      eventEndDate: event.endDate ? new Date(event.endDate) : null,
+      eventLocation: event.location,
+      eventAddress: event.address ?? null,
+      eventUrl,
+    });
+
+    if (sent) {
+      await db.update(waitlistTable).set({ notified: true }).where(eq(waitlistTable.id, entry.id));
+      logger.info({ waitlistId: entry.id, email: entry.email, eventId }, "Waitlist notification sent");
+    }
+  } catch (err) {
+    logger.warn({ err, eventId }, "Could not send waitlist notification");
+  }
+}
 
 // Authenticated user: list their own registrations with event details
 router.get("/registrations/my", async (req, res): Promise<void> => {
@@ -631,6 +673,9 @@ router.post("/registrations/:id/cancel-by-token", async (req, res): Promise<void
     }).catch(() => {});
   }
 
+  // Notify next waitlisted person that a spot opened (non-blocking)
+  notifyWaitlistOnSpotAvailable(result.eventId).catch(() => {});
+
   res.json({ success: true, refundStatus });
 });
 
@@ -771,6 +816,9 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     }
   }
 
+  // Notify next waitlisted person that a spot opened (non-blocking)
+  notifyWaitlistOnSpotAvailable(result.eventId).catch(() => {});
+
   res.json({ success: true, refundStatus });
 });
 
@@ -861,6 +909,9 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
       logger.error({ err, registrationId: id, paymentId: result.squarePaymentId }, "Square refund failed on admin cancel");
     }
   }
+
+  // Notify next waitlisted person that a spot opened (non-blocking)
+  notifyWaitlistOnSpotAvailable(result.eventId).catch(() => {});
 
   res.json({ success: true, refundStatus });
 });

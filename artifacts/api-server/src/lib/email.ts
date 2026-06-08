@@ -633,6 +633,103 @@ export async function sendCancellationConfirmation(opts: CancellationEmailOption
   }
 }
 
+export interface WaitlistNotificationOptions {
+  to: string;
+  firstName: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventEndDate?: Date | null;
+  eventLocation: string;
+  eventAddress?: string | null;
+  eventUrl: string;
+}
+
+function buildWaitlistHtml(opts: WaitlistNotificationOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, eventUrl } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  const locationBlock = eventAddress
+    ? `${eventLocation}<br><span style="color:#6b7280">${eventAddress}</span>`
+    : eventLocation;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f9f6f1;font-family:Georgia,serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+<tr><td style="background:#C9A227;padding:6px 0"></td></tr>
+<tr><td style="padding:40px 40px 32px;text-align:center">
+  <p style="margin:0 0 8px;font-size:13px;letter-spacing:3px;color:#9B8060;text-transform:uppercase">Bougie Bams</p>
+  <h1 style="margin:0 0 24px;font-size:26px;color:#181D37;font-weight:normal">A Spot Just Opened Up!</h1>
+  <p style="margin:0 0 24px;font-size:16px;color:#374151;line-height:1.6">Hi ${firstName},<br><br>
+  Good news — a spot has opened up for <strong>${eventTitle}</strong> and you're next on the waitlist.
+  Register now before it fills up again!</p>
+  <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;background:#f9f6f1;border-radius:12px;width:100%">
+    <tr><td style="padding:20px 24px">
+      <p style="margin:0 0 8px;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">📅 ${dateStr}</p>
+      <p style="margin:0 0 8px;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">🕐 ${timeStr}</p>
+      <p style="margin:0;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">📍 ${locationBlock}</p>
+    </td></tr>
+  </table>
+  <a href="${eventUrl}" style="display:inline-block;background:#C9A227;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:50px;font-size:16px;font-family:Arial,sans-serif;font-weight:600">Claim Your Spot</a>
+  <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;font-family:Arial,sans-serif">Spots are first-come, first-served. This notification was sent to you because you joined the waitlist.</p>
+</td></tr>
+<tr><td style="background:#C9A227;padding:6px 0"></td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+function buildWaitlistText(opts: WaitlistNotificationOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, eventUrl } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  return [
+    `Hi ${firstName},`,
+    "",
+    `Good news — a spot has opened up for ${eventTitle} and you're next on the waitlist.`,
+    "",
+    `Date: ${dateStr}`,
+    `Time: ${timeStr}`,
+    `Location: ${eventLocation}${eventAddress ? `, ${eventAddress}` : ""}`,
+    "",
+    `Register now: ${eventUrl}`,
+    "",
+    "Spots are first-come, first-served.",
+    "— Bougie Bams",
+  ].join("\n");
+}
+
+/**
+ * Send a waitlist spot-available notification email via Resend.
+ * Returns true on success, false on any error — never throws.
+ */
+export async function sendWaitlistNotification(opts: WaitlistNotificationOptions): Promise<boolean> {
+  try {
+    const connectors = new ReplitConnectors();
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
+    const payload = {
+      from: fromAddress,
+      to: [opts.to],
+      subject: `A spot opened up for ${opts.eventTitle} — claim it now!`,
+      html: buildWaitlistHtml(opts),
+      text: buildWaitlistText(opts),
+    };
+    const response = await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      logger.warn({ status: response.status, body }, "Resend waitlist notification failed");
+      return false;
+    }
+    logger.info({ to: opts.to, event: opts.eventTitle }, "Waitlist notification email sent");
+    return true;
+  } catch (err) {
+    logger.warn({ err }, "Could not send waitlist notification email");
+    return false;
+  }
+}
+
 /**
  * Send a registration confirmation email via Resend.
  * Returns true only when Resend confirms delivery (2xx response).
