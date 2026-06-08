@@ -115,7 +115,7 @@ export default function Events() {
     <div className="w-full">
       <section className="relative text-background py-20 px-4 overflow-hidden"  style={{ minHeight: "360px" }}>
         <img
-          src="/bougie-zebra-banner.png"
+          src={`${import.meta.env.BASE_URL}bougie-zebra-banner.png`}
           alt="Bougie Zebra — Events banner"
           className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
         />

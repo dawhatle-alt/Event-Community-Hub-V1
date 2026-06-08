@@ -116,7 +116,7 @@ export default function EventDetail() {
       <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
         {(() => {
           const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo") || event.imageUrl.toLowerCase().endsWith(".svg");
-          const src = isLogo ? "/bougie-zebra-banner.png" : event.imageUrl!;
+          const src = isLogo ? `${import.meta.env.BASE_URL}bougie-zebra-banner.png` : event.imageUrl!;
           return (
             <img
               src={src}
