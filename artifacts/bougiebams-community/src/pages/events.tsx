@@ -117,18 +117,20 @@ export default function Events() {
         <img
           src="/bougie-zebra-banner.png"
           alt="Bougie Zebra — Events banner"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
         />
         <div className="absolute inset-0 bg-foreground/40" />
-        <div className="container mx-auto max-w-5xl text-center relative z-10">
-          <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
-          <p className="text-lg md:text-xl text-muted font-light max-w-2xl mx-auto">
-            Life's too short for ordinary. Let's make mahjong bougie — bam!
-          </p>
-          <p className="mt-6 text-sm text-white/60 italic max-w-xl mx-auto border-l-2 border-[#C9A227]/60 pl-4 text-left">
-            "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
-            <span className="block mt-1 not-italic text-white/40 text-xs">— Patsy Miller, Founder & CEO</span>
-          </p>
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <div className="max-w-xl">
+            <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
+            <p className="text-lg md:text-xl text-muted font-light">
+              Life's too short for ordinary. Let's make mahjong bougie — bam!
+            </p>
+            <p className="mt-6 text-sm text-white/60 italic border-l-2 border-[#C9A227]/60 pl-4">
+              "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+              <span className="block mt-1 not-italic text-white/40 text-xs">— Patsy Miller, Founder & CEO</span>
+            </p>
+          </div>
         </div>
       </section>
 
