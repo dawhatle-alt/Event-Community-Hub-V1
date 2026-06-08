@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, format } from "date-fns";
 import { formatDateShortCT, formatTimeCT, formatDateTimeCT } from "@/lib/dateUtils";
 import { Calendar, Users, MapPin, Search, LayoutGrid, LayoutList, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { useListEvents, useListEventCategories } from "@workspace/api-client-react";
+import { useListEvents } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -92,14 +92,11 @@ function CalendarView({ events }: { events: Event[] }) {
 }
 
 export default function Events() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showUpcomingOnly, setShowUpcomingOnly] = useState(true);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  const { data: categories } = useListEventCategories();
   const { data: events, isLoading } = useListEvents({
-    ...(selectedCategory ? { category: selectedCategory } : {}),
     ...(showUpcomingOnly ? { upcoming: true } : {}),
   });
 
@@ -146,26 +143,6 @@ export default function Events() {
 
           {/* Filters + view toggle */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                onClick={() => setSelectedCategory(null)}
-                className="rounded-full"
-              >
-                All Experiences
-              </Button>
-              {categories?.map((cat) => (
-                <Button
-                  key={cat}
-                  variant={selectedCategory === cat ? "default" : "outline"}
-                  onClick={() => setSelectedCategory(cat)}
-                  className="rounded-full"
-                >
-                  {cat}
-                </Button>
-              ))}
-            </div>
-
             <div className="flex items-center gap-2">
               <Button
                 variant={showUpcomingOnly ? "default" : "outline"}
