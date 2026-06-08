@@ -125,6 +125,10 @@ export default function Events() {
           <p className="text-lg md:text-xl text-muted font-light max-w-2xl mx-auto">
             Life's too short for ordinary. Let's make mahjong bougie — bam!
           </p>
+          <p className="mt-6 text-sm text-white/60 italic max-w-xl mx-auto border-l-2 border-[#C9A227]/60 pl-4 text-left">
+            "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+            <span className="block mt-1 not-italic text-white/40 text-xs">— Patsy Miller, Founder & CEO</span>
+          </p>
         </div>
       </section>
 

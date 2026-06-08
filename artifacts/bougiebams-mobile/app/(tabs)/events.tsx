@@ -68,6 +68,14 @@ export default function EventsScreen() {
         <Text style={[styles.headerTagline, { color: colors.mutedForeground }]}>
           Life's too short for ordinary. Let's make mahjong bougie — bam!
         </Text>
+        <View style={[styles.founderQuote, { borderLeftColor: "#C9A227" }]}>
+          <Text style={[styles.founderQuoteText, { color: colors.mutedForeground }]}>
+            "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+          </Text>
+          <Text style={[styles.founderAttribution, { color: colors.mutedForeground }]}>
+            — Patsy Miller, Founder &amp; CEO
+          </Text>
+        </View>
 
         {/* Search */}
         <View
@@ -229,6 +237,21 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 2,
     marginBottom: 4,
+  },
+  founderQuote: {
+    borderLeftWidth: 2,
+    paddingLeft: 10,
+    marginTop: 4,
+  },
+  founderQuoteText: {
+    fontSize: 11,
+    fontStyle: "italic",
+    lineHeight: 17,
+  },
+  founderAttribution: {
+    fontSize: 10,
+    marginTop: 3,
+    opacity: 0.7,
   },
   searchContainer: {
     flexDirection: "row",
