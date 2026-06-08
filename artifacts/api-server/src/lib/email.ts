@@ -1,6 +1,37 @@
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { logger } from "./logger";
 
+function toIcsDate(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function buildIcs(opts: ConfirmationEmailOptions): string {
+  const dtstart = toIcsDate(opts.eventDate);
+  const dtend = opts.eventEndDate
+    ? toIcsDate(opts.eventEndDate)
+    : toIcsDate(new Date(opts.eventDate.getTime() + 2 * 60 * 60 * 1000));
+  const location = opts.eventAddress
+    ? `${opts.eventLocation}, ${opts.eventAddress}`
+    : opts.eventLocation;
+  const uid = `${opts.eventDate.getTime()}-${opts.to.replace(/[^a-z0-9]/gi, "")}@bougiebams.com`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Bougie Bams//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `DTSTART:${dtstart}`,
+    `DTEND:${dtend}`,
+    `SUMMARY:${opts.eventTitle}`,
+    `LOCATION:${location}`,
+    `DESCRIPTION:You're registered for ${opts.eventTitle}!`,
+    `UID:${uid}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
 export interface ConfirmationEmailOptions {
   to: string;
   firstName: string;
@@ -579,12 +610,22 @@ export async function sendRegistrationConfirmation(opts: ConfirmationEmailOption
 
     const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
 
+    const icsContent = buildIcs(opts);
+    const icsBase64 = Buffer.from(icsContent).toString("base64");
+
     const payload = {
       from: fromAddress,
       to: [opts.to],
       subject: `You're registered for ${opts.eventTitle}!`,
       html: buildHtml(opts),
       text: buildText(opts),
+      attachments: [
+        {
+          filename: "event.ics",
+          content: icsBase64,
+          content_type: "text/calendar; method=PUBLISH",
+        },
+      ],
     };
 
     const response = await connectors.proxy("resend", "/emails", {
