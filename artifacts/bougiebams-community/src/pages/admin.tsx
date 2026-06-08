@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -215,6 +215,15 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
                   <span className="text-muted-foreground truncate">{r.email}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <StatusBadge status={r.status} />
+                    {(r as any).reminderSentAt ? (
+                      <span title={`Reminder sent ${new Date((r as any).reminderSentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}>
+                        <Bell className="w-3 h-3 text-primary/60" />
+                      </span>
+                    ) : r.status === "paid" ? (
+                      <span title="No reminder sent yet">
+                        <Bell className="w-3 h-3 text-muted-foreground/30" />
+                      </span>
+                    ) : null}
                     {r.status === "cancelled" ? (
                       <button
                         onClick={() => handleReinstate(r.id)}
@@ -663,6 +672,30 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
   const [formData, setFormData] = useState(BLANK_FORM);
   const [uploading, setUploading] = useState(false);
   const [capacityEdits, setCapacityEdits] = useState<Record<number, { open: boolean; value: string }>>({});
+  const [reminderSending, setReminderSending] = useState(false);
+  const [reminderResult, setReminderResult] = useState<{ sent: number; ts: Date } | null>(null);
+
+  const handleSendReminders = async () => {
+    if (!confirm("Send 48-hour reminder emails to all paid attendees of upcoming events who haven't received one yet? This is idempotent — already-reminded attendees are skipped.")) return;
+    setReminderSending(true);
+    try {
+      const res = await fetch("/api/notifications/send-48h-reminders", {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      const body = await res.json();
+      if (res.ok) {
+        setReminderResult({ sent: body.emailsSent, ts: new Date() });
+        toast({ title: body.emailsSent === 0 ? "No new reminders to send" : `Sent ${body.emailsSent} reminder email${body.emailsSent !== 1 ? "s" : ""}`, description: body.emailsSent === 0 ? "All upcoming attendees have already been reminded." : undefined });
+      } else {
+        toast({ title: "Failed to send reminders", description: body.error ?? "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setReminderSending(false);
+    }
+  };
 
   const handleCapacityUpdate = async (event: { id: number; capacity: number; spotsRemaining?: number | null }) => {
     const raw = capacityEdits[event.id]?.value ?? "";
@@ -960,6 +993,30 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
+              <h3 className="font-serif text-xl font-medium mb-4">Quick Actions</h3>
+              <div className="flex flex-wrap gap-3 items-center">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 rounded-xl"
+                  onClick={handleSendReminders}
+                  disabled={reminderSending}
+                >
+                  <BellRing className="w-4 h-4" />
+                  {reminderSending ? "Sending…" : "Send 48h Reminders"}
+                </Button>
+                {reminderResult && (
+                  <span className="text-sm text-muted-foreground">
+                    Last run {format(reminderResult.ts, "h:mm a")} — {reminderResult.sent === 0 ? "no new reminders" : `${reminderResult.sent} email${reminderResult.sent !== 1 ? "s" : ""} sent`}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Emails paid attendees of events starting within 48 hours who haven't been reminded yet. Safe to run multiple times — duplicates are skipped.
+              </p>
             </div>
 
             <HeroTilesSection adminPassword={adminPassword} />
