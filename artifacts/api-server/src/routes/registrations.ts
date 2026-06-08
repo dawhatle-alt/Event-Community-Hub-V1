@@ -327,6 +327,64 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   res.json({ url: paymentLink.url, sessionId: paymentLink.orderId });
 }
 
+router.post("/registrations/pay", async (req, res): Promise<void> => {
+  const { sessionId, sourceId } = req.body as { sessionId?: string; sourceId?: string };
+  if (!sessionId || !sourceId) {
+    res.status(400).json({ error: "sessionId and sourceId are required" });
+    return;
+  }
+
+  const [registration] = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.stripeSessionId, sessionId))
+    .limit(1);
+
+  if (!registration) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  if (registration.status === "paid") {
+    res.json({ sessionId, alreadyPaid: true });
+    return;
+  }
+  if (registration.status !== "pending") {
+    res.status(400).json({ error: "Registration is not in a payable state" });
+    return;
+  }
+
+  const { getSquareClient, getSquareLocationId } = await import("../lib/squareClient");
+  const square = getSquareClient();
+  const locationId = getSquareLocationId();
+
+  const amountCents = BigInt(Math.round(Number(registration.totalAmount) * 100));
+  const idempotencyKey = `pay_${registration.id}_${Date.now()}`;
+
+  const paymentResponse = await square.payments.create({
+    idempotencyKey,
+    sourceId,
+    amountMoney: { amount: amountCents, currency: "USD" },
+    locationId,
+    buyerEmailAddress: registration.email,
+  });
+
+  const payment = paymentResponse.payment;
+  if (!payment || payment.status !== "COMPLETED") {
+    const errorDetail = (paymentResponse as any)?.errors?.[0]?.detail ?? "Payment was not completed";
+    res.status(402).json({ error: errorDetail });
+    return;
+  }
+
+  const finalized = await finalizePayment(sessionId, payment.id ?? null);
+  if (!finalized) {
+    res.status(409).json({ error: "This event is now sold out. Your card was not charged." });
+    return;
+  }
+
+  logger.info({ registrationId: registration.id, paymentId: payment.id }, "Web Payments SDK payment completed");
+  res.json({ sessionId, paymentId: payment.id });
+});
+
 router.get("/registrations/confirmation", async (req, res): Promise<void> => {
   const query = GetRegistrationBySessionQueryParams.safeParse(req.query);
   if (!query.success) {

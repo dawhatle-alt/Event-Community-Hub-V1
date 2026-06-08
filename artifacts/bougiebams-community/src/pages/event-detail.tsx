@@ -22,7 +22,7 @@ export default function EventDetail() {
 
   const createCheckout = useCreateCheckoutSession();
   const { user, isAuthenticated, login } = useAuth();
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutData, setCheckoutData] = useState<{ sessionId: string } | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -100,7 +100,7 @@ export default function EventDetail() {
       },
       {
         onSuccess: (data) => {
-          setCheckoutUrl(data.url);
+          setCheckoutData({ sessionId: data.sessionId });
         }
       }
     );
@@ -170,11 +170,11 @@ export default function EventDetail() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-28 bg-card p-8 rounded-3xl shadow-lg border border-primary/20">
-              {checkoutUrl ? (
+              {checkoutData ? (
                 <div className="space-y-6">
                   <div>
                     <h2 className="font-serif text-2xl font-medium mb-1">Review your order</h2>
-                    <p className="text-sm text-muted-foreground">You're about to be taken to Square to complete your payment securely.</p>
+                    <p className="text-sm text-muted-foreground">Check the details below then enter your card to complete payment.</p>
                   </div>
                   <div className="bg-muted/50 rounded-2xl p-4 space-y-3 text-sm">
                     <div className="flex justify-between items-start">
@@ -196,14 +196,22 @@ export default function EventDetail() {
                   </div>
                   <Button
                     className="w-full h-14 text-lg rounded-xl"
-                    onClick={() => { window.location.href = checkoutUrl; }}
+                    onClick={() => {
+                      const total = (Number(event.price) * formData.quantity).toFixed(2);
+                      const params = new URLSearchParams({
+                        sessionId: checkoutData.sessionId,
+                        eventTitle: event.title,
+                        total,
+                      });
+                      setLocation(`/events/pay?${params.toString()}`);
+                    }}
                   >
-                    Proceed to Payment
+                    Enter Payment Details
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full h-12 rounded-xl"
-                    onClick={() => setCheckoutUrl(null)}
+                    onClick={() => setCheckoutData(null)}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Go Back

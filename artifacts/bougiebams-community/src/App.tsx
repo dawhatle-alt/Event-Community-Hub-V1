@@ -15,6 +15,7 @@ import Admin from "@/pages/admin";
 import MyEvents from "@/pages/my-events";
 import Feedback from "@/pages/feedback";
 import CancelRegistration from "@/pages/cancel";
+import Pay from "@/pages/pay";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/events" component={Events} />
         <Route path="/events/confirmation" component={Confirmation} />
+        <Route path="/events/pay" component={Pay} />
         <Route path="/events/:id" component={EventDetail} />
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />

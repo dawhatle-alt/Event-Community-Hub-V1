@@ -48,3 +48,4 @@ channel = "stable-25_05"
 [userenv.shared]
 SQUARE_ENVIRONMENT = "production"
 WEBHOOK_BASE_URL = "https://bougiebams.com"
+SQUARE_APPLICATION_ID = "sq0idp-3MghE7nNhYa-fBQZBK_ZSg"
