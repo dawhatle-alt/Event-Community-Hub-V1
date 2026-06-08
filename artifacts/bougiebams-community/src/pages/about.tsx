@@ -1,25 +1,7 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import mahjongTiles from "/mahjong-tiles.jpeg";
-import mahjongTable from "/mahjong-table.jpeg";
-
-const venuePhotos = [
-  "/event-boss-moves.jpeg",
-  "/event-rose.jpeg",
-  "/mahjong-table.jpeg",
-  "/mahjong-tiles.jpeg",
-  "/event-spa.jpeg",
-];
 
 export default function About() {
-  const [photoIndex, setPhotoIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPhotoIndex((i) => (i + 1) % venuePhotos.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="w-full bg-background">
@@ -65,74 +47,6 @@ export default function About() {
               </div>
               <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-primary/20 blur-3xl -z-10"></div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-foreground text-background">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid md:grid-cols-3 gap-12 text-center">
-            <div>
-              <h3 className="font-serif text-3xl mb-4 text-primary">Intimacy</h3>
-              <p className="font-light opacity-80">Our gatherings are kept small by design, ensuring real conversations and meaningful connections around the table.</p>
-            </div>
-            <div>
-              <h3 className="font-serif text-3xl mb-4 text-primary">Customization</h3>
-              <p className="font-light opacity-80">Over 40 premium mats, tile sets, and racks to choose from — build a table setup that's uniquely yours.</p>
-            </div>
-            <div>
-              <h3 className="font-serif text-3xl mb-4 text-primary">Community</h3>
-              <p className="font-light opacity-80">A warm, welcoming environment open to everyone — arrive solo, leave with new friends and a love for the game.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="relative overflow-hidden"
-      >
-        <div className="aspect-[21/9] w-full">
-          <img
-            src={mahjongTable}
-            alt="Bougie Bams custom mahjong table setup"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center text-background">
-            <p className="font-serif text-2xl md:text-3xl italic">Where every table tells a story.</p>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Venue photo slideshow — kept as a standalone visual break */}
-      <section className="py-14 bg-background">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="relative aspect-[4/3] md:aspect-[16/7] rounded-2xl overflow-hidden shadow-lg">
-            <AnimatePresence mode="crossfade">
-              <motion.img
-                key={venuePhotos[photoIndex]}
-                src={venuePhotos[photoIndex]}
-                alt="Bougie Bams venue"
-                className="absolute inset-0 w-full h-full object-cover"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
-              />
-            </AnimatePresence>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {venuePhotos.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPhotoIndex(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === photoIndex ? "bg-white w-4" : "bg-white/50"}`}
-                />
-              ))}
-            </div>
           </div>
         </div>
       </section>
