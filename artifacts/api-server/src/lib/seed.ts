@@ -1,5 +1,5 @@
 import { db, eventsTable } from "@workspace/db";
-import { count } from "drizzle-orm";
+import { count, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
 const SEED_EVENTS = [
@@ -112,6 +112,23 @@ const SEED_EVENTS = [
     stripePriceId: null,
   },
 ];
+
+/**
+ * Idempotent data fixups — correct known-bad values introduced before schema migrations.
+ * Each fix is a targeted UPDATE with a WHERE clause so it is safe to run on every startup.
+ */
+export async function applyDataFixups(): Promise<void> {
+  try {
+    // Fix: event-style-table.svg was the placeholder for the "Style-Your-Own" event.
+    // Replace it with the real mat-rack photo so the event banner displays correctly.
+    await db
+      .update(eventsTable)
+      .set({ imageUrl: "mats-rack-2.jpg" })
+      .where(sql`${eventsTable.imageUrl} = '/event-style-table.svg'`);
+  } catch (err) {
+    logger.error({ err }, "Data fixup failed — continuing startup");
+  }
+}
 
 export async function seedIfEmpty(): Promise<void> {
   try {

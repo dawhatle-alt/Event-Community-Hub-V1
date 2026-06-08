@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedIfEmpty } from "./lib/seed";
+import { seedIfEmpty, applyDataFixups } from "./lib/seed";
 import { recalculateAllSpots } from "./lib/recalculateSpots";
 import { startPushReminderScheduler } from "./lib/pushScheduler";
 
@@ -25,6 +25,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  applyDataFixups();
   recalculateAllSpots();
   seedIfEmpty();
   startPushReminderScheduler();
