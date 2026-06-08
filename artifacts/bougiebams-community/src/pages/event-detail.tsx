@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { formatDateCT, formatTimeCT, formatDateShortCT } from "@/lib/dateUtils";
+import { formatDateCT, formatTimeRangeCT, formatDateShortCT } from "@/lib/dateUtils";
 import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, X } from "lucide-react";
 import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -143,7 +143,7 @@ export default function EventDetail() {
                   <Calendar className="w-5 h-5 text-primary" />
                   <div>
                     <div className="font-medium text-foreground">{formatDateCT(event.date)}</div>
-                    <div className="text-sm">{formatTimeCT(event.date)} CT</div>
+                    <div className="text-sm">{formatTimeRangeCT(event.date, event.endDate)}</div>
                   </div>
                 </div>
                 <a

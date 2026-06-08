@@ -45,3 +45,9 @@ export function formatDateTimeCT(date: Date | string): string {
 export function formatDateTimeFullCT(date: Date | string): string {
   return `${formatDateFullCT(date)} · ${formatTimeCT(date)}`;
 }
+
+export function formatTimeRangeCT(start: Date | string, end?: Date | string | null): string {
+  const startStr = formatTimeCT(start);
+  if (!end) return `${startStr} CT`;
+  return `${startStr} – ${formatTimeCT(end)} CT`;
+}
