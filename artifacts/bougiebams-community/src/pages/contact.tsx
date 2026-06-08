@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Instagram, MapPin } from "lucide-react";
+import { Mail, Instagram, Facebook, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contact() {
@@ -59,17 +59,27 @@ export default function Contact() {
 
             <div className="mt-12">
               <h4 className="font-serif text-xl mb-4">Follow Us</h4>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-3">
                 <a
                   href="https://instagram.com/bougiebams"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Follow @bougiebams on Instagram"
-                  className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-primary hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/10 text-sm hover:bg-primary hover:text-foreground transition-colors"
                 >
-                  <Instagram className="w-5 h-5" />
+                  <Instagram className="w-4 h-4" />
+                  @bougiebams
                 </a>
-                <span className="self-center text-sm text-background/60 font-light">@bougiebams</span>
+                <a
+                  href="https://facebook.com/bougiebams"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow @bougiebams on Facebook"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/10 text-sm hover:bg-primary hover:text-foreground transition-colors"
+                >
+                  <Facebook className="w-4 h-4" />
+                  @bougiebams
+                </a>
               </div>
             </div>
           </div>

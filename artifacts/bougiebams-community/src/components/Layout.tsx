@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import logoPath from "@assets/Bougie_Bams_NEW_logo_-_white_1780941860680.png";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogIn, LogOut, CalendarDays } from "lucide-react";
+import { Menu, X, LogIn, LogOut, CalendarDays, Instagram, Facebook } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -190,9 +190,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
             <img src="/bougiebams-logo-transparent.png" alt="BougieBams" className="h-32 w-auto mb-6" />
-            <p className="text-muted text-sm leading-relaxed max-w-sm">
+            <p className="text-muted text-sm leading-relaxed max-w-sm mb-6">
               A luxury, intimate mahjong community for everyone. Curated gatherings, rich connections, and elevated experiences.
             </p>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://instagram.com/bougiebams"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow on Instagram"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 text-sm text-primary hover:bg-primary hover:text-foreground transition-colors"
+              >
+                <Instagram className="w-4 h-4" />
+                @bougiebams
+              </a>
+              <a
+                href="https://facebook.com/bougiebams"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow on Facebook"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 text-sm text-primary hover:bg-primary hover:text-foreground transition-colors"
+              >
+                <Facebook className="w-4 h-4" />
+                @bougiebams
+              </a>
+            </div>
           </div>
           <div>
             <h4 className="font-serif text-lg mb-4 text-primary">Explore</h4>
@@ -208,7 +230,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-3 text-sm text-muted">
               <li><a href="https://instagram.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram · @bougiebams</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">TikTok</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Facebook</a></li>
+              <li><a href="https://facebook.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Facebook · @bougiebams</a></li>
             </ul>
           </div>
         </div>
