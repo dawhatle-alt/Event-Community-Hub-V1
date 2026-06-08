@@ -141,7 +141,15 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
         toast({ title: "Failed to remove", description: err.error ?? "Unknown error", variant: "destructive" });
         return;
       }
-      toast({ title: "Registration cancelled" });
+      const data = await res.json().catch(() => ({}));
+      const refundStatus: string = data.refundStatus ?? "no_payment";
+      if (refundStatus === "refunded") {
+        toast({ title: "Registration cancelled & refunded", description: "A full refund was issued to the attendee via Square." });
+      } else if (refundStatus === "failed") {
+        toast({ title: "Registration cancelled — refund failed", description: "The registration was cancelled but the Square refund could not be processed. Please issue it manually in Square.", variant: "destructive" });
+      } else {
+        toast({ title: "Registration cancelled", description: "No charge had been made, so no refund was needed." });
+      }
       queryClient.invalidateQueries({ queryKey });
     } catch {
       toast({ title: "Network error", variant: "destructive" });

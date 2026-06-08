@@ -453,17 +453,19 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
   type TxResult =
     | { outcome: "not_found" }
     | { outcome: "already_cancelled" }
-    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number };
+    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number; squarePaymentId: string | null; totalAmount: string };
 
   const result = await db.transaction(async (tx): Promise<TxResult> => {
     const locked = await tx.execute(
-      sql`SELECT id, status, quantity, event_id FROM registrations WHERE id = ${id} FOR UPDATE`
+      sql`SELECT id, status, quantity, event_id, square_payment_id, total_amount FROM registrations WHERE id = ${id} FOR UPDATE`
     );
     const reg = (locked.rows?.[0] ?? null) as {
       id: number;
       status: string;
       quantity: number;
       event_id: number;
+      square_payment_id: string | null;
+      total_amount: string;
     } | null;
 
     if (!reg) return { outcome: "not_found" };
@@ -479,6 +481,8 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
       prevStatus: reg.status,
       quantity: Number(reg.quantity),
       eventId: Number(reg.event_id),
+      squarePaymentId: reg.square_payment_id,
+      totalAmount: reg.total_amount,
     };
   });
 
@@ -504,7 +508,29 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
     })
     .where(eq(eventsTable.id, result.eventId));
 
-  res.json({ success: true });
+  // Issue a Square refund if the registration was paid and has a payment ID.
+  // Pending registrations were never charged, so no refund is needed for them.
+  let refundStatus: "refunded" | "no_payment" | "failed" = "no_payment";
+  if (result.prevStatus === "paid" && result.squarePaymentId) {
+    try {
+      const { getSquareClient } = await import("../lib/squareClient");
+      const square = getSquareClient();
+      const amountCents = BigInt(Math.round(Number(result.totalAmount) * 100));
+      await square.refunds.refundPayment({
+        idempotencyKey: `cancel-reg-${id}-${Date.now()}`,
+        amountMoney: { amount: amountCents, currency: "USD" },
+        paymentId: result.squarePaymentId,
+        reason: "Registration cancelled by admin",
+      });
+      refundStatus = "refunded";
+      logger.info({ registrationId: id, paymentId: result.squarePaymentId, amountCents: amountCents.toString() }, "Square refund issued on admin cancel");
+    } catch (err) {
+      refundStatus = "failed";
+      logger.error({ err, registrationId: id, paymentId: result.squarePaymentId }, "Square refund failed on admin cancel");
+    }
+  }
+
+  res.json({ success: true, refundStatus });
 });
 
 // Admin-only: reinstate a cancelled registration

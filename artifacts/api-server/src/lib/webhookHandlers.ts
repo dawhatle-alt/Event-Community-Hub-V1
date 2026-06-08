@@ -52,11 +52,13 @@ export class WebhookHandlers {
       const orderId: string = payment.order_id;
       const status: string = payment.status;
 
+      const paymentId: string = payment.id;
+
       if (status === "COMPLETED" && orderId) {
         // Only transition pending → paid; never reactivate a cancelled registration
         const updated = await db
           .update(registrationsTable)
-          .set({ status: "paid" })
+          .set({ status: "paid", squarePaymentId: paymentId || null })
           .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
           .returning();
 
@@ -112,10 +114,24 @@ export class WebhookHandlers {
       const orderId: string | undefined = event.data?.object?.checkout?.order_id;
       if (!orderId) return;
 
+      // Try to resolve the Square payment ID from the order's tenders for future refunds
+      let resolvedPaymentId: string | null = null;
+      try {
+        const { getSquareClient } = await import("./squareClient");
+        const square = getSquareClient();
+        const orderResp = await square.orders.get({ orderId });
+        const tenders = (orderResp.order as any)?.tenders;
+        if (Array.isArray(tenders) && tenders.length > 0) {
+          resolvedPaymentId = tenders[0].id ?? null;
+        }
+      } catch (err) {
+        logger.warn({ err, orderId }, "Could not resolve Square payment ID from order tenders");
+      }
+
       // Only transition pending → paid; never reactivate a cancelled registration
       const updated = await db
         .update(registrationsTable)
-        .set({ status: "paid" })
+        .set({ status: "paid", squarePaymentId: resolvedPaymentId })
         .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
         .returning();
 
