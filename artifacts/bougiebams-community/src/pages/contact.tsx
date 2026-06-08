@@ -60,9 +60,16 @@ export default function Contact() {
             <div className="mt-12">
               <h4 className="font-serif text-xl mb-4">Follow Us</h4>
               <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-primary hover:text-foreground transition-colors">
+                <a
+                  href="https://instagram.com/bougiebams"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow @bougiebams on Instagram"
+                  className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-primary hover:text-foreground transition-colors"
+                >
                   <Instagram className="w-5 h-5" />
                 </a>
+                <span className="self-center text-sm text-background/60 font-light">@bougiebams</span>
               </div>
             </div>
           </div>

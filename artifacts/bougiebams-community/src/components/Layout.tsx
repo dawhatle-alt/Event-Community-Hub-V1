@@ -206,7 +206,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div>
             <h4 className="font-serif text-lg mb-4 text-primary">Connect</h4>
             <ul className="space-y-3 text-sm text-muted">
-              <li><a href="#" className="hover:text-primary transition-colors">Instagram</a></li>
+              <li><a href="https://instagram.com/bougiebams" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram · @bougiebams</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">TikTok</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Facebook</a></li>
             </ul>
