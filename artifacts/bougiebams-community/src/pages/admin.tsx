@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -102,12 +102,41 @@ function StatusBadge({ status }: { status: string }) {
   return <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-yellow-100 text-yellow-700">{status}</span>;
 }
 
-function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
+function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventId: number; eventTitle: string; adminHeaders: Record<string, string> }) {
   const [open, setOpen] = useState(false);
   const [reinstating, setReinstating] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const handleExportCSV = () => {
+    if (!regs?.length) return;
+    const headers = ["First Name", "Last Name", "Email", "Phone", "Qty", "Total ($)", "Status", "Seating", "Jokers", "Skill Level", "Registered At", "Reminder Sent"];
+    const rows = regs.map(r => [
+      r.firstName,
+      r.lastName,
+      r.email,
+      (r as any).phone ?? "",
+      String(r.quantity),
+      String(r.totalAmount ?? "0"),
+      r.status,
+      (r as any).seatingPreference ?? "",
+      (r as any).jokersPreference ?? "",
+      (r as any).skillLevel ?? "",
+      r.createdAt ? new Date(r.createdAt).toLocaleString() : "",
+      (r as any).reminderSentAt ? new Date((r as any).reminderSentAt).toLocaleString() : "",
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${eventTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-registrations.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const queryKey = ["event-registrations", eventId];
   const { data: regs, isLoading } = useListEventRegistrations(eventId, {
@@ -182,20 +211,32 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
 
   return (
     <div className="border-t border-border mt-2 pt-2">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
-      >
-        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        Registrations
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+        >
+          {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          Registrations
+          {regs && regs.length > 0 && (
+            <span className="ml-1 flex gap-1">
+              {counts.paid > 0 && <span className="bg-green-100 text-green-700 rounded px-1">{counts.paid} paid</span>}
+              {counts.pending > 0 && <span className="bg-yellow-100 text-yellow-700 rounded px-1">{counts.pending} pending</span>}
+              {counts.cancelled > 0 && <span className="bg-red-100 text-red-600 rounded px-1">{counts.cancelled} cancelled</span>}
+            </span>
+          )}
+        </button>
         {regs && regs.length > 0 && (
-          <span className="ml-1 flex gap-1">
-            {counts.paid > 0 && <span className="bg-green-100 text-green-700 rounded px-1">{counts.paid} paid</span>}
-            {counts.pending > 0 && <span className="bg-yellow-100 text-yellow-700 rounded px-1">{counts.pending} pending</span>}
-            {counts.cancelled > 0 && <span className="bg-red-100 text-red-600 rounded px-1">{counts.cancelled} cancelled</span>}
-          </span>
+          <button
+            onClick={handleExportCSV}
+            title="Export attendee list as CSV"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Download className="w-3 h-3" />
+            CSV
+          </button>
         )}
-      </button>
+      </div>
       {open && (
         <div className="mt-2 text-xs space-y-1">
           {isLoading ? (
@@ -1079,7 +1120,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                       </button>
                     )}
 
-                    <EventRegistrationsPanel eventId={event.id} adminHeaders={adminHeaders} />
+                    <EventRegistrationsPanel eventId={event.id} eventTitle={event.title} adminHeaders={adminHeaders} />
                     <WaitlistPanel eventId={event.id} adminHeaders={adminHeaders} />
                     <EventFeedbackPanel event={event} adminHeaders={adminHeaders} />
                   </div>
