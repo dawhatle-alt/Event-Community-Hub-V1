@@ -115,7 +115,7 @@ export default function Events() {
     <div className="w-full">
       <section className="relative text-background py-20 px-4 overflow-hidden">
         <img
-          src="/bougie-zebra.png"
+          src="/bougie-zebra-v2.png"
           alt="Bougie Zebra — Events banner"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
