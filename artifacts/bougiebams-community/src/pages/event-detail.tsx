@@ -113,18 +113,18 @@ export default function EventDetail() {
 
   return (
     <div className="w-full bg-background min-h-screen pb-24">
-      <div className="relative h-[40vh] min-h-[300px] w-full">
-        {event.imageUrl ? (
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #181D37 0%, #2a3160 50%, #1a1f3e 100%)" }}>
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 30% 60%, #C9A227 0%, transparent 50%), radial-gradient(circle at 75% 30%, #C9A227 0%, transparent 40%)" }} />
-          </div>
-        )}
+      <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
+        {(() => {
+          const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo");
+          const src = isLogo ? "/bougie-zebra-v2.png" : event.imageUrl!;
+          return (
+            <img
+              src={src}
+              alt={event.title}
+              className={`w-full h-full ${isLogo ? "object-contain object-center" : "object-cover"}`}
+            />
+          );
+        })()}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 
