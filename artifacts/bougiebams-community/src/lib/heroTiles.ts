@@ -8,20 +8,25 @@ export const LS_KEY = "bb_hero_tiles";
 export const TILES_UPDATED_EVENT = "bb-hero-tiles-updated";
 
 export const DEFAULT_TILES: TileConfig[] = [
-  { id: "brunch",   label: "Bougie Brunch",  src: "/mahjong-table.jpeg" },
-  { id: "wine",     label: "Wine Tastings",  src: "/event-boss-moves.jpeg" },
-  { id: "art",      label: "Arts & Culture", src: "/event-rose.jpeg" },
-  { id: "wellness", label: "Wellness",       src: "/event-spa.jpeg" },
-  { id: "connect",  label: "Connection",     src: "/mahjong-tiles.jpeg" },
+  { id: "tile1", label: "", src: "/bb-new-1.jpg" },
+  { id: "tile2", label: "", src: "/bb-new-2.jpg" },
+  { id: "tile3", label: "", src: "/bb-new-3.jpg" },
+  { id: "tile4", label: "", src: "/bb-new-4.jpg" },
+  { id: "tile5", label: "", src: "/bb-new-5.jpg" },
+  { id: "tile6", label: "", src: "/bb-new-6.jpg" },
 ];
 
 export const AVAILABLE_PHOTOS = [
+  { src: "/bb-new-1.jpg", label: "Pink & Ducks" },
+  { src: "/bb-new-2.jpg", label: "Dark Floral & Bees" },
+  { src: "/bb-new-3.jpg", label: "Flamingos & Tiger" },
+  { src: "/bb-new-4.jpg", label: "Dragons" },
+  { src: "/bb-new-5.jpg", label: "Dream Mat & Ducks" },
+  { src: "/bb-new-6.jpg", label: "Green Floral" },
   { src: "/event-boss-moves.jpeg", label: "Wine & Mahjong Night" },
   { src: "/event-rose.jpeg",       label: "Rose / Seahorse Mat" },
   { src: "/event-spa.jpeg",        label: "Wellness" },
   { src: "/event-book-club.jpeg",  label: "Book Club" },
-  { src: "/event-test.jpeg",       label: "Gatherings" },
-  { src: "/events-banner.jpeg",    label: "Events Banner" },
   { src: "/mahjong-table.jpeg",    label: "Mahjong Table" },
   { src: "/mahjong-tiles.jpeg",    label: "Mahjong Tiles" },
 ];
