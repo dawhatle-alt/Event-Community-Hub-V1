@@ -14,6 +14,7 @@ import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
 import MyEvents from "@/pages/my-events";
 import Feedback from "@/pages/feedback";
+import CancelRegistration from "@/pages/cancel";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/my-events" component={MyEvents} />
         <Route path="/feedback/:token" component={Feedback} />
+        <Route path="/cancel" component={CancelRegistration} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

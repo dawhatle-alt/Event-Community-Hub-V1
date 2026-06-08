@@ -362,6 +362,138 @@ function buildFeedbackText(opts: FeedbackSurveyEmailOptions): string {
   ].join("\n");
 }
 
+export interface CancelLinksEmailOptions {
+  to: string;
+  firstName: string;
+  registrations: Array<{
+    eventTitle: string;
+    eventDate: Date;
+    quantity: number;
+    totalAmount: number;
+    cancelUrl: string;
+  }>;
+}
+
+function buildCancelLinksHtml(opts: CancelLinksEmailOptions): string {
+  const { firstName, registrations } = opts;
+
+  const regRows = registrations.map(({ eventTitle, eventDate, quantity, totalAmount, cancelUrl }) => {
+    const dateStr = formatDate(eventDate);
+    const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
+    const amountLine = totalAmount > 0 ? ` · $${totalAmount.toFixed(2)}` : " · Free";
+    return `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:8px;margin-bottom:20px;">
+        <tr>
+          <td style="padding:20px 24px;">
+            <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:#1f2937;">${eventTitle}</h3>
+            <p style="margin:0 0 4px;font-size:14px;color:#6b7280;">📅 ${dateStr}</p>
+            <p style="margin:0 0 16px;font-size:14px;color:#6b7280;">🎟️ ${ticketLine}${amountLine}</p>
+            <a href="${cancelUrl}" style="display:inline-block;background:#dc2626;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:10px 24px;border-radius:6px;">
+              Cancel This Registration
+            </a>
+          </td>
+        </tr>
+      </table>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancel Your Registration</title>
+</head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:#181D37;padding:32px 40px;text-align:center;">
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.1em;color:#C9A227;text-transform:uppercase;">BougieBams</p>
+              <h1 style="margin:10px 0 0;font-size:26px;font-weight:700;color:#ffffff;">Cancel Your Registration</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 8px;font-size:16px;color:#374151;">Hi <strong>${firstName}</strong>,</p>
+              <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.6;">
+                We received a cancellation request for your email address. Click the button below for the registration you'd like to cancel. Each link is secure and expires in 7 days.
+              </p>
+              ${regRows}
+              <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;line-height:1.6;">
+                If you didn't request this, you can safely ignore this email. Your registrations will not be affected.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} BougieBams. All rights reserved.</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#d1d5db;">These links are unique to you and expire after 7 days.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildCancelLinksText(opts: CancelLinksEmailOptions): string {
+  const { firstName, registrations } = opts;
+  const lines = [
+    `Hi ${firstName},`,
+    "",
+    "We received a cancellation request for your email. Use the links below to cancel specific registrations.",
+    "Each link expires in 7 days.",
+    "",
+  ];
+  for (const { eventTitle, eventDate, quantity, totalAmount, cancelUrl } of registrations) {
+    const dateStr = formatDate(eventDate);
+    const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
+    const amountLine = totalAmount > 0 ? ` · $${totalAmount.toFixed(2)}` : "";
+    lines.push(`${eventTitle}`);
+    lines.push(`  ${dateStr} · ${ticketLine}${amountLine}`);
+    lines.push(`  Cancel: ${cancelUrl}`);
+    lines.push("");
+  }
+  lines.push("If you didn't request this, ignore this email — nothing will change.");
+  lines.push("");
+  lines.push("— The BougieBams Team");
+  return lines.join("\n");
+}
+
+/**
+ * Send an email with per-registration cancellation links.
+ * Returns true on success, false on failure — never throws.
+ */
+export async function sendCancelLinksEmail(opts: CancelLinksEmailOptions): Promise<boolean> {
+  try {
+    const connectors = new ReplitConnectors();
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "BougieBams <noreply@bougiebams.com>";
+    const response = await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [opts.to],
+        subject: "Your BougieBams cancellation links",
+        html: buildCancelLinksHtml(opts),
+        text: buildCancelLinksText(opts),
+      }),
+    });
+    if (!response.ok) {
+      logger.warn({ status: response.status }, "Cancel links email delivery failed");
+      return false;
+    }
+    logger.info({ to: opts.to, count: opts.registrations.length }, "Cancel links email sent");
+    return true;
+  } catch (err) {
+    logger.warn({ err }, "Could not send cancel links email");
+    return false;
+  }
+}
+
 /**
  * Send a post-event feedback survey email via Resend.
  * Returns true on success, false on failure — never throws.

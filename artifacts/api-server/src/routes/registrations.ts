@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, sum, sql, and } from "drizzle-orm";
+import { eq, count, sum, sql, and, gt, ne } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import {
   ListEventRegistrationsParams,
@@ -8,7 +8,39 @@ import {
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
-import { sendRegistrationConfirmation, sendCancellationConfirmation } from "../lib/email";
+import { sendRegistrationConfirmation, sendCancellationConfirmation, sendCancelLinksEmail } from "../lib/email";
+import { createHmac } from "crypto";
+
+const CANCEL_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function generateCancelToken(registrationId: number, email: string): string {
+  const secret = process.env.ADMIN_PASSWORD ?? "bougiebams-cancel-secret";
+  const expiry = Date.now() + CANCEL_TOKEN_TTL_MS;
+  const payload = `${registrationId}:${email.toLowerCase()}:${expiry}`;
+  const sig = createHmac("sha256", secret).update(payload).digest("hex");
+  return `${Buffer.from(payload).toString("base64url")}.${sig}`;
+}
+
+function verifyCancelToken(token: string, registrationId: number, email: string): boolean {
+  try {
+    const secret = process.env.ADMIN_PASSWORD ?? "bougiebams-cancel-secret";
+    const dotIdx = token.lastIndexOf(".");
+    if (dotIdx === -1) return false;
+    const payloadB64 = token.slice(0, dotIdx);
+    const sig = token.slice(dotIdx + 1);
+    const payload = Buffer.from(payloadB64, "base64url").toString();
+    const parts = payload.split(":");
+    if (parts.length !== 3) return false;
+    const [idStr, tokenEmail, expiryStr] = parts;
+    if (Number(idStr) !== registrationId) return false;
+    if (tokenEmail.toLowerCase() !== email.toLowerCase()) return false;
+    if (Date.now() > Number(expiryStr)) return false;
+    const expectedSig = createHmac("sha256", secret).update(payload).digest("hex");
+    return sig === expectedSig;
+  } catch {
+    return false;
+  }
+}
 const router: IRouter = Router();
 
 // Authenticated user: list their own registrations with event details
@@ -332,6 +364,189 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
     registration: { ...registration, totalAmount: Number(registration.totalAmount) },
     event: { ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null },
   });
+});
+
+// Guest: request cancellation links be sent to an email address
+router.post("/registrations/send-cancel-link", async (req, res): Promise<void> => {
+  const { email } = req.body ?? {};
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "email is required" });
+    return;
+  }
+
+  const baseUrl = process.env.WEBHOOK_BASE_URL ||
+    (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "http://localhost");
+
+  try {
+    // Find upcoming non-cancelled registrations for this email
+    const now = new Date();
+    const rows = await db
+      .select({ r: registrationsTable, e: eventsTable })
+      .from(registrationsTable)
+      .innerJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+      .where(
+        and(
+          eq(registrationsTable.email, email.toLowerCase()),
+          ne(registrationsTable.status, "cancelled"),
+          gt(eventsTable.date, now)
+        )
+      );
+
+    // Always respond 200 to avoid email enumeration
+    if (rows.length === 0) {
+      res.json({ sent: true });
+      return;
+    }
+
+    const firstName = rows[0].r.firstName;
+    const regs = rows.map(({ r, e }) => ({
+      eventTitle: e.title,
+      eventDate: new Date(e.date),
+      quantity: r.quantity,
+      totalAmount: Number(r.totalAmount),
+      cancelUrl: `${baseUrl}/cancel?reg=${r.id}&token=${generateCancelToken(r.id, email)}`,
+    }));
+
+    sendCancelLinksEmail({ to: email.toLowerCase(), firstName, registrations: regs }).catch(() => {});
+
+    res.json({ sent: true });
+  } catch (err) {
+    logger.error({ err }, "send-cancel-link error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Guest: fetch registration info for the cancel page (verifies HMAC token)
+router.get("/registrations/:id/cancel-info", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const token = String(req.query.token ?? "");
+  if (isNaN(id) || !token) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const row = await db
+    .select({ r: registrationsTable, e: eventsTable })
+    .from(registrationsTable)
+    .innerJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+    .where(eq(registrationsTable.id, id))
+    .limit(1)
+    .then((r) => r[0] ?? null);
+
+  if (!row) { res.status(404).json({ error: "Registration not found" }); return; }
+  if (!verifyCancelToken(token, id, row.r.email)) {
+    res.status(400).json({ error: "Invalid or expired cancellation link" });
+    return;
+  }
+
+  res.json({
+    id: row.r.id,
+    firstName: row.r.firstName,
+    lastName: row.r.lastName,
+    status: row.r.status,
+    quantity: row.r.quantity,
+    totalAmount: Number(row.r.totalAmount),
+    eventTitle: row.e.title,
+    eventDate: row.e.date,
+    eventLocation: row.e.location,
+    eventAddress: row.e.address,
+  });
+});
+
+// Guest: cancel a registration using the HMAC token from the email link
+router.post("/registrations/:id/cancel-by-token", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const token = String(req.query.token ?? "");
+  if (isNaN(id) || !token) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  type TxResult =
+    | { outcome: "not_found" }
+    | { outcome: "bad_token" }
+    | { outcome: "already_cancelled" }
+    | { outcome: "event_passed" }
+    | { outcome: "ok"; email: string; firstName: string; eventId: number; prevStatus: string; squarePaymentId: string | null; totalAmount: string; quantity: number };
+
+  const result = await db.transaction(async (tx): Promise<TxResult> => {
+    const locked = await tx.execute(
+      sql`SELECT r.id, r.email, r.first_name, r.status, r.quantity, r.event_id, r.square_payment_id, r.total_amount, e.date AS event_date
+          FROM registrations r JOIN events e ON e.id = r.event_id
+          WHERE r.id = ${id} FOR UPDATE OF r`
+    );
+    const reg = (locked.rows?.[0] ?? null) as {
+      id: number; email: string; first_name: string; status: string; quantity: number;
+      event_id: number; square_payment_id: string | null; total_amount: string; event_date: string | Date | null;
+    } | null;
+
+    if (!reg) return { outcome: "not_found" };
+    if (!verifyCancelToken(token, id, reg.email)) return { outcome: "bad_token" };
+    if (reg.status === "cancelled") return { outcome: "already_cancelled" };
+    const eventDate = reg.event_date ? new Date(reg.event_date) : null;
+    if (eventDate && eventDate < new Date()) return { outcome: "event_passed" };
+
+    await tx.update(registrationsTable).set({ status: "cancelled" }).where(eq(registrationsTable.id, id));
+
+    return {
+      outcome: "ok",
+      email: reg.email,
+      firstName: reg.first_name,
+      eventId: Number(reg.event_id),
+      prevStatus: reg.status,
+      squarePaymentId: reg.square_payment_id,
+      totalAmount: reg.total_amount,
+      quantity: Number(reg.quantity),
+    };
+  });
+
+  if (result.outcome === "not_found") { res.status(404).json({ error: "Registration not found" }); return; }
+  if (result.outcome === "bad_token") { res.status(400).json({ error: "Invalid or expired cancellation link" }); return; }
+  if (result.outcome === "already_cancelled") { res.status(400).json({ error: "Registration is already cancelled" }); return; }
+  if (result.outcome === "event_passed") { res.status(400).json({ error: "Cannot cancel a registration for an event that has already passed" }); return; }
+
+  await db.update(eventsTable).set({
+    spotsRemaining: sql`${eventsTable.capacity} - (
+      SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+      FROM ${registrationsTable}
+      WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+      AND ${registrationsTable.status} != 'cancelled'
+    )`,
+  }).where(eq(eventsTable.id, result.eventId));
+
+  // Issue Square refund if applicable
+  let refundStatus: "refunded" | "no_payment" | "failed" = "no_payment";
+  if (result.prevStatus === "paid" && result.squarePaymentId) {
+    try {
+      const { getSquareClient } = await import("../lib/squareClient");
+      const sq = getSquareClient();
+      const amountCents = BigInt(Math.round(Number(result.totalAmount) * 100));
+      await sq.refunds.refundPayment({
+        idempotencyKey: `guest-cancel-reg-${id}-${Date.now()}`,
+        amountMoney: { amount: amountCents, currency: "USD" },
+        paymentId: result.squarePaymentId,
+        reason: "Registration cancelled by attendee (guest)",
+      });
+      refundStatus = "refunded";
+    } catch (err) {
+      refundStatus = "failed";
+      logger.error({ err, registrationId: id }, "Square refund failed on guest cancel");
+    }
+  }
+
+  // Send cancellation confirmation email (non-blocking)
+  const [eventRow] = await db.select().from(eventsTable).where(eq(eventsTable.id, result.eventId));
+  if (eventRow) {
+    sendCancellationConfirmation({
+      to: result.email,
+      firstName: result.firstName,
+      eventTitle: eventRow.title,
+      eventDate: new Date(eventRow.date),
+      quantity: result.quantity,
+    }).catch(() => {});
+  }
+
+  res.json({ success: true, refundStatus });
 });
 
 // Authenticated user: cancel their own registration
