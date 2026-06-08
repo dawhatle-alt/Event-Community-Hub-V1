@@ -115,7 +115,7 @@ export default function EventDetail() {
     <div className="w-full bg-background min-h-screen pb-24">
       <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
         {(() => {
-          const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo");
+          const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo") || event.imageUrl.toLowerCase().endsWith(".svg");
           const src = isLogo ? "/bougie-zebra-v2.png" : event.imageUrl!;
           return (
             <img
