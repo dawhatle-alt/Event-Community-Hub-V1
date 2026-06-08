@@ -29,11 +29,6 @@ export default function Home() {
         <div className="pt-12 pb-24 md:pt-24 md:pb-32">
           <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
             <div className="flex flex-col space-y-8">
-              <div className="inline-flex items-center rounded-full border border-[#C9A227]/25 px-4 py-1.5 text-sm font-medium bg-[#C9A227]/[0.07] backdrop-blur w-fit">
-                <span className="flex h-2 w-2 rounded-full bg-primary mr-2"></span>
-                <span className="text-[#FAF8F5]/75">Premium mahjong experiences for everyone</span>
-              </div>
-
               <h1 className="font-serif text-5xl md:text-7xl font-medium tracking-tight text-[#FAF8F5] leading-[1.1]">
                 You're invited to <br />
                 <span className="text-primary italic">something special</span>.
