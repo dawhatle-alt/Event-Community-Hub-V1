@@ -41,8 +41,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src={logoPath} alt="BougieBams" className="h-10 w-auto" />
-            <span className="font-serif font-semibold text-xl tracking-tight hidden sm:inline-block">BougieBams</span>
+            <img src={logoPath} alt="Bougie Bams Events" className="h-10 w-auto" />
+            <span className="font-serif font-semibold text-xl tracking-tight hidden sm:inline-block">Bougie Bams Events</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -213,7 +213,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-muted/20 text-sm text-muted/60 text-center">
-          &copy; {new Date().getFullYear()} BougieBams Community & Events. All rights reserved.
+          &copy; {new Date().getFullYear()} Bougie Bams Events. All rights reserved.
         </div>
       </footer>
     </div>
