@@ -85,6 +85,10 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
     : toIcsDate(new Date(eventDate.getTime() + 2 * 60 * 60 * 1000));
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}&location=${gcalLocation}`;
 
+  const outlookStart = eventDate.toISOString();
+  const outlookEnd = (eventEndDate ?? new Date(eventDate.getTime() + 2 * 60 * 60 * 1000)).toISOString();
+  const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?subject=${gcalTitle}&startdt=${encodeURIComponent(outlookStart)}&enddt=${encodeURIComponent(outlookEnd)}&body=${gcalDetails}&location=${gcalLocation}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,16 +159,26 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
                 </tr>
               </table>
 
-              <!-- Add to Google Calendar -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <!-- Add to Calendar buttons -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
                 <tr>
-                  <td align="center">
-                    <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#4285F4;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 24px;border-radius:8px;">
-                      📅 Add to Google Calendar
+                  <td align="center" style="padding-bottom:12px;">
+                    <p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#374151;">Add to your calendar</p>
+                    <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#4285F4;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:8px;margin:0 6px;">
+                      Google Calendar
+                    </a>
+                    <a href="${outlookUrl}" target="_blank" style="display:inline-block;background:#0078D4;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:8px;margin:0 6px;">
+                      Outlook (web)
                     </a>
                   </td>
                 </tr>
+                <tr>
+                  <td align="center">
+                    <p style="margin:0;font-size:12px;color:#9ca3af;">Apple Calendar or Outlook desktop? Open the <strong>event.ics</strong> attachment.</p>
+                  </td>
+                </tr>
               </table>
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0 24px;"/>
 
               <p style="margin:0 0 8px;font-size:15px;color:#6b7280;line-height:1.6;">
                 Keep this email for your records. If you have any questions, reply to this email and we'll be happy to help.
