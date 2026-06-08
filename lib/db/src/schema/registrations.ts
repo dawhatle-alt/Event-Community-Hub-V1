@@ -35,6 +35,17 @@ export const feedbackResponsesTable = pgTable("feedback_responses", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const waitlistTable = pgTable("waitlist", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull().references(() => eventsTable.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  notified: boolean("notified").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertRegistrationSchema = createInsertSchema(registrationsTable).omit({ id: true, createdAt: true });
 export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;
 export type Registration = typeof registrationsTable.$inferSelect;

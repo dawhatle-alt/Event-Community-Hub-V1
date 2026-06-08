@@ -36,6 +36,8 @@ export default function EventDetail() {
     couponCode: "",
   });
   const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [waitlistForm, setWaitlistForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
+  const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(
     () => localStorage.getItem("prefill_note_dismissed") === "true"
   );
@@ -260,9 +262,96 @@ export default function EventDetail() {
               )}
 
               {isSoldOut ? (
-                <Button className="w-full h-14 text-lg rounded-xl" disabled>
-                  Sold Out
-                </Button>
+                <div className="space-y-4">
+                  <div className="bg-muted/60 border border-border rounded-xl p-4 text-center">
+                    <p className="font-semibold text-foreground text-sm mb-0.5">This event is sold out</p>
+                    <p className="text-xs text-muted-foreground">Join the waitlist and we'll reach out if a spot opens up.</p>
+                  </div>
+                  {waitlistStatus === "success" ? (
+                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 text-center space-y-1">
+                      <p className="font-semibold text-foreground">You're on the waitlist!</p>
+                      <p className="text-sm text-muted-foreground">We'll contact you if a spot becomes available.</p>
+                    </div>
+                  ) : (
+                    <form
+                      className="space-y-3"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        setWaitlistStatus("submitting");
+                        try {
+                          const res = await fetch("/api/waitlist", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ eventId, ...waitlistForm }),
+                          });
+                          if (res.ok || res.status === 200) {
+                            setWaitlistStatus("success");
+                          } else {
+                            setWaitlistStatus("error");
+                          }
+                        } catch {
+                          setWaitlistStatus("error");
+                        }
+                      }}
+                    >
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="wl-first" className="text-xs">First Name</Label>
+                          <Input
+                            id="wl-first"
+                            required
+                            value={waitlistForm.firstName}
+                            onChange={(e) => setWaitlistForm(p => ({ ...p, firstName: e.target.value }))}
+                            placeholder="Jane"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="wl-last" className="text-xs">Last Name</Label>
+                          <Input
+                            id="wl-last"
+                            required
+                            value={waitlistForm.lastName}
+                            onChange={(e) => setWaitlistForm(p => ({ ...p, lastName: e.target.value }))}
+                            placeholder="Smith"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="wl-email" className="text-xs">Email</Label>
+                        <Input
+                          id="wl-email"
+                          type="email"
+                          required
+                          value={waitlistForm.email}
+                          onChange={(e) => setWaitlistForm(p => ({ ...p, email: e.target.value }))}
+                          placeholder="jane@example.com"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="wl-phone" className="text-xs">Cell Phone</Label>
+                        <Input
+                          id="wl-phone"
+                          type="tel"
+                          value={waitlistForm.phone}
+                          onChange={(e) => setWaitlistForm(p => ({ ...p, phone: e.target.value }))}
+                          placeholder="(512) 555-0100"
+                        />
+                      </div>
+                      {waitlistStatus === "error" && (
+                        <p className="text-xs text-destructive">Something went wrong. Please try again.</p>
+                      )}
+                      <Button
+                        type="submit"
+                        className="w-full h-12 rounded-xl"
+                        disabled={waitlistStatus === "submitting"}
+                      >
+                        {waitlistStatus === "submitting" ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Joining waitlist…</>
+                        ) : "Join the Waitlist"}
+                      </Button>
+                    </form>
+                  )}
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {isAuthenticated && user && !prefillNoteDismissed && (

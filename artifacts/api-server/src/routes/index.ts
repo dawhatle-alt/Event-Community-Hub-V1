@@ -7,6 +7,7 @@ import storageRouter from "./storage";
 import notificationsRouter from "./notifications";
 import feedbackRouter from "./feedback";
 import squareRouter from "./square";
+import waitlistRouter from "./waitlist";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(storageRouter);
 router.use(notificationsRouter);
 router.use(feedbackRouter);
 router.use(squareRouter);
+router.use(waitlistRouter);
 
 export default router;
