@@ -45,6 +45,12 @@ export default function About() {
                 <p>
                   Whether you're a seasoned player or picking up tiles for the first time, when you attend a Bougie Bams event you're stepping into a welcoming community that celebrates the game and the people who play it.
                 </p>
+                <blockquote className="mt-8 border-l-4 border-primary pl-5 py-1">
+                  <p className="italic text-foreground font-light text-base leading-relaxed">
+                    "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+                  </p>
+                  <cite className="block mt-2 text-sm text-primary not-italic font-medium">— Patsy Miller, Founder &amp; CEO</cite>
+                </blockquote>
               </div>
             </motion.div>
             
