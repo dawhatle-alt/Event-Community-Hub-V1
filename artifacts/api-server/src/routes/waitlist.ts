@@ -84,6 +84,28 @@ router.post("/waitlist", async (req, res) => {
   return res.status(201).json({ message: "Added to waitlist", position: Number(position) });
 });
 
+router.post("/waitlist/:eventId/notify-all", requireAdminAuth, async (req, res) => {
+  const eventId = parseInt(req.params.eventId, 10);
+  if (isNaN(eventId)) return res.status(400).json({ error: "Invalid event ID" });
+
+  const event = await db.query.eventsTable.findFirst({ where: eq(eventsTable.id, eventId) });
+  if (!event) return res.status(404).json({ error: "Event not found" });
+
+  const [{ unnotified }] = await db
+    .select({ unnotified: count() })
+    .from(waitlistTable)
+    .where(and(eq(waitlistTable.eventId, eventId), eq(waitlistTable.notified, false)));
+
+  const toSend = Number(unnotified);
+  if (toSend === 0) return res.json({ sent: 0, skipped: 0, message: "No unnotified entries" });
+
+  const { notifyWaitlistSpots } = await import("../lib/notifyWaitlist");
+  await notifyWaitlistSpots(eventId, toSend);
+
+  logger.info({ eventId, toSend }, "Admin triggered notify-all for waitlist");
+  return res.json({ sent: toSend, skipped: 0 });
+});
+
 router.get("/waitlist/:eventId/count", requireAdminAuth, async (req, res) => {
   const eventId = parseInt(req.params.eventId, 10);
   if (isNaN(eventId)) return res.status(400).json({ error: "Invalid event ID" });

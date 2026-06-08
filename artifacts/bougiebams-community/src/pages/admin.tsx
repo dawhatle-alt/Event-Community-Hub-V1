@@ -378,6 +378,7 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<number | null>(null);
   const [count, setCount] = useState<number | null>(null);
+  const [notifying, setNotifying] = useState(false);
   const { toast } = useToast();
 
   // Eagerly fetch count on mount for at-a-glance display
@@ -406,6 +407,33 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
     setOpen(o => !o);
   };
 
+  const handleNotifyAll = async () => {
+    if (!confirm(`Send a spot-available email to all unnotified people on this waitlist? People already notified will be skipped.`)) return;
+    setNotifying(true);
+    try {
+      const res = await fetch(`/api/waitlist/${eventId}/notify-all`, {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      const body = await res.json();
+      if (res.ok) {
+        if (body.sent === 0) {
+          toast({ title: "No one to notify", description: "Everyone on the waitlist has already been notified." });
+        } else {
+          toast({ title: `Notified ${body.sent} person${body.sent !== 1 ? "s" : ""}`, description: "Spot-available emails sent." });
+        }
+        // Refresh entries if panel is open
+        if (open) fetchEntries();
+      } else {
+        toast({ title: "Failed to send", description: body.error ?? "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   const handleRemove = async (id: number, name: string) => {
     if (!confirm(`Remove ${name} from the waitlist?`)) return;
     setRemoving(id);
@@ -426,20 +454,33 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
 
   return (
     <div className="border-t border-border mt-2 pt-2">
-      <button
-        onClick={toggleOpen}
-        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
-      >
-        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <ClipboardList className="w-3 h-3" />
-        Waitlist
+      <div className="flex items-center justify-between">
+        <button
+          onClick={toggleOpen}
+          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+        >
+          {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          <ClipboardList className="w-3 h-3" />
+          Waitlist
+          {count !== null && count > 0 && (
+            <span className="ml-1 bg-amber-100 text-amber-700 rounded px-1">{count} waiting</span>
+          )}
+          {count !== null && count === 0 && (
+            <span className="ml-1 text-muted-foreground">(empty)</span>
+          )}
+        </button>
         {count !== null && count > 0 && (
-          <span className="ml-1 bg-amber-100 text-amber-700 rounded px-1">{count} waiting</span>
+          <button
+            onClick={handleNotifyAll}
+            disabled={notifying}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-medium disabled:opacity-50 transition-colors"
+            title="Email all unnotified waitlist members that a spot is available"
+          >
+            <Send className="w-3 h-3" />
+            {notifying ? "Sending…" : "Notify all"}
+          </button>
         )}
-        {count !== null && count === 0 && (
-          <span className="ml-1 text-muted-foreground">(empty)</span>
-        )}
-      </button>
+      </div>
       {open && (
         <div className="mt-2 text-xs space-y-1">
           {loading ? (
