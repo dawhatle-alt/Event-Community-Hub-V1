@@ -116,12 +116,12 @@ export default function EventDetail() {
       <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
         {(() => {
           const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo") || event.imageUrl.toLowerCase().endsWith(".svg");
-          const src = isLogo ? "/bougie-zebra-v2.png" : event.imageUrl!;
+          const src = isLogo ? "/bougie-zebra-banner.png" : event.imageUrl!;
           return (
             <img
               src={src}
               alt={event.title}
-              className={`w-full h-full ${isLogo ? "object-contain object-center" : "object-cover"}`}
+              className="w-full h-full object-cover object-center"
             />
           );
         })()}

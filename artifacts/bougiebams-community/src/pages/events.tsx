@@ -113,13 +113,13 @@ export default function Events() {
 
   return (
     <div className="w-full">
-      <section className="relative text-background py-20 px-4 overflow-hidden bg-[#181D37]" style={{ minHeight: "480px" }}>
+      <section className="relative text-background py-20 px-4 overflow-hidden"  style={{ minHeight: "360px" }}>
         <img
-          src="/bougie-zebra-v2.png"
+          src="/bougie-zebra-banner.png"
           alt="Bougie Zebra — Events banner"
-          className="absolute inset-0 w-full h-full object-contain object-center"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-[#181D37]/30" />
+        <div className="absolute inset-0 bg-foreground/40" />
         <div className="container mx-auto max-w-5xl text-center relative z-10">
           <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
           <p className="text-lg md:text-xl text-muted font-light max-w-2xl mx-auto">
