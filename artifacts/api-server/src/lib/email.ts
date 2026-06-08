@@ -76,6 +76,15 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
     ? `${eventLocation}<br><span style="color:#6b7280">${eventAddress}</span>`
     : eventLocation;
 
+  const gcalLocation = encodeURIComponent(eventAddress ? `${eventLocation}, ${eventAddress}` : eventLocation);
+  const gcalTitle = encodeURIComponent(eventTitle);
+  const gcalDetails = encodeURIComponent(`You're registered for ${eventTitle}!`);
+  const gcalStart = toIcsDate(eventDate);
+  const gcalEnd = eventEndDate
+    ? toIcsDate(eventEndDate)
+    : toIcsDate(new Date(eventDate.getTime() + 2 * 60 * 60 * 1000));
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}&location=${gcalLocation}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,6 +151,17 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
                         </td>
                       </tr>
                     </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Add to Google Calendar -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#4285F4;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 24px;border-radius:8px;">
+                      📅 Add to Google Calendar
+                    </a>
                   </td>
                 </tr>
               </table>
