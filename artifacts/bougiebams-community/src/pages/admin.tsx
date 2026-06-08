@@ -489,17 +489,25 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
             <p className="text-muted-foreground">No one on the waitlist yet.</p>
           ) : (
             <>
-              <div className="grid grid-cols-[1fr_1.2fr_1fr_auto] gap-x-3 px-2 py-1 text-muted-foreground font-medium uppercase tracking-wide text-[10px]">
+              <div className="grid grid-cols-[1fr_1.2fr_1fr_auto_auto] gap-x-3 px-2 py-1 text-muted-foreground font-medium uppercase tracking-wide text-[10px]">
                 <span>Name</span>
                 <span>Email</span>
                 <span>Phone</span>
+                <span>Status</span>
                 <span></span>
               </div>
               {entries.map(e => (
-                <div key={e.id} className="grid grid-cols-[1fr_1.2fr_1fr_auto] gap-x-3 items-center bg-muted/40 rounded px-2 py-1.5">
-                  <span className="font-medium truncate">{e.firstName} {e.lastName}</span>
+                <div key={e.id} className="grid grid-cols-[1fr_1.2fr_1fr_auto_auto] gap-x-3 items-center bg-muted/40 rounded px-2 py-1.5">
+                  <div className="min-w-0">
+                    <span className="font-medium truncate block">{e.firstName} {e.lastName}</span>
+                    <span className="text-muted-foreground text-[10px]">{new Date(e.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                  </div>
                   <span className="text-muted-foreground truncate">{e.email}</span>
                   <span className="text-muted-foreground">{e.phone || "—"}</span>
+                  {e.notified
+                    ? <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-green-100 text-green-700 whitespace-nowrap">Notified</span>
+                    : <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-100 text-amber-700 whitespace-nowrap">Waiting</span>
+                  }
                   <button
                     onClick={() => handleRemove(e.id, `${e.firstName} ${e.lastName}`)}
                     disabled={removing === e.id}
@@ -510,9 +518,6 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
                   </button>
                 </div>
               ))}
-              <p className="text-muted-foreground pt-1">
-                Joined: {entries.map(e => new Date(e.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(", ")}
-              </p>
             </>
           )}
         </div>
