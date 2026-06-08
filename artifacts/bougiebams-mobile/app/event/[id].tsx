@@ -11,6 +11,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -26,6 +27,20 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data: event, isLoading, error } = useGetEvent(Number(id));
+
+  const handleShare = async () => {
+    if (!event) return;
+    const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+    const url = domain ? `https://${domain}/events/${event.id}` : "";
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await Share.share({
+        title: event.title,
+        message: `Join me at ${event.title}!${url ? ` ${url}` : ""}`,
+        url: url || undefined,
+      });
+    } catch {}
+  };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -110,6 +125,16 @@ export default function EventDetailScreen() {
             onPress={() => router.back()}
           >
             <Feather name="arrow-left" size={20} color="#fff" />
+          </Pressable>
+          {/* Share button */}
+          <Pressable
+            style={[
+              styles.backCircle,
+              { top: topPad + 12, right: 16, left: undefined, backgroundColor: "rgba(0,0,0,0.5)" },
+            ]}
+            onPress={handleShare}
+          >
+            <Feather name="share" size={20} color="#fff" />
           </Pressable>
           {/* Price badge */}
           <View style={[styles.priceBadge, { backgroundColor: colors.gold }]}>

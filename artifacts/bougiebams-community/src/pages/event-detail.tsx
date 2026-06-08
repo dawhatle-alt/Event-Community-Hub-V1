@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { formatDateCT, formatTimeRangeCT, formatDateShortCT } from "@/lib/dateUtils";
-import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, X } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, X, Share2, Check, Copy } from "lucide-react";
 import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,19 @@ export default function EventDetail() {
   const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(
     () => localStorage.getItem("prefill_note_dismissed") === "true"
   );
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const text = `Join me at ${event?.title}! ${url}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: event?.title, text, url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShareState("copied");
+      setTimeout(() => setShareState("idle"), 2000);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -129,9 +142,21 @@ export default function EventDetail() {
       </div>
 
       <div className="container mx-auto px-4 max-w-5xl -mt-32 relative z-10">
-        <Link href="/events" className="inline-flex items-center text-sm font-medium text-foreground bg-background/80 backdrop-blur px-4 py-2 rounded-full mb-6 hover:bg-background transition-colors shadow-sm">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Events
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/events" className="inline-flex items-center text-sm font-medium text-foreground bg-background/80 backdrop-blur px-4 py-2 rounded-full hover:bg-background transition-colors shadow-sm">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Events
+          </Link>
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 text-sm font-medium text-foreground bg-background/80 backdrop-blur px-4 py-2 rounded-full hover:bg-background transition-colors shadow-sm"
+          >
+            {shareState === "copied" ? (
+              <><Check className="w-4 h-4 text-green-600" /> Copied!</>
+            ) : (
+              <><Share2 className="w-4 h-4" /> Share</>
+            )}
+          </button>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
