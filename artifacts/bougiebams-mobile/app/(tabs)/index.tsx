@@ -158,6 +158,46 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
+
+      {/* Meet the Founder */}
+      <View style={[styles.founderSection, { backgroundColor: "#181D37" }]}>
+        <View style={styles.founderLabelRow}>
+          <View style={[styles.founderLabelLine, { backgroundColor: "#C9A227" }]} />
+          <Text style={[styles.founderLabel, { color: "#C9A227", fontFamily: "Inter_600SemiBold" }]}>
+            MEET THE FOUNDER
+          </Text>
+          <View style={[styles.founderLabelLine, { backgroundColor: "#C9A227" }]} />
+        </View>
+
+        <Text style={[styles.founderName, { color: "#FAF8F5", fontFamily: "CormorantGaramond_500Medium" }]}>
+          Patsy Miller
+        </Text>
+        <Text style={[styles.founderTitle, { color: "#C9A227", fontFamily: "Inter_400Regular" }]}>
+          Founder &amp; CEO, Bougie Bams
+        </Text>
+
+        <View style={[styles.founderDivider, { backgroundColor: "rgba(201,162,39,0.25)" }]} />
+
+        <Text style={[styles.founderBio, { color: "rgba(250,248,245,0.80)", fontFamily: "Inter_400Regular" }]}>
+          If you know me, you know I love bringing people together. I've always been happiest when there's food, laughter, conversation, and a touch of over-the-top flair. Most people would tell you "bougie" has always been one of my defining characteristics — and I happily embrace it.
+        </Text>
+        <Text style={[styles.founderBio, { color: "rgba(250,248,245,0.80)", fontFamily: "Inter_400Regular" }]}>
+          I'm a proud 12th-generation Texan. I'm also known for my eyeglasses — bright colors are kind of my thing. So when I discovered mahjong, it felt like fate. The beautiful tables, vibrant tiles, and the way the game turns strangers into friends captured my heart immediately.
+        </Text>
+        <Text style={[styles.founderBio, { color: "rgba(250,248,245,0.80)", fontFamily: "Inter_400Regular" }]}>
+          "Bougie" is what friends and family have called me for years. And "Bams"? That's a nod to bamboo tiles — a little wink to the game that brought all of this together.
+        </Text>
+
+        <View style={[styles.founderQuoteBlock, { borderLeftColor: "#C9A227" }]}>
+          <Text style={[styles.founderQuoteBlockText, { color: "rgba(250,248,245,0.90)", fontFamily: "Inter_400Regular" }]}>
+            "My hope is that every Bougie Bams gathering becomes more than just a game — a place where friendships are formed, traditions are created, and people leave feeling a little happier than when they arrived."
+          </Text>
+        </View>
+
+        <Text style={[styles.founderClosing, { color: "rgba(250,248,245,0.55)", fontFamily: "Inter_400Regular" }]}>
+          Because life is simply better when there's color, community, and a seat for everyone at the table. I'm so glad you're here.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -287,5 +327,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 22,
+  },
+  founderSection: {
+    padding: 28,
+    gap: 14,
+  },
+  founderLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 4,
+  },
+  founderLabelLine: {
+    flex: 1,
+    height: 1,
+  },
+  founderLabel: {
+    fontSize: 10,
+    letterSpacing: 3,
+  },
+  founderName: {
+    fontSize: 40,
+    lineHeight: 44,
+  },
+  founderTitle: {
+    fontSize: 13,
+    letterSpacing: 0.5,
+    marginTop: -6,
+  },
+  founderDivider: {
+    height: 1,
+    marginVertical: 2,
+  },
+  founderBio: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  founderQuoteBlock: {
+    borderLeftWidth: 3,
+    paddingLeft: 14,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  founderQuoteBlockText: {
+    fontSize: 14,
+    fontStyle: "italic",
+    lineHeight: 22,
+  },
+  founderClosing: {
+    fontSize: 13,
+    fontStyle: "italic",
+    lineHeight: 20,
+    marginTop: 4,
   },
 });
