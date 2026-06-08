@@ -82,16 +82,12 @@ export default function Home() {
               </AnimatedGradientBorder>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                `${import.meta.env.BASE_URL}bb-new-1.jpg`,
-                `${import.meta.env.BASE_URL}bb-new-3.jpg`,
-                `${import.meta.env.BASE_URL}bb-new-5.jpg`,
-                `${import.meta.env.BASE_URL}bb-new-6.jpg`,
-              ].map((src, i) => (
-                <div key={i} className="aspect-square rounded-2xl overflow-hidden border border-background/10">
-                  <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                </div>
-              ))}
+              <div className="aspect-square rounded-2xl overflow-hidden border border-background/10">
+                <img src={`${import.meta.env.BASE_URL}mats-rack-1.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="aspect-square rounded-2xl overflow-hidden border border-background/10">
+                <img src={`${import.meta.env.BASE_URL}mats-rack-2.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              </div>
               <div className="col-span-2 rounded-2xl overflow-hidden border border-background/10 h-44">
                 <img src={`${import.meta.env.BASE_URL}tiles-collection.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
               </div>
