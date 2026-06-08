@@ -633,6 +633,98 @@ export async function sendCancellationConfirmation(opts: CancellationEmailOption
   }
 }
 
+export interface WaitlistConfirmationOptions {
+  to: string;
+  firstName: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventEndDate?: Date | null;
+  eventLocation: string;
+  eventAddress?: string | null;
+}
+
+function buildWaitlistConfirmationHtml(opts: WaitlistConfirmationOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  const locationBlock = eventAddress
+    ? `${eventLocation}<br><span style="color:#6b7280">${eventAddress}</span>`
+    : eventLocation;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f9f6f1;font-family:Georgia,serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+<tr><td style="background:#C9A227;padding:6px 0"></td></tr>
+<tr><td style="padding:40px 40px 32px;text-align:center">
+  <p style="margin:0 0 8px;font-size:13px;letter-spacing:3px;color:#9B8060;text-transform:uppercase">Bougie Bams</p>
+  <h1 style="margin:0 0 24px;font-size:26px;color:#181D37;font-weight:normal">You're on the Waitlist!</h1>
+  <p style="margin:0 0 24px;font-size:16px;color:#374151;line-height:1.6">Hi ${firstName},<br><br>
+  You've been added to the waitlist for <strong>${eventTitle}</strong>. We'll send you an email the moment a spot opens up — spots are offered first-come, first-served.</p>
+  <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;background:#f9f6f1;border-radius:12px;width:100%">
+    <tr><td style="padding:20px 24px">
+      <p style="margin:0 0 8px;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">📅 ${dateStr}</p>
+      <p style="margin:0 0 8px;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">🕐 ${timeStr}</p>
+      <p style="margin:0;font-size:13px;color:#6b7280;font-family:Arial,sans-serif">📍 ${locationBlock}</p>
+    </td></tr>
+  </table>
+  <p style="margin:0;font-size:13px;color:#9ca3af;font-family:Arial,sans-serif">Keep an eye on your inbox — we'll reach out as soon as a seat becomes available.</p>
+</td></tr>
+<tr><td style="background:#C9A227;padding:6px 0"></td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+function buildWaitlistConfirmationText(opts: WaitlistConfirmationOptions): string {
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress } = opts;
+  const dateStr = formatDate(eventDate);
+  const startTime = formatTime(eventDate);
+  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
+  return [
+    `Hi ${firstName},`,
+    "",
+    `You've been added to the waitlist for ${eventTitle}. We'll email you the moment a spot opens up.`,
+    "",
+    `Date: ${dateStr}`,
+    `Time: ${timeStr}`,
+    `Location: ${eventLocation}${eventAddress ? `, ${eventAddress}` : ""}`,
+    "",
+    "Spots are offered first-come, first-served — keep an eye on your inbox.",
+    "— Bougie Bams",
+  ].join("\n");
+}
+
+/**
+ * Send a waitlist join confirmation email via Resend.
+ * Returns true on success, false on any error — never throws.
+ */
+export async function sendWaitlistConfirmation(opts: WaitlistConfirmationOptions): Promise<boolean> {
+  try {
+    const connectors = new ReplitConnectors();
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
+    const payload = {
+      from: fromAddress,
+      to: [opts.to],
+      subject: `You're on the waitlist for ${opts.eventTitle}`,
+      html: buildWaitlistConfirmationHtml(opts),
+      text: buildWaitlistConfirmationText(opts),
+    };
+    const response = await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      logger.warn({ status: response.status, body }, "Resend waitlist confirmation failed");
+      return false;
+    }
+    logger.info({ to: opts.to, event: opts.eventTitle }, "Waitlist confirmation email sent");
+    return true;
+  } catch (err) {
+    logger.warn({ err }, "Could not send waitlist confirmation email");
+    return false;
+  }
+}
+
 export interface WaitlistNotificationOptions {
   to: string;
   firstName: string;

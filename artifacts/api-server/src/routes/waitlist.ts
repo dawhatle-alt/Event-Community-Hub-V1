@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db, waitlistTable, eventsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
+import { sendWaitlistConfirmation } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,18 @@ router.post("/waitlist", async (req, res) => {
   });
 
   logger.info({ eventId, email }, "Waitlist entry added");
+
+  // Send confirmation email (non-blocking)
+  sendWaitlistConfirmation({
+    to: email.toLowerCase(),
+    firstName,
+    eventTitle: event.title,
+    eventDate: new Date(event.date),
+    eventEndDate: event.endDate ? new Date(event.endDate) : null,
+    eventLocation: event.location,
+    eventAddress: event.address ?? null,
+  }).catch(() => {});
+
   return res.status(201).json({ message: "Added to waitlist" });
 });
 
