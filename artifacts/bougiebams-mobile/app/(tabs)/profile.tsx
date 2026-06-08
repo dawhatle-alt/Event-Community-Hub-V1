@@ -22,6 +22,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth";
+import { useReminders } from "@/context/reminders";
 import { useColors } from "@/hooks/useColors";
 import {
   cancelEventReminder,
@@ -199,7 +200,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabFilter>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
-  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
+  const { reminders, setReminders } = useReminders();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 

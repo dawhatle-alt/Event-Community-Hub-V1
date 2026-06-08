@@ -9,6 +9,7 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { RemindersProvider, useReminders } from "@/context/reminders";
 
 function NativeTabLayout() {
   return (
@@ -36,6 +37,8 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const safeAreaInsets = useSafeAreaInsets();
+  const { reminders } = useReminders();
+  const badgeCount = reminders.length > 0 ? reminders.length : undefined;
 
   return (
     <Tabs
@@ -97,6 +100,7 @@ function ClassicTabLayout() {
         name="profile"
         options={{
           title: "Profile",
+          tabBarBadge: badgeCount,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="person.circle" tintColor={color} size={24} />
@@ -109,9 +113,17 @@ function ClassicTabLayout() {
   );
 }
 
-export default function TabLayout() {
+function TabLayoutInner() {
   if (isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
+}
+
+export default function TabLayout() {
+  return (
+    <RemindersProvider>
+      <TabLayoutInner />
+    </RemindersProvider>
+  );
 }
