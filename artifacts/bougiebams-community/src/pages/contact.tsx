@@ -44,14 +44,14 @@ export default function Contact() {
                   <Mail className="w-6 h-6 text-primary mt-1" />
                   <div>
                     <div className="font-medium">Email Us</div>
-                    <div className="text-background/80 font-light mt-1">hello@bougiebams.com</div>
+                    <a href="mailto:patsy@bougiebams.com" className="text-background/80 font-light mt-1 hover:text-primary transition-colors">patsy@bougiebams.com</a>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <MapPin className="w-6 h-6 text-primary mt-1" />
                   <div>
                     <div className="font-medium">Location</div>
-                    <div className="text-background/80 font-light mt-1">Based in Atlanta, hosting globally.</div>
+                    <div className="text-background/80 font-light mt-1">Based in Leander, TX</div>
                   </div>
                 </div>
               </div>
