@@ -487,15 +487,19 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
     return;
   }
 
-  // Restore spots if the registration was paid
-  if (result.prevStatus === "paid") {
-    await db
-      .update(eventsTable)
-      .set({
-        spotsRemaining: sql`COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}`,
-      })
-      .where(eq(eventsTable.id, result.eventId));
-  }
+  // Always restore the spot — whether the registration was paid or pending.
+  // Pending Square registrations hold a seat from the user's perspective even before
+  // payment confirms, and the webhook guards on status = 'pending' so it won't
+  // re-decrement a slot we just freed here.
+  await db
+    .update(eventsTable)
+    .set({
+      spotsRemaining: sql`LEAST(
+        ${eventsTable.capacity},
+        COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}
+      )`,
+    })
+    .where(eq(eventsTable.id, result.eventId));
 
   res.json({ success: true });
 });
