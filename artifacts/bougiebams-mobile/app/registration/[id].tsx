@@ -14,6 +14,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -105,6 +106,30 @@ export default function RegistrationDetailScreen() {
     }
   }
 
+  async function handleShare() {
+    if (!registration || !event) return;
+    const dateStr = format(new Date(event.date), "EEE, MMM d, yyyy · h:mm a");
+    const ticketLine =
+      `${registration.quantity} ${registration.quantity === 1 ? "ticket" : "tickets"}` +
+      (Number(registration.totalAmount ?? 0) > 0
+        ? ` · $${Number(registration.totalAmount).toFixed(0)} paid`
+        : " · Free");
+    const message = [
+      `🎉 Registration ${status.label}`,
+      ``,
+      `Event: ${event.title}`,
+      `Date: ${dateStr}`,
+      `Location: ${event.location}`,
+      ``,
+      `Name: ${registration.firstName} ${registration.lastName}`,
+      `Tickets: ${ticketLine}`,
+    ].join("\n");
+    try {
+      await Share.share({ message });
+    } catch {
+    }
+  }
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -114,17 +139,31 @@ export default function RegistrationDetailScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Back button */}
-      <Pressable
-        testID="back-button"
-        style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-        onPress={() => router.back()}
-      >
-        <Feather name="arrow-left" size={20} color={colors.foreground} />
-        <Text style={[styles.backText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
-          My Registrations
-        </Text>
-      </Pressable>
+      {/* Back button row */}
+      <View style={styles.topRow}>
+        <Pressable
+          testID="back-button"
+          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+          onPress={() => router.back()}
+        >
+          <Feather name="arrow-left" size={20} color={colors.foreground} />
+          <Text style={[styles.backText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
+            My Registrations
+          </Text>
+        </Pressable>
+
+        {registration && event && (
+          <Pressable
+            testID="share-button"
+            style={({ pressed }) => [styles.shareIconBtn, { opacity: pressed ? 0.6 : 1 }]}
+            onPress={handleShare}
+            accessibilityLabel="Share registration"
+            accessibilityRole="button"
+          >
+            <Feather name="share-2" size={20} color={colors.primary} />
+          </Pressable>
+        )}
+      </View>
 
       {isLoading && (
         <View style={styles.center}>
@@ -241,6 +280,27 @@ export default function RegistrationDetailScreen() {
             </View>
           </View>
 
+          {/* Share button */}
+          <Pressable
+            testID="share-details-button"
+            style={({ pressed }) => [
+              styles.shareBtn,
+              {
+                borderColor: colors.primary,
+                borderRadius: colors.radius,
+                opacity: pressed ? 0.75 : 1,
+              },
+            ]}
+            onPress={handleShare}
+            accessibilityLabel="Share registration details"
+            accessibilityRole="button"
+          >
+            <Feather name="share-2" size={16} color={colors.primary} />
+            <Text style={[styles.shareBtnText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+              Share Details
+            </Text>
+          </Pressable>
+
           {/* View event button */}
           <Pressable
             testID="view-event-button"
@@ -302,6 +362,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 24,
   },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   backBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -309,6 +374,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   backText: {
+    fontSize: 15,
+  },
+  shareIconBtn: {
+    padding: 6,
+  },
+  shareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+  },
+  shareBtnText: {
     fontSize: 15,
   },
   center: {
