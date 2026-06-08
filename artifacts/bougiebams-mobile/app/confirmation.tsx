@@ -6,6 +6,7 @@ import { useGetRegistrationBySession } from "@workspace/api-client-react";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,8 @@ import {
   Text,
   View,
 } from "react-native";
+
+const zebraBanner = require("@/assets/bougie-zebra-banner.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
@@ -96,34 +99,55 @@ export default function ConfirmationScreen() {
   const event = data?.event;
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Zebra banner header */}
+      <ImageBackground
+        source={zebraBanner}
+        style={[styles.bannerHeader, { paddingTop: topPad + 24 }]}
+        imageStyle={{ resizeMode: "cover" }}
+      >
+        <View style={styles.bannerOverlay} />
+        {isLoading && (
+          <View style={styles.bannerContent}>
+            <ActivityIndicator color="#fff" size="large" />
+            <Text style={[styles.bannerTitle, { fontFamily: "CormorantGaramond_500Medium" }]}>
+              Confirming…
+            </Text>
+          </View>
+        )}
+        {error && (
+          <View style={styles.bannerContent}>
+            <Feather name="alert-circle" size={40} color="#fff" />
+            <Text style={[styles.bannerTitle, { fontFamily: "CormorantGaramond_500Medium" }]}>
+              Something went wrong
+            </Text>
+          </View>
+        )}
+        {registration && event && (
+          <View style={styles.bannerContent}>
+            <View style={styles.bannerCheckCircle}>
+              <Feather name="check-circle" size={44} color="#C9A227" />
+            </View>
+            <Text style={[styles.bannerTitle, { fontFamily: "CormorantGaramond_500Medium" }]}>
+              You&apos;re in!
+            </Text>
+            <Text style={[styles.bannerSubtitle, { fontFamily: "Inter_400Regular" }]}>
+              Your spot is {registration.status === "paid" ? "confirmed" : "reserved"}. We&apos;ll email you with details.
+            </Text>
+          </View>
+        )}
+      </ImageBackground>
+
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1 }}
       contentContainerStyle={[
         styles.container,
-        { paddingTop: topPad + 24, paddingBottom: bottomPad + 40 },
+        { paddingBottom: bottomPad + 40 },
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {isLoading && (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            Confirming your registration…
-          </Text>
-        </View>
-      )}
-
       {error && (
         <View style={styles.center}>
-          <View style={[styles.iconCircle, { backgroundColor: `${colors.destructive}15` }]}>
-            <Feather name="alert-circle" size={40} color={colors.destructive} />
-          </View>
-          <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
-            Something went wrong
-          </Text>
-          <Text style={[styles.successSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            We couldn&apos;t load your registration details. If you completed payment, check your email for a confirmation.
-          </Text>
           <Pressable
             testID="go-home-button"
             style={[styles.homeBtn, { backgroundColor: colors.primary, borderRadius: colors.radius }]}
@@ -138,18 +162,6 @@ export default function ConfirmationScreen() {
 
       {registration && event && (
         <>
-          {/* Success icon */}
-          <View style={styles.successHeader}>
-            <View style={[styles.iconCircle, { backgroundColor: `${colors.primary}20` }]}>
-              <Feather name="check-circle" size={44} color={colors.primary} />
-            </View>
-            <Text style={[styles.successTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
-              You&apos;re in!
-            </Text>
-            <Text style={[styles.successSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              Your spot is {registration.status === "paid" ? "confirmed" : "reserved"}. We&apos;ll email you with details.
-            </Text>
-          </View>
 
           {/* Event summary card */}
           <View
@@ -304,6 +316,7 @@ export default function ConfirmationScreen() {
         </>
       )}
     </ScrollView>
+    </View>
   );
 }
 
@@ -320,6 +333,40 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 15,
+  },
+  bannerHeader: {
+    overflow: "hidden",
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(24,29,55,0.62)",
+  },
+  bannerContent: {
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 8,
+  },
+  bannerCheckCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(201,162,39,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerTitle: {
+    fontSize: 40,
+    color: "#fff",
+    textAlign: "center",
+  },
+  bannerSubtitle: {
+    fontSize: 15,
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 300,
   },
   successHeader: {
     alignItems: "center",
