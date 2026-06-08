@@ -123,12 +123,12 @@ export default function Events() {
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="max-w-xl">
             <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
-            <p className="text-lg md:text-xl text-muted font-light">
+            <p className="text-lg md:text-xl text-muted font-light whitespace-nowrap">
               Life's too short for ordinary. Let's make mahjong bougie — bam!
             </p>
-            <p className="mt-6 text-sm text-white/60 italic border-l-2 border-[#C9A227]/60 pl-4">
+            <p className="mt-6 text-base text-white/90 font-medium italic border-l-4 border-[#C9A227] pl-4">
               "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
-              <span className="block mt-1 not-italic text-white/40 text-xs">— Patsy Miller, Founder & CEO</span>
+              <span className="block mt-1 not-italic text-white/70 text-sm font-normal">— Patsy Miller, Founder & CEO</span>
             </p>
           </div>
         </div>
