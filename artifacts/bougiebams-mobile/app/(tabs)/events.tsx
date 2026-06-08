@@ -63,7 +63,10 @@ export default function EventsScreen() {
             { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
           ]}
         >
-          Gatherings
+          Bougie Events!
+        </Text>
+        <Text style={[styles.headerTagline, { color: colors.mutedForeground }]}>
+          Life's too short for ordinary. Let's make mahjong bougie — bam!
         </Text>
 
         {/* Search */}
@@ -220,6 +223,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 36,
+  },
+  headerTagline: {
+    fontSize: 13,
+    fontStyle: "italic",
+    marginTop: 2,
+    marginBottom: 4,
   },
   searchContainer: {
     flexDirection: "row",
