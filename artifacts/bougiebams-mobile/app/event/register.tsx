@@ -186,6 +186,15 @@ export default function RegisterScreen() {
             Your Details
           </Text>
 
+          {authUser && (
+            <View style={styles.preFillNotice}>
+              <Feather name="user-check" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.preFillNoticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Pre-filled from your account — feel free to edit
+              </Text>
+            </View>
+          )}
+
           <View style={styles.fieldRow}>
             <View style={[styles.fieldHalf]}>
               <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
@@ -529,5 +538,14 @@ const styles = StyleSheet.create({
   secureNote: {
     fontSize: 12,
     textAlign: "center",
+  },
+  preFillNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: -4,
+  },
+  preFillNoticeText: {
+    fontSize: 12,
   },
 });
