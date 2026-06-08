@@ -11,7 +11,7 @@ export function FloatingGlow() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#181D37", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", gap: 24 }}>
       <p style={{ color: "#C9A227", fontFamily: "sans-serif", fontSize: 11, letterSpacing: 4, textTransform: "uppercase", marginBottom: 8 }}>Floating Glow</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 28, width: "100%", maxWidth: 580 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32, width: "100%", maxWidth: 580 }}>
         {TILES.map((src, i) => (
           <div
             key={i}
@@ -19,21 +19,22 @@ export function FloatingGlow() {
               aspectRatio: "4/5",
               borderRadius: 16,
               overflow: "hidden",
-              border: "2px solid rgba(201,162,39,0.6)",
+              border: "2px solid rgba(201,162,39,0.9)",
               boxShadow: [
-                "0 4px 6px rgba(0,0,0,0.3)",
-                "0 16px 40px rgba(0,0,0,0.45)",
-                "0 0 30px rgba(201,162,39,0.25)",
+                "0 2px 4px rgba(0,0,0,0.4)",
+                "0 12px 32px rgba(0,0,0,0.6)",
+                "0 0 18px 4px rgba(201,162,39,0.55)",
+                "0 0 48px 12px rgba(201,162,39,0.25)",
               ].join(", "),
               position: "relative",
-              transform: "translateY(-2px)",
+              transform: "translateY(-3px)",
             }}
           >
             <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
         ))}
       </div>
-      <p style={{ color: "rgba(250,248,245,0.4)", fontFamily: "sans-serif", fontSize: 12, marginTop: 8, textAlign: "center" }}>Soft diffuse + gold halo — airy, elevated, glowing</p>
+      <p style={{ color: "rgba(250,248,245,0.4)", fontFamily: "sans-serif", fontSize: 12, marginTop: 8, textAlign: "center" }}>Bright gold halo — tiles glow against the dark background</p>
     </div>
   );
 }
