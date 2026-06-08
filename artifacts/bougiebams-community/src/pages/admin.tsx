@@ -603,6 +603,30 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState(BLANK_FORM);
   const [uploading, setUploading] = useState(false);
+  const [capacityEdits, setCapacityEdits] = useState<Record<number, { open: boolean; value: string }>>({});
+
+  const handleCapacityUpdate = async (event: { id: number; capacity: number; spotsRemaining?: number | null }) => {
+    const raw = capacityEdits[event.id]?.value ?? "";
+    const newCap = parseInt(raw, 10);
+    if (isNaN(newCap) || newCap < event.capacity) return;
+    if (newCap === event.capacity) {
+      setCapacityEdits(p => ({ ...p, [event.id]: { open: false, value: "" } }));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...adminHeaders },
+        body: JSON.stringify({ capacity: newCap }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      await queryClient.invalidateQueries({ queryKey: getListEventsQueryKey({}) });
+      setCapacityEdits(p => ({ ...p, [event.id]: { open: false, value: "" } }));
+      toast({ title: `Capacity updated to ${newCap}` });
+    } catch {
+      toast({ title: "Failed to update capacity", variant: "destructive" });
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -912,6 +936,33 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                         <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(event.id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
+
+                    {/* Inline capacity expander */}
+                    {capacityEdits[event.id]?.open ? (
+                      <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-muted-foreground">New capacity (current: {event.capacity}):</span>
+                        <Input
+                          type="number"
+                          min={event.capacity}
+                          className="w-24 h-8 text-sm"
+                          value={capacityEdits[event.id]?.value ?? ""}
+                          onChange={e => setCapacityEdits(p => ({ ...p, [event.id]: { open: true, value: e.target.value } }))}
+                          onKeyDown={e => { if (e.key === "Enter") handleCapacityUpdate(event); if (e.key === "Escape") setCapacityEdits(p => ({ ...p, [event.id]: { open: false, value: "" } })); }}
+                          autoFocus
+                          placeholder={String(event.capacity + 5)}
+                        />
+                        <Button size="sm" className="h-8" onClick={() => handleCapacityUpdate(event)}>Save</Button>
+                        <Button size="sm" variant="ghost" className="h-8" onClick={() => setCapacityEdits(p => ({ ...p, [event.id]: { open: false, value: "" } }))}>Cancel</Button>
+                      </div>
+                    ) : (
+                      <button
+                        className="mt-2 text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
+                        onClick={() => setCapacityEdits(p => ({ ...p, [event.id]: { open: true, value: String(event.capacity) } }))}
+                      >
+                        <Plus className="w-3 h-3" /> Expand capacity
+                      </button>
+                    )}
+
                     <EventRegistrationsPanel eventId={event.id} adminHeaders={adminHeaders} />
                     <WaitlistPanel eventId={event.id} adminHeaders={adminHeaders} />
                     <EventFeedbackPanel event={event} adminHeaders={adminHeaders} />

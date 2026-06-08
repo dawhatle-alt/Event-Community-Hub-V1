@@ -150,9 +150,20 @@ router.patch("/events/:id", requireAdminAuth, async (req, res): Promise<void> =>
     return;
   }
 
+  // If capacity is being changed, auto-adjust spotsRemaining by the same delta
+  const updateData: Record<string, unknown> = { ...parsed.data };
+  if (parsed.data.capacity !== undefined) {
+    const [current] = await db.select().from(eventsTable).where(eq(eventsTable.id, params.data.id)).limit(1);
+    if (current) {
+      const delta = parsed.data.capacity - current.capacity;
+      const currentSpots = current.spotsRemaining ?? current.capacity;
+      updateData.spotsRemaining = Math.max(0, currentSpots + delta);
+    }
+  }
+
   const [event] = await db
     .update(eventsTable)
-    .set(parsed.data as any)
+    .set(updateData)
     .where(eq(eventsTable.id, params.data.id))
     .returning();
 

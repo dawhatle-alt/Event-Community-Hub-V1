@@ -283,6 +283,7 @@ export default function EventDetail() {
                             : `You're #${waitlistPosition} in line. We'll email you when a spot opens.`
                           : "We'll contact you if a spot becomes available."}
                       </p>
+                      <p className="text-xs text-muted-foreground/80 italic">Bougie Bams may open additional seats — being on the waitlist puts you first in line if more spots become available.</p>
                       <p className="text-xs text-muted-foreground">Check your inbox for a confirmation email.</p>
                     </div>
                   ) : (
