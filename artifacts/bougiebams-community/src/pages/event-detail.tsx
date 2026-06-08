@@ -22,6 +22,7 @@ export default function EventDetail() {
 
   const createCheckout = useCreateCheckoutSession();
   const { user, isAuthenticated, login } = useAuth();
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -99,7 +100,7 @@ export default function EventDetail() {
       },
       {
         onSuccess: (data) => {
-          window.location.href = data.url;
+          setCheckoutUrl(data.url);
         }
       }
     );
@@ -169,6 +170,47 @@ export default function EventDetail() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-28 bg-card p-8 rounded-3xl shadow-lg border border-primary/20">
+              {checkoutUrl ? (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="font-serif text-2xl font-medium mb-1">Review your order</h2>
+                    <p className="text-sm text-muted-foreground">You're about to be taken to Square to complete your payment securely.</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-2xl p-4 space-y-3 text-sm">
+                    <div className="flex justify-between items-start">
+                      <span className="text-muted-foreground">Event</span>
+                      <span className="font-medium text-right max-w-[60%]">{event.title}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Date</span>
+                      <span className="font-medium">{format(new Date(event.date), "MMM d, yyyy")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Tickets</span>
+                      <span className="font-medium">{formData.quantity}</span>
+                    </div>
+                    <div className="border-t border-border pt-3 flex justify-between items-center">
+                      <span className="font-medium">Total</span>
+                      <span className="text-lg font-serif font-medium">${(Number(event.price) * formData.quantity).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full h-14 text-lg rounded-xl"
+                    onClick={() => { window.location.href = checkoutUrl; }}
+                  >
+                    Proceed to Payment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-xl"
+                    onClick={() => setCheckoutUrl(null)}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Go Back
+                  </Button>
+                </div>
+              ) : (
+              <>
               <div className="mb-6">
                 <span className="text-3xl font-serif font-medium">${event.price}</span>
                 <span className="text-muted-foreground ml-2">per person</span>
@@ -313,6 +355,8 @@ export default function EventDetail() {
                     Reserve Your Spot
                   </Button>
                 </form>
+              )}
+              </>
               )}
             </div>
           </div>
