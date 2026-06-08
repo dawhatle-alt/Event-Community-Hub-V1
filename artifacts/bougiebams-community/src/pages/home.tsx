@@ -92,6 +92,9 @@ export default function Home() {
                   <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                 </div>
               ))}
+              <div className="col-span-2 rounded-2xl overflow-hidden border border-background/10 h-44">
+                <img src={`${import.meta.env.BASE_URL}tiles-collection.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              </div>
             </div>
           </div>
         </div>
