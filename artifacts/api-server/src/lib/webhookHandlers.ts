@@ -67,11 +67,16 @@ export class WebhookHandlers {
           await db
             .update(eventsTable)
             .set({
-              spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${reg.quantity})`
+              spotsRemaining: sql`${eventsTable.capacity} - (
+                SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+                FROM ${registrationsTable}
+                WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+                AND ${registrationsTable.status} != 'cancelled'
+              )`,
             })
             .where(eq(eventsTable.id, reg.eventId));
 
-          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots decremented after Square payment confirmation");
+          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots recalculated after Square payment confirmation");
 
           // Send confirmation email if not already sent (idempotency guard)
           if (!reg.confirmationEmailSent) {
@@ -121,7 +126,12 @@ export class WebhookHandlers {
         await db
           .update(eventsTable)
           .set({
-            spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${reg.quantity})`
+            spotsRemaining: sql`${eventsTable.capacity} - (
+              SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+              FROM ${registrationsTable}
+              WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+              AND ${registrationsTable.status} != 'cancelled'
+            )`,
           })
           .where(eq(eventsTable.id, reg.eventId));
 

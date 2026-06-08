@@ -142,7 +142,14 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
 
     await db
       .update(eventsTable)
-      .set({ spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${quantity})` })
+      .set({
+        spotsRemaining: sql`${eventsTable.capacity} - (
+          SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+          FROM ${registrationsTable}
+          WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+          AND ${registrationsTable.status} != 'cancelled'
+        )`,
+      })
       .where(eq(eventsTable.id, eventId));
 
     // Send confirmation email (non-blocking — never fail the registration if email fails)
@@ -403,21 +410,18 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  // Restore capacity only when the registration had actually consumed a spot (status was 'paid').
-  // Pending registrations never decremented capacity — that only happens on webhook confirmation
-  // or free-event checkout — so restoring them would inflate spotsRemaining above reality.
-  // Cap to event capacity to guard against any edge-case double-restoration.
-  if (result.prevStatus === "paid") {
-    await db
-      .update(eventsTable)
-      .set({
-        spotsRemaining: sql`LEAST(
-          ${eventsTable.capacity},
-          COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}
-        )`,
-      })
-      .where(eq(eventsTable.id, result.eventId));
-  }
+  // Recalculate spots from the live registration count so any historical drift self-heals.
+  await db
+    .update(eventsTable)
+    .set({
+      spotsRemaining: sql`${eventsTable.capacity} - (
+        SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+        FROM ${registrationsTable}
+        WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+        AND ${registrationsTable.status} != 'cancelled'
+      )`,
+    })
+    .where(eq(eventsTable.id, result.eventId));
 
   // Send cancellation confirmation email (non-blocking — never fail the cancellation if email fails)
   Promise.all([
@@ -487,16 +491,15 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
     return;
   }
 
-  // Always restore the spot — whether the registration was paid or pending.
-  // Pending Square registrations hold a seat from the user's perspective even before
-  // payment confirms, and the webhook guards on status = 'pending' so it won't
-  // re-decrement a slot we just freed here.
+  // Recalculate spots from the live registration count so any historical drift self-heals.
   await db
     .update(eventsTable)
     .set({
-      spotsRemaining: sql`LEAST(
-        ${eventsTable.capacity},
-        COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}
+      spotsRemaining: sql`${eventsTable.capacity} - (
+        SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+        FROM ${registrationsTable}
+        WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+        AND ${registrationsTable.status} != 'cancelled'
       )`,
     })
     .where(eq(eventsTable.id, result.eventId));
@@ -552,11 +555,16 @@ router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): 
     return;
   }
 
-  // Decrement spotsRemaining since we're restoring a paid registration
+  // Recalculate spots from the live registration count so any historical drift self-heals.
   await db
     .update(eventsTable)
     .set({
-      spotsRemaining: sql`GREATEST(0, COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) - ${result.quantity})`,
+      spotsRemaining: sql`${eventsTable.capacity} - (
+        SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
+        FROM ${registrationsTable}
+        WHERE ${registrationsTable.eventId} = ${eventsTable.id}
+        AND ${registrationsTable.status} != 'cancelled'
+      )`,
     })
     .where(eq(eventsTable.id, result.eventId));
 
