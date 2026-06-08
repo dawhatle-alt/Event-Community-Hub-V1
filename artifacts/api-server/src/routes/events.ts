@@ -10,6 +10,7 @@ import {
   DeleteEventParams,
 } from "@workspace/api-zod";
 import { requireAdminAuth } from "../middleware/adminAuth";
+import { notifyWaitlistSpots } from "../lib/notifyWaitlist";
 
 const router: IRouter = Router();
 
@@ -152,12 +153,13 @@ router.patch("/events/:id", requireAdminAuth, async (req, res): Promise<void> =>
 
   // If capacity is being changed, auto-adjust spotsRemaining by the same delta
   const updateData: Record<string, unknown> = { ...parsed.data };
+  let capacityDelta = 0;
   if (parsed.data.capacity !== undefined) {
     const [current] = await db.select().from(eventsTable).where(eq(eventsTable.id, params.data.id)).limit(1);
     if (current) {
-      const delta = parsed.data.capacity - current.capacity;
+      capacityDelta = parsed.data.capacity - current.capacity;
       const currentSpots = current.spotsRemaining ?? current.capacity;
-      updateData.spotsRemaining = Math.max(0, currentSpots + delta);
+      updateData.spotsRemaining = Math.max(0, currentSpots + capacityDelta);
     }
   }
 
@@ -170,6 +172,11 @@ router.patch("/events/:id", requireAdminAuth, async (req, res): Promise<void> =>
   if (!event) {
     res.status(404).json({ error: "Event not found" });
     return;
+  }
+
+  // Notify waitlisted members for each newly opened spot (non-blocking)
+  if (capacityDelta > 0) {
+    notifyWaitlistSpots(event.id, capacityDelta).catch(() => {});
   }
 
   res.json({ ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null });
