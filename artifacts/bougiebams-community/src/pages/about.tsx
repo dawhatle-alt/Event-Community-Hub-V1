@@ -148,14 +148,30 @@ export default function About() {
         <div className="container mx-auto px-4 max-w-5xl">
           <p className="text-xs tracking-[4px] uppercase text-primary mb-3 font-medium">Meet the Founder</p>
           <div className="grid md:grid-cols-[1fr_1.6fr] gap-14 items-start">
-            {/* Photo — swap src for a real photo of Patsy when available */}
-            <div className="relative">
+            {/* Patsy photos */}
+            <div className="relative flex flex-col gap-3">
               <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
                 <img
-                  src="/event-boss-moves.jpeg"
+                  src="/patsy-mahj-bash.jpg"
                   alt="Patsy Miller — Founder & CEO of Bougie Bams"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="aspect-square rounded-xl overflow-hidden shadow-md">
+                  <img
+                    src="/patsy-atx-tournament.jpg"
+                    alt="Patsy at the ATX Mahjong Tournament"
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+                <div className="aspect-square rounded-xl overflow-hidden shadow-md">
+                  <img
+                    src="/patsy-earthly-hand.jpg"
+                    alt="Patsy showing off a mahjong hand"
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
               </div>
               <div className="absolute -bottom-4 -right-4 bg-primary text-background text-xs font-semibold uppercase tracking-widest px-4 py-2 rounded-xl shadow-md">
                 Founder &amp; CEO

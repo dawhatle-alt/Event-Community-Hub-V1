@@ -6,6 +6,7 @@ import React from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -167,6 +168,33 @@ export default function HomeScreen() {
             MEET THE FOUNDER
           </Text>
           <View style={[styles.founderLabelLine, { backgroundColor: "#C9A227" }]} />
+        </View>
+
+        {/* Main photo */}
+        <View style={styles.founderPhotoMain}>
+          <Image
+            source={require("../../assets/patsy-mahj-bash.jpg")}
+            style={styles.founderPhotoMainImg}
+            resizeMode="cover"
+          />
+        </View>
+
+        {/* Thumbnail row */}
+        <View style={styles.founderPhotoRow}>
+          <View style={styles.founderPhotoThumb}>
+            <Image
+              source={require("../../assets/patsy-atx-tournament.jpg")}
+              style={styles.founderPhotoThumbImg}
+              resizeMode="cover"
+            />
+          </View>
+          <View style={styles.founderPhotoThumb}>
+            <Image
+              source={require("../../assets/patsy-earthly-hand.jpg")}
+              style={styles.founderPhotoThumbImg}
+              resizeMode="cover"
+            />
+          </View>
         </View>
 
         <Text style={[styles.founderName, { color: "#FAF8F5", fontFamily: "CormorantGaramond_500Medium" }]}>
@@ -331,6 +359,30 @@ const styles = StyleSheet.create({
   founderSection: {
     padding: 28,
     gap: 14,
+  },
+  founderPhotoMain: {
+    width: "100%",
+    aspectRatio: 3 / 4,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  founderPhotoMainImg: {
+    width: "100%",
+    height: "100%",
+  },
+  founderPhotoRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  founderPhotoThumb: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  founderPhotoThumbImg: {
+    width: "100%",
+    height: "100%",
   },
   founderLabelRow: {
     flexDirection: "row",
