@@ -377,13 +377,26 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
   const [entries, setEntries] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<number | null>(null);
+  const [count, setCount] = useState<number | null>(null);
   const { toast } = useToast();
+
+  // Eagerly fetch count on mount for at-a-glance display
+  useEffect(() => {
+    fetch(`/api/waitlist/${eventId}/count`, { headers: adminHeaders })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setCount(data.count); })
+      .catch(() => {});
+  }, [eventId]);
 
   const fetchEntries = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/waitlist/${eventId}`, { headers: adminHeaders });
-      if (res.ok) setEntries(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data);
+        setCount(data.length);
+      }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
@@ -420,10 +433,10 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
         {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         <ClipboardList className="w-3 h-3" />
         Waitlist
-        {entries !== null && entries.length > 0 && (
-          <span className="ml-1 bg-amber-100 text-amber-700 rounded px-1">{entries.length} waiting</span>
+        {count !== null && count > 0 && (
+          <span className="ml-1 bg-amber-100 text-amber-700 rounded px-1">{count} waiting</span>
         )}
-        {entries !== null && entries.length === 0 && (
+        {count !== null && count === 0 && (
           <span className="ml-1 text-muted-foreground">(empty)</span>
         )}
       </button>

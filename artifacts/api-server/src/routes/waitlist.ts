@@ -84,6 +84,16 @@ router.post("/waitlist", async (req, res) => {
   return res.status(201).json({ message: "Added to waitlist", position: Number(position) });
 });
 
+router.get("/waitlist/:eventId/count", requireAdminAuth, async (req, res) => {
+  const eventId = parseInt(req.params.eventId, 10);
+  if (isNaN(eventId)) return res.status(400).json({ error: "Invalid event ID" });
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(waitlistTable)
+    .where(eq(waitlistTable.eventId, eventId));
+  return res.json({ count: Number(total) });
+});
+
 router.get("/waitlist/:eventId", requireAdminAuth, async (req, res) => {
   const eventId = parseInt(req.params.eventId, 10);
   if (isNaN(eventId)) return res.status(400).json({ error: "Invalid event ID" });
