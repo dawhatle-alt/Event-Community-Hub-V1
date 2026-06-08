@@ -363,10 +363,15 @@ function RegistrationCard({
 }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelResult, setCancelResult] = useState<"refunded" | "no_payment" | "failed" | null>(null);
+
+  const isPaid = registration.status === "paid";
+  const hasCost = registration.totalAmount > 0;
 
   async function handleCancel() {
     setCancelling(true);
     setCancelError(null);
+    setCancelResult(null);
     try {
       const res = await fetch(`/api/registrations/${registration.id}`, {
         method: "DELETE",
@@ -376,6 +381,8 @@ function RegistrationCard({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
       }
+      const data = await res.json().catch(() => ({}));
+      setCancelResult(data.refundStatus ?? "no_payment");
       onCancelled?.(registration.id);
     } catch (err: any) {
       setCancelError(err.message);
@@ -443,6 +450,17 @@ function RegistrationCard({
           <p className="text-destructive text-xs">{cancelError}</p>
         )}
 
+        {cancelResult === "refunded" && (
+          <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            Your registration was cancelled and a full refund has been issued to your original payment method. Please allow a few business days for it to appear.
+          </p>
+        )}
+        {cancelResult === "failed" && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Your registration was cancelled, but we couldn't process your refund automatically. Please contact us so we can issue it manually.
+          </p>
+        )}
+
         <div className="flex items-center gap-2 flex-wrap">
           {!isPast && !isCancelled && (
             <Link href={`/events/${event.id}`}>
@@ -475,8 +493,11 @@ function RegistrationCard({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancel your registration?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will cancel your registration for <strong>{event.title}</strong>. Your spot
-                    will be released back to the event. This action cannot be undone.
+                    This will cancel your registration for <strong>{event.title}</strong> and release your spot back to the event.
+                    {isPaid && hasCost && (
+                      <> A full refund of <strong>${registration.totalAmount.toFixed(2)}</strong> will be issued automatically to your original payment method.</>
+                    )}
+                    {" "}This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -485,7 +506,7 @@ function RegistrationCard({
                     onClick={handleCancel}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Yes, Cancel
+                    {isPaid && hasCost ? "Yes, Cancel & Refund" : "Yes, Cancel"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

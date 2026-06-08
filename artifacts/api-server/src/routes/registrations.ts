@@ -352,14 +352,14 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     | { outcome: "forbidden" }
     | { outcome: "already_cancelled" }
     | { outcome: "event_passed" }
-    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number };
+    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number; squarePaymentId: string | null; totalAmount: string };
 
   // Use a transaction with FOR UPDATE to lock the row, capturing the pre-update status
   // atomically. This prevents a concurrent webhook payment from slipping between our read
   // and write and causing a stale prevStatus decision outside the transaction.
   const result = await db.transaction(async (tx): Promise<TxResult> => {
     const locked = await tx.execute(
-      sql`SELECT r.id, r.user_id, r.status, r.quantity, r.event_id, e.date AS event_date
+      sql`SELECT r.id, r.user_id, r.status, r.quantity, r.event_id, r.square_payment_id, r.total_amount, e.date AS event_date
           FROM registrations r
           JOIN events e ON e.id = r.event_id
           WHERE r.id = ${id} FOR UPDATE OF r`
@@ -370,6 +370,8 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
       status: string;
       quantity: number;
       event_id: number;
+      square_payment_id: string | null;
+      total_amount: string;
       event_date: string | Date | null;
     } | null;
 
@@ -390,6 +392,8 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
       prevStatus: reg.status,
       quantity: Number(reg.quantity),
       eventId: Number(reg.event_id),
+      squarePaymentId: reg.square_payment_id,
+      totalAmount: reg.total_amount,
     };
   });
 
@@ -439,7 +443,29 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
     }
   }).catch(() => {});
 
-  res.json({ success: true });
+  // Issue a Square refund if the registration was paid and has a payment ID.
+  // Pending registrations were never charged, so no refund is needed for them.
+  let refundStatus: "refunded" | "no_payment" | "failed" = "no_payment";
+  if (result.prevStatus === "paid" && result.squarePaymentId) {
+    try {
+      const { getSquareClient } = await import("../lib/squareClient");
+      const square = getSquareClient();
+      const amountCents = BigInt(Math.round(Number(result.totalAmount) * 100));
+      await square.refunds.refundPayment({
+        idempotencyKey: `user-cancel-reg-${id}-${Date.now()}`,
+        amountMoney: { amount: amountCents, currency: "USD" },
+        paymentId: result.squarePaymentId,
+        reason: "Registration cancelled by attendee",
+      });
+      refundStatus = "refunded";
+      logger.info({ registrationId: id, paymentId: result.squarePaymentId }, "Square refund issued on user self-cancel");
+    } catch (err) {
+      refundStatus = "failed";
+      logger.error({ err, registrationId: id }, "Square refund failed on user self-cancel");
+    }
+  }
+
+  res.json({ success: true, refundStatus });
 });
 
 // Admin-only: cancel any registration (bypasses user-ownership check)
