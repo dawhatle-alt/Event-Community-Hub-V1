@@ -38,10 +38,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white">
+        <div className="container mx-auto px-4 h-24 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src={logoPath} alt="Bougie Bams Events" className="h-10 w-auto" />
+            <img src={logoPath} alt="Bougie Bams Events" className="h-16 w-auto" />
             <span className="font-serif font-semibold text-xl tracking-tight hidden sm:inline-block">Bougie Bams Events</span>
           </Link>
 
@@ -143,7 +143,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t overflow-hidden bg-background"
+              className="md:hidden border-t overflow-hidden bg-white"
             >
               <nav className="flex flex-col p-4 space-y-4">
                 <Link href="/" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Home</Link>
