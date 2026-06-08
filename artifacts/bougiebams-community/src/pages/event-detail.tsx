@@ -133,9 +133,6 @@ export default function EventDetail() {
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-card p-8 md:p-12 rounded-3xl shadow-sm border border-border">
-              <div className="text-primary font-medium text-sm mb-4 uppercase tracking-wider">
-                {event.category}
-              </div>
               <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6 text-foreground">{event.title}</h1>
               
               <div className="flex flex-wrap gap-6 mb-8 text-muted-foreground border-b border-border pb-8">
