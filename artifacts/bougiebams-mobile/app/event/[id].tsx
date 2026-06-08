@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useGetEvent } from "@workspace/api-client-react";
 import React from "react";
@@ -82,22 +81,24 @@ export default function EventDetailScreen() {
       >
         {/* Image / Hero */}
         <View style={styles.imageContainer}>
-          {event.imageUrl ? (
-            <Image
-              source={{ uri: event.imageUrl }}
-              style={styles.heroImage}
-              contentFit="cover"
-            />
-          ) : (
-            <LinearGradient
-              colors={[colors.navy, colors.navyLight]}
-              style={styles.heroImage}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={[styles.heroPlaceholder, { color: colors.gold }]}>BB</Text>
-            </LinearGradient>
-          )}
+          {(() => {
+            const isPlaceholder = !event.imageUrl ||
+              event.imageUrl.toLowerCase().includes("logo") ||
+              event.imageUrl.toLowerCase().endsWith(".svg");
+            return isPlaceholder ? (
+              <Image
+                source={require("@/assets/bougie-zebra-banner.png")}
+                style={styles.heroImage}
+                contentFit="cover"
+              />
+            ) : (
+              <Image
+                source={{ uri: event.imageUrl! }}
+                style={styles.heroImage}
+                contentFit="cover"
+              />
+            );
+          })()}
           {/* Back button */}
           <Pressable
             testID="back-button"
