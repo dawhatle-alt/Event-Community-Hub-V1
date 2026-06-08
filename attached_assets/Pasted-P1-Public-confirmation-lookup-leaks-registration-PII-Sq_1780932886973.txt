@@ -1,0 +1,23 @@
+P1: Public confirmation lookup leaks registration PII. Square redirects use the sequential registration.id as sessionId, and /registrations/confirmation accepts any numeric ID, fetches that row, then returns the full registration object including name, email, phone, userId, status, etc. Anyone can enumerate /api/registrations/confirmation?sessionId=123.
+registrations.ts (line 258), registrations.ts (line 291), registrations.ts (line 368)
+Fix: use an unguessable public confirmation token, require auth/ownership for user-specific data, and return a minimal confirmation payload.
+
+P1: Inventory recalculation counts unpaid pending registrations as occupied spots. Multiple recalculations use status != 'cancelled', which includes pending checkout rows. That can create phantom sellouts after abandoned Square checkouts, and cancellation/reinstate flows keep using the same flawed formula.
+registrations.ts (line 183), webhookHandlers.ts (line 72), registrations.ts (line 641)
+Fix: count only status = 'paid', unless you intentionally add expiring “held” reservations.
+
+P1: Registration capacity check is race-prone and can oversell. Checkout reads spotsRemaining once, then inserts separately; free/coupon registrations immediately become paid, and Square webhooks mark pending rows paid without a capacity guard. Concurrent registrations can all pass the same check.
+registrations.ts (line 140), registrations.ts (line 164), webhookHandlers.ts (line 58)
+Fix: perform capacity reservation/decrement in a transaction with row locking or a conditional UPDATE ... WHERE spots_remaining >= quantity.
+
+P1: Square webhook signature verification fails open. If SQUARE_WEBHOOK_SIGNATURE_KEY is missing, the server logs a warning and processes unsigned webhook bodies. In production, this should deny by default.
+webhookHandlers.ts (line 28)
+Fix: require the key and reject webhooks when it is absent.
+
+P2: Browser-side Square confirmation marks paid without full side effects. If the webhook is delayed/missed, the confirmation endpoint can change status to paid, but it does not recalculate spots or persist squarePaymentId. That can leave inventory overstated and later refunds impossible.
+registrations.ts (line 319)
+Fix: reuse the same idempotent payment-finalization function from the webhook path.
+
+P2: Cancellation token signing secret is weakly coupled to admin auth and has a hardcoded fallback. Tokens use ADMIN_PASSWORD, or "bougiebams-cancel-secret" if unset. That makes tokens forgeable in misconfigured environments and ties cancellation security to the admin password.
+registrations.ts (line 17)
+Fix: require a dedicated CANCEL_TOKEN_SECRET and compare signatures with timingSafeEqual.
