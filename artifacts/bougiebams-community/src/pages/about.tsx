@@ -37,13 +37,13 @@ export default function About() {
               </h1>
               <div className="space-y-6 text-lg text-muted-foreground font-light leading-relaxed">
                 <p>
-                  BougieBams was born from a love of mahjong and a belief that every gathering deserves to be memorable. We wanted events where the setup was stunning, the company was warm, and the atmosphere was nothing short of luxurious.
+                  Bougie Bams was born from a love of mahjong and a belief that every gathering deserves to be memorable. We wanted events where the setup was stunning, the company was warm, and the atmosphere was nothing short of luxurious.
                 </p>
                 <p>
-                  We're done with plain folding tables and mismatched tiles. BougieBams curates intimate mahjong events where you can choose from over <strong className="font-medium text-foreground">40 premium mats, tile sets, and racks</strong> — so your table looks and feels exactly the way you want it.
+                  We're done with plain folding tables and mismatched tiles. Bougie Bams curates intimate mahjong events where you can choose from over <strong className="font-medium text-foreground">40 premium mats, tile sets, and racks</strong> — so your table looks and feels exactly the way you want it.
                 </p>
                 <p>
-                  Whether you're a seasoned player or picking up tiles for the first time, when you attend a BougieBams event you're stepping into a welcoming community that celebrates the game and the people who play it.
+                  Whether you're a seasoned player or picking up tiles for the first time, when you attend a Bougie Bams event you're stepping into a welcoming community that celebrates the game and the people who play it.
                 </p>
               </div>
             </motion.div>
@@ -92,7 +92,7 @@ export default function About() {
         <div className="aspect-[21/9] w-full">
           <img
             src={mahjongTable}
-            alt="BougieBams custom mahjong table setup"
+            alt="Bougie Bams custom mahjong table setup"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
@@ -110,7 +110,7 @@ export default function About() {
                 <motion.img
                   key={venuePhotos[photoIndex]}
                   src={venuePhotos[photoIndex]}
-                  alt="BougieBams venue"
+                  alt="Bougie Bams venue"
                   className="absolute inset-0 w-full h-full object-cover"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -131,7 +131,7 @@ export default function About() {
             <div>
               <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">The Vision</h2>
               <p className="text-base text-muted-foreground font-light leading-relaxed mb-6">
-                "I started BougieBams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
+                "I started Bougie Bams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
               </p>
               <div className="font-serif text-lg font-medium">— Patsy Miller, Founder</div>
             </div>

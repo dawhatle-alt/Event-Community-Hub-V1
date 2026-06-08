@@ -40,7 +40,7 @@ export default function Home() {
               </h1>
 
               <p className="text-lg text-[#FAF8F5]/55 leading-relaxed max-w-md font-light">
-                BougieBams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
+                Bougie Bams brings people together around beautifully curated mahjong tables — intimate gatherings, premium setups, and connections that feel rich, polished, and entirely your own.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">

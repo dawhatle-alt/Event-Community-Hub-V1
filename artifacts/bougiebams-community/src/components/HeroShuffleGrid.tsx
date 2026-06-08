@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion } from "framer-motion";
-import logoPath from "@assets/bougiebams-logo.png";
+import logoPath from "@assets/Bougie_Bams_NEW_logo_-_white_1780941860680.png";
 import { cn } from "@/lib/utils";
 import { getHeroTiles, TILES_UPDATED_EVENT, type TileConfig } from "@/lib/heroTiles";
 

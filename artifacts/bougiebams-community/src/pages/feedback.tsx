@@ -126,9 +126,9 @@ export default function FeedbackPage() {
           </div>
           <h1 className="font-serif text-3xl mb-3 text-foreground">Thank you, {info?.firstName}!</h1>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Your feedback on <strong>{info?.eventTitle}</strong> means the world to us. We use every response to make BougieBams events even better.
+            Your feedback on <strong>{info?.eventTitle}</strong> means the world to us. We use every response to make Bougie Bams events even better.
           </p>
-          <p className="mt-6 text-muted-foreground text-sm">— The BougieBams Team</p>
+          <p className="mt-6 text-muted-foreground text-sm">— The Bougie Bams Team</p>
         </div>
       </div>
     );
@@ -138,7 +138,7 @@ export default function FeedbackPage() {
     <div className="min-h-screen bg-background py-16 px-4">
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-10">
-          <p className="text-sm font-medium tracking-widest uppercase text-primary mb-3">BougieBams</p>
+          <p className="text-sm font-medium tracking-widest uppercase text-primary mb-3">Bougie Bams</p>
           <h1 className="font-serif text-3xl md:text-4xl text-foreground mb-2">
             How was the event?
           </h1>
@@ -187,7 +187,7 @@ export default function FeedbackPage() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Your response is private and will only be seen by the BougieBams team.
+          Your response is private and will only be seen by the Bougie Bams team.
         </p>
       </div>
     </div>

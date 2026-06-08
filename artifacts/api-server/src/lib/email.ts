@@ -60,7 +60,7 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
           <!-- Header -->
           <tr>
             <td style="background:#7c3aed;padding:32px 40px;text-align:center;">
-              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.08em;color:#e9d5ff;text-transform:uppercase;">BougieBams</p>
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.08em;color:#e9d5ff;text-transform:uppercase;">Bougie Bams</p>
               <h1 style="margin:8px 0 0;font-size:26px;font-weight:700;color:#ffffff;">You're registered! 🎉</h1>
             </td>
           </tr>
@@ -123,7 +123,7 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} BougieBams. All rights reserved.</p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} Bougie Bams. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -158,7 +158,7 @@ function buildText(opts: ConfirmationEmailOptions): string {
     "",
     "Keep this email for your records.",
     "",
-    "— The BougieBams Team",
+    "— The Bougie Bams Team",
   ].join("\n");
 }
 
@@ -190,7 +190,7 @@ function buildCancellationHtml(opts: CancellationEmailOptions): string {
           <!-- Header -->
           <tr>
             <td style="background:#6b7280;padding:32px 40px;text-align:center;">
-              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.08em;color:#e5e7eb;text-transform:uppercase;">BougieBams</p>
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.08em;color:#e5e7eb;text-transform:uppercase;">Bougie Bams</p>
               <h1 style="margin:8px 0 0;font-size:26px;font-weight:700;color:#ffffff;">Registration Cancelled</h1>
             </td>
           </tr>
@@ -237,7 +237,7 @@ function buildCancellationHtml(opts: CancellationEmailOptions): string {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} BougieBams. All rights reserved.</p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} Bougie Bams. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -266,7 +266,7 @@ function buildCancellationText(opts: CancellationEmailOptions): string {
     "",
     "If this was a mistake or you have questions, reply to this email and we'll help.",
     "",
-    "— The BougieBams Team",
+    "— The Bougie Bams Team",
   ].join("\n");
 }
 
@@ -297,7 +297,7 @@ function buildFeedbackHtml(opts: FeedbackSurveyEmailOptions): string {
           <!-- Header -->
           <tr>
             <td style="background:#181D37;padding:32px 40px;text-align:center;">
-              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.1em;color:#C9A227;text-transform:uppercase;">BougieBams</p>
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.1em;color:#C9A227;text-transform:uppercase;">Bougie Bams</p>
               <h1 style="margin:10px 0 0;font-size:26px;font-weight:700;color:#ffffff;">How was the event? ✨</h1>
             </td>
           </tr>
@@ -309,7 +309,7 @@ function buildFeedbackHtml(opts: FeedbackSurveyEmailOptions): string {
                 Thank you so much for joining us for <strong>${eventTitle}</strong> on ${dateStr}. We hope you had a wonderful time!
               </p>
               <p style="margin:0 0 28px;font-size:16px;color:#374151;line-height:1.7;">
-                Your opinion helps us make every BougieBams experience better. It only takes a minute — we'd love to hear from you.
+                Your opinion helps us make every Bougie Bams experience better. It only takes a minute — we'd love to hear from you.
               </p>
 
               <!-- CTA Button -->
@@ -332,7 +332,7 @@ function buildFeedbackHtml(opts: FeedbackSurveyEmailOptions): string {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} BougieBams. All rights reserved.</p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} Bougie Bams. All rights reserved.</p>
               <p style="margin:4px 0 0;font-size:12px;color:#d1d5db;">This link is unique to you and can only be used once.</p>
             </td>
           </tr>
@@ -356,9 +356,9 @@ function buildFeedbackText(opts: FeedbackSurveyEmailOptions): string {
     "We'd love to hear your thoughts. It only takes a minute:",
     surveyUrl,
     "",
-    "Your feedback helps us make every BougieBams event better.",
+    "Your feedback helps us make every Bougie Bams event better.",
     "",
-    "— The BougieBams Team",
+    "— The Bougie Bams Team",
   ].join("\n");
 }
 
@@ -410,7 +410,7 @@ function buildCancelLinksHtml(opts: CancelLinksEmailOptions): string {
         <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
           <tr>
             <td style="background:#181D37;padding:32px 40px;text-align:center;">
-              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.1em;color:#C9A227;text-transform:uppercase;">BougieBams</p>
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.1em;color:#C9A227;text-transform:uppercase;">Bougie Bams</p>
               <h1 style="margin:10px 0 0;font-size:26px;font-weight:700;color:#ffffff;">Cancel Your Registration</h1>
             </td>
           </tr>
@@ -428,7 +428,7 @@ function buildCancelLinksHtml(opts: CancelLinksEmailOptions): string {
           </tr>
           <tr>
             <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} BougieBams. All rights reserved.</p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">© ${new Date().getFullYear()} Bougie Bams. All rights reserved.</p>
               <p style="margin:4px 0 0;font-size:12px;color:#d1d5db;">These links are unique to you and expire after 7 days.</p>
             </td>
           </tr>
@@ -460,7 +460,7 @@ function buildCancelLinksText(opts: CancelLinksEmailOptions): string {
   }
   lines.push("If you didn't request this, ignore this email — nothing will change.");
   lines.push("");
-  lines.push("— The BougieBams Team");
+  lines.push("— The Bougie Bams Team");
   return lines.join("\n");
 }
 
@@ -471,13 +471,13 @@ function buildCancelLinksText(opts: CancelLinksEmailOptions): string {
 export async function sendCancelLinksEmail(opts: CancelLinksEmailOptions): Promise<boolean> {
   try {
     const connectors = new ReplitConnectors();
-    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "BougieBams <noreply@bougiebams.com>";
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
     const response = await connectors.proxy("resend", "/emails", {
       method: "POST",
       body: JSON.stringify({
         from: fromAddress,
         to: [opts.to],
-        subject: "Your BougieBams cancellation links",
+        subject: "Your Bougie Bams cancellation links",
         html: buildCancelLinksHtml(opts),
         text: buildCancelLinksText(opts),
       }),
@@ -501,7 +501,7 @@ export async function sendCancelLinksEmail(opts: CancelLinksEmailOptions): Promi
 export async function sendFeedbackSurvey(opts: FeedbackSurveyEmailOptions): Promise<boolean> {
   try {
     const connectors = new ReplitConnectors();
-    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "BougieBams <noreply@bougiebams.com>";
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
 
     const payload = {
       from: fromAddress,
@@ -539,7 +539,7 @@ export async function sendCancellationConfirmation(opts: CancellationEmailOption
   try {
     const connectors = new ReplitConnectors();
 
-    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "BougieBams <noreply@bougiebams.com>";
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
 
     const payload = {
       from: fromAddress,
@@ -577,7 +577,7 @@ export async function sendRegistrationConfirmation(opts: ConfirmationEmailOption
   try {
     const connectors = new ReplitConnectors();
 
-    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "BougieBams <noreply@bougiebams.com>";
+    const fromAddress = process.env.RESEND_FROM_EMAIL ?? "Bougie Bams <noreply@bougiebams.com>";
 
     const payload = {
       from: fromAddress,

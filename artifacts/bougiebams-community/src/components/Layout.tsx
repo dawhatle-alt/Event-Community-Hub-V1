@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import logoPath from "@assets/bougiebams-logo.png";
+import logoPath from "@assets/Bougie_Bams_NEW_logo_-_white_1780941860680.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogIn, LogOut, CalendarDays } from "lucide-react";
 import * as React from "react";
