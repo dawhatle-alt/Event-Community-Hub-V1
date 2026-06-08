@@ -6,6 +6,7 @@ import { useGetCurrentAuthUser, useRegisterForEvent } from "@workspace/api-clien
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
   Platform,
   Pressable,
   StyleSheet,
@@ -13,6 +14,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+const zebraBanner = require("@/assets/bougie-zebra-banner.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -147,31 +150,27 @@ export default function RegisterScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: topPad + 12,
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
-        ]}
+      <ImageBackground
+        source={zebraBanner}
+        style={[styles.header, { paddingTop: topPad + 12, borderBottomColor: colors.border }]}
+        imageStyle={{ resizeMode: "cover" }}
       >
+        <View style={styles.headerOverlay} />
         <Pressable onPress={() => router.back()} style={styles.headerBackBtn}>
-          <Feather name="arrow-left" size={20} color={colors.foreground} />
+          <Feather name="arrow-left" size={20} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text
-            style={[styles.headerTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}
+            style={[styles.headerTitle, { color: "#fff", fontFamily: "CormorantGaramond_500Medium" }]}
             numberOfLines={1}
           >
             {title}
           </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <Text style={[styles.headerSubtitle, { color: "rgba(255,255,255,0.75)", fontFamily: "Inter_400Regular" }]}>
             Registration
           </Text>
         </View>
-      </View>
+      </ImageBackground>
 
       <KeyboardAwareScrollViewCompat
         style={{ flex: 1 }}
@@ -420,6 +419,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
     gap: 12,
+    overflow: "hidden",
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(24,29,55,0.6)",
   },
   headerBackBtn: {
     padding: 4,
