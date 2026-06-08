@@ -123,7 +123,7 @@ export default function Events() {
         <div className="container mx-auto max-w-5xl text-center relative z-10">
           <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
           <p className="text-lg md:text-xl text-muted font-light max-w-2xl mx-auto">
-            Life's too short for ordinary. Come dressed, come ready, and let's make it bougie — bam!
+            Life's too short for ordinary. Let's make mahjong bougie — bam!
           </p>
         </div>
       </section>
