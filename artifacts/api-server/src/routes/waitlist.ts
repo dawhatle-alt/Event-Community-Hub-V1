@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, waitlistTable, eventsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { requireAdminAuth } from "../middleware/adminAuth";
 
 const router: IRouter = Router();
 
@@ -33,20 +34,24 @@ router.post("/waitlist", async (req, res) => {
   return res.status(201).json({ message: "Added to waitlist" });
 });
 
-router.get("/waitlist/:eventId", async (req, res) => {
+router.get("/waitlist/:eventId", requireAdminAuth, async (req, res) => {
   const eventId = parseInt(req.params.eventId, 10);
   if (isNaN(eventId)) return res.status(400).json({ error: "Invalid event ID" });
-
-  const adminPassword = req.headers["x-admin-password"];
-  if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
 
   const entries = await db.query.waitlistTable.findMany({
     where: eq(waitlistTable.eventId, eventId),
     orderBy: (w, { asc }) => [asc(w.createdAt)],
   });
   return res.json(entries);
+});
+
+router.delete("/waitlist/:id", requireAdminAuth, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+  await db.delete(waitlistTable).where(eq(waitlistTable.id, id));
+  logger.info({ id }, "Waitlist entry removed by admin");
+  return res.json({ message: "Removed" });
 });
 
 export default router;

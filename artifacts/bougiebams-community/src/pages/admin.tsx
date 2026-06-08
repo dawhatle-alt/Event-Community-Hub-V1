@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -366,6 +366,101 @@ function EventFeedbackPanel({ event, adminHeaders }: { event: any; adminHeaders:
               {r.comments && <p className="text-foreground/80 leading-relaxed pl-0.5">"{r.comments}"</p>}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
+  const [open, setOpen] = useState(false);
+  const [entries, setEntries] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [removing, setRemoving] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const fetchEntries = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/waitlist/${eventId}`, { headers: adminHeaders });
+      if (res.ok) setEntries(await res.json());
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  const toggleOpen = () => {
+    if (!open && entries === null) fetchEntries();
+    setOpen(o => !o);
+  };
+
+  const handleRemove = async (id: number, name: string) => {
+    if (!confirm(`Remove ${name} from the waitlist?`)) return;
+    setRemoving(id);
+    try {
+      const res = await fetch(`/api/waitlist/${id}`, { method: "DELETE", headers: adminHeaders });
+      if (res.ok) {
+        setEntries(prev => prev?.filter(e => e.id !== id) ?? null);
+        toast({ title: `${name} removed from waitlist` });
+      } else {
+        toast({ title: "Failed to remove", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  return (
+    <div className="border-t border-border mt-2 pt-2">
+      <button
+        onClick={toggleOpen}
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+      >
+        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        <ClipboardList className="w-3 h-3" />
+        Waitlist
+        {entries !== null && entries.length > 0 && (
+          <span className="ml-1 bg-amber-100 text-amber-700 rounded px-1">{entries.length} waiting</span>
+        )}
+        {entries !== null && entries.length === 0 && (
+          <span className="ml-1 text-muted-foreground">(empty)</span>
+        )}
+      </button>
+      {open && (
+        <div className="mt-2 text-xs space-y-1">
+          {loading ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : !entries?.length ? (
+            <p className="text-muted-foreground">No one on the waitlist yet.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-[1fr_1.2fr_1fr_auto] gap-x-3 px-2 py-1 text-muted-foreground font-medium uppercase tracking-wide text-[10px]">
+                <span>Name</span>
+                <span>Email</span>
+                <span>Phone</span>
+                <span></span>
+              </div>
+              {entries.map(e => (
+                <div key={e.id} className="grid grid-cols-[1fr_1.2fr_1fr_auto] gap-x-3 items-center bg-muted/40 rounded px-2 py-1.5">
+                  <span className="font-medium truncate">{e.firstName} {e.lastName}</span>
+                  <span className="text-muted-foreground truncate">{e.email}</span>
+                  <span className="text-muted-foreground">{e.phone || "—"}</span>
+                  <button
+                    onClick={() => handleRemove(e.id, `${e.firstName} ${e.lastName}`)}
+                    disabled={removing === e.id}
+                    className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                    title="Remove from waitlist"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <p className="text-muted-foreground pt-1">
+                Joined: {entries.map(e => new Date(e.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(", ")}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -818,6 +913,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                       </div>
                     </div>
                     <EventRegistrationsPanel eventId={event.id} adminHeaders={adminHeaders} />
+                    <WaitlistPanel eventId={event.id} adminHeaders={adminHeaders} />
                     <EventFeedbackPanel event={event} adminHeaders={adminHeaders} />
                   </div>
                 ))}
