@@ -19,7 +19,7 @@ function formatDate(date: Date): string {
     year: "numeric",
     month: "long",
     day: "numeric",
-    timeZone: "America/New_York",
+    timeZone: "America/Chicago",
   });
 }
 
@@ -28,7 +28,7 @@ function formatTime(date: Date): string {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZone: "America/New_York",
+    timeZone: "America/Chicago",
   });
 }
 
@@ -91,7 +91,7 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
                           <span style="font-size:18px;">🕐</span>
                         </td>
                         <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;">
-                          ${timeStr} ET
+                          ${timeStr} CT
                         </td>
                       </tr>
                       <tr>
@@ -152,7 +152,7 @@ function buildText(opts: ConfirmationEmailOptions): string {
     "-------------",
     `Event:    ${eventTitle}`,
     `Date:     ${dateStr}`,
-    `Time:     ${timeStr} ET`,
+    `Time:     ${timeStr} CT`,
     `Location: ${locationLine}`,
     `Tickets:  ${ticketLine} · ${amountStr}`,
     "",
