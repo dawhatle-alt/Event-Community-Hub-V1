@@ -108,42 +108,88 @@ export default function About() {
         </div>
       </motion.section>
 
+      {/* Venue photo slideshow — kept as a standalone visual break */}
       <section className="py-14 bg-background">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid md:grid-cols-2 gap-10 items-center">
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
-              <AnimatePresence mode="crossfade">
-                <motion.img
-                  key={venuePhotos[photoIndex]}
-                  src={venuePhotos[photoIndex]}
-                  alt="Bougie Bams venue"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.8 }}
+          <div className="relative aspect-[4/3] md:aspect-[16/7] rounded-2xl overflow-hidden shadow-lg">
+            <AnimatePresence mode="crossfade">
+              <motion.img
+                key={venuePhotos[photoIndex]}
+                src={venuePhotos[photoIndex]}
+                alt="Bougie Bams venue"
+                className="absolute inset-0 w-full h-full object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+              />
+            </AnimatePresence>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {venuePhotos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPhotoIndex(i)}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === photoIndex ? "bg-white w-4" : "bg-white/50"}`}
                 />
-              </AnimatePresence>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {venuePhotos.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPhotoIndex(i)}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === photoIndex ? "bg-white w-4" : "bg-white/50"}`}
-                  />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">The Vision</h2>
-              <p className="text-base text-muted-foreground font-light leading-relaxed mb-6">
-                "I started Bougie Bams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
-              </p>
-              <div className="font-serif text-lg font-medium">— Patsy Miller, Founder</div>
+              ))}
             </div>
           </div>
         </div>
       </section>
+
+      {/* About the Founder */}
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="py-20 bg-foreground text-background"
+      >
+        <div className="container mx-auto px-4 max-w-5xl">
+          <p className="text-xs tracking-[4px] uppercase text-primary mb-3 font-medium">About the Founder</p>
+          <div className="grid md:grid-cols-[1fr_1.6fr] gap-14 items-start">
+            {/* Photo — swap src for a real photo of Patsy when available */}
+            <div className="relative">
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
+                <img
+                  src="/event-boss-moves.jpeg"
+                  alt="Patsy Miller — Founder & CEO of Bougie Bams"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-primary text-background text-xs font-semibold uppercase tracking-widest px-4 py-2 rounded-xl shadow-md">
+                Founder &amp; CEO
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div className="flex flex-col justify-center gap-6 pt-2 md:pt-0">
+              <div>
+                <h2 className="font-serif text-4xl md:text-5xl font-medium mb-1">Patsy Miller</h2>
+                <p className="text-primary text-sm tracking-wide">Founder &amp; CEO, Bougie Bams</p>
+              </div>
+              <div className="space-y-4 text-background/80 font-light leading-relaxed text-[15px]">
+                <p>
+                  Patsy Miller is a colorful, self-described over-the-top Texan with a passion for beautiful tables, warm company, and the art of the gather. She founded Bougie Bams out of a simple conviction: mahjong deserved better — and so did the people who play it.
+                </p>
+                <p>
+                  What started as a personal love of the game grew into a full community — intimate events where premium setups, curated mats, and genuine hospitality come together to create something truly unforgettable.
+                </p>
+              </div>
+              <blockquote className="border-l-4 border-primary pl-5 py-1">
+                <p className="italic text-background/90 font-light text-base leading-relaxed">
+                  "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+                </p>
+              </blockquote>
+              <blockquote className="border-l-4 border-primary/40 pl-5 py-1">
+                <p className="italic text-background/70 font-light text-sm leading-relaxed">
+                  "I started Bougie Bams because I wanted mahjong nights that felt as elevated as the game itself. Beautiful tiles, gorgeous mats, good company, and an environment where everyone belongs. This is the gathering place I always wished existed."
+                </p>
+              </blockquote>
+            </div>
+          </div>
+        </div>
+      </motion.section>
     </div>
   );
 }
