@@ -9,12 +9,18 @@ import {
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { sendRegistrationConfirmation, sendCancellationConfirmation, sendCancelLinksEmail } from "../lib/email";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const CANCEL_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+function getCancelTokenSecret(): string {
+  const secret = process.env.CANCEL_TOKEN_SECRET;
+  if (!secret) throw new Error("CANCEL_TOKEN_SECRET environment variable is not set");
+  return secret;
+}
+
 function generateCancelToken(registrationId: number, email: string): string {
-  const secret = process.env.ADMIN_PASSWORD ?? "bougiebams-cancel-secret";
+  const secret = getCancelTokenSecret();
   const expiry = Date.now() + CANCEL_TOKEN_TTL_MS;
   const payload = `${registrationId}:${email.toLowerCase()}:${expiry}`;
   const sig = createHmac("sha256", secret).update(payload).digest("hex");
@@ -23,7 +29,7 @@ function generateCancelToken(registrationId: number, email: string): string {
 
 function verifyCancelToken(token: string, registrationId: number, email: string): boolean {
   try {
-    const secret = process.env.ADMIN_PASSWORD ?? "bougiebams-cancel-secret";
+    const secret = getCancelTokenSecret();
     const dotIdx = token.lastIndexOf(".");
     if (dotIdx === -1) return false;
     const payloadB64 = token.slice(0, dotIdx);
@@ -36,7 +42,10 @@ function verifyCancelToken(token: string, registrationId: number, email: string)
     if (tokenEmail.toLowerCase() !== email.toLowerCase()) return false;
     if (Date.now() > Number(expiryStr)) return false;
     const expectedSig = createHmac("sha256", secret).update(payload).digest("hex");
-    return sig === expectedSig;
+    const sigBuf = Buffer.from(sig, "hex");
+    const expectedBuf = Buffer.from(expectedSig, "hex");
+    if (sigBuf.length !== expectedBuf.length) return false;
+    return timingSafeEqual(sigBuf, expectedBuf);
   } catch {
     return false;
   }

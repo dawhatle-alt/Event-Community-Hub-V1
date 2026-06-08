@@ -27,14 +27,13 @@ export class WebhookHandlers {
   static async processSquareWebhook(rawBody: string, signature: string, notificationUrl: string): Promise<void> {
     const webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
 
-    // If a webhook signature key is configured, verify the request
-    if (webhookSignatureKey) {
-      const isValid = verifySquareWebhookSignature(rawBody, signature, webhookSignatureKey, notificationUrl);
-      if (!isValid) {
-        throw new Error("Square webhook signature verification failed");
-      }
-    } else {
-      logger.warn("SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping webhook signature verification");
+    if (!webhookSignatureKey) {
+      throw new Error("SQUARE_WEBHOOK_SIGNATURE_KEY is not configured — rejecting webhook");
+    }
+
+    const isValid = verifySquareWebhookSignature(rawBody, signature, webhookSignatureKey, notificationUrl);
+    if (!isValid) {
+      throw new Error("Square webhook signature verification failed");
     }
 
     let event: any;
