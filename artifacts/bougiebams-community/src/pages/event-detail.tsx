@@ -36,7 +36,9 @@ export default function EventDetail() {
     couponCode: "",
   });
   const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid">("idle");
-  const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(false);
+  const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(
+    () => localStorage.getItem("prefill_note_dismissed") === "true"
+  );
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -242,7 +244,7 @@ export default function EventDetail() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setPrefillNoteDismissed(true)}
+                        onClick={() => { localStorage.setItem("prefill_note_dismissed", "true"); setPrefillNoteDismissed(true); }}
                         className="mt-0.5 text-foreground/40 hover:text-foreground/70 transition-colors flex-shrink-0"
                         aria-label="Dismiss"
                       >
