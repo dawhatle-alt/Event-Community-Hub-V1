@@ -38,6 +38,7 @@ export default function EventDetail() {
   const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [waitlistForm, setWaitlistForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
   const [prefillNoteDismissed, setPrefillNoteDismissed] = useState(
     () => localStorage.getItem("prefill_note_dismissed") === "true"
   );
@@ -268,9 +269,21 @@ export default function EventDetail() {
                     <p className="text-xs text-muted-foreground">Join the waitlist and we'll reach out if a spot opens up.</p>
                   </div>
                   {waitlistStatus === "success" ? (
-                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 text-center space-y-1">
+                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 text-center space-y-2">
                       <p className="font-semibold text-foreground">You're on the waitlist!</p>
-                      <p className="text-sm text-muted-foreground">We'll contact you if a spot becomes available.</p>
+                      {waitlistPosition !== null && (
+                        <p className="text-2xl font-bold text-primary">
+                          #{waitlistPosition}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {waitlistPosition !== null
+                          ? waitlistPosition === 1
+                            ? "You're first in line — we'll email you the moment a spot opens."
+                            : `You're #${waitlistPosition} in line. We'll email you when a spot opens.`
+                          : "We'll contact you if a spot becomes available."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Check your inbox for a confirmation email.</p>
                     </div>
                   ) : (
                     <form
@@ -285,6 +298,8 @@ export default function EventDetail() {
                             body: JSON.stringify({ eventId, ...waitlistForm }),
                           });
                           if (res.ok || res.status === 200) {
+                            const data = await res.json();
+                            setWaitlistPosition(data.position ?? null);
                             setWaitlistStatus("success");
                           } else {
                             setWaitlistStatus("error");

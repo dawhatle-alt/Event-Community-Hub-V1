@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count, lte, sql } from "drizzle-orm";
 import { db, waitlistTable, eventsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
@@ -23,15 +23,27 @@ router.post("/waitlist", async (req, res) => {
     return res.status(200).json({ message: "Already on waitlist" });
   }
 
-  await db.insert(waitlistTable).values({
+  const [inserted] = await db.insert(waitlistTable).values({
     eventId,
     firstName,
     lastName,
     email: email.toLowerCase(),
     phone: phone || null,
-  });
+  }).returning({ id: waitlistTable.id, createdAt: waitlistTable.createdAt });
 
-  logger.info({ eventId, email }, "Waitlist entry added");
+  // Count un-notified entries inserted at or before this one (1-based position)
+  const [{ position }] = await db
+    .select({ position: count() })
+    .from(waitlistTable)
+    .where(
+      and(
+        eq(waitlistTable.eventId, eventId),
+        eq(waitlistTable.notified, false),
+        lte(waitlistTable.createdAt, inserted.createdAt ?? sql`now()`)
+      )
+    );
+
+  logger.info({ eventId, email, position }, "Waitlist entry added");
 
   // Send confirmation email (non-blocking)
   sendWaitlistConfirmation({
@@ -44,7 +56,7 @@ router.post("/waitlist", async (req, res) => {
     eventAddress: event.address ?? null,
   }).catch(() => {});
 
-  return res.status(201).json({ message: "Added to waitlist" });
+  return res.status(201).json({ message: "Added to waitlist", position: Number(position) });
 });
 
 router.get("/waitlist/:eventId", requireAdminAuth, async (req, res) => {
