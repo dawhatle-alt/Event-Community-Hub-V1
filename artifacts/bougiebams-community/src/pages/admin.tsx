@@ -372,16 +372,42 @@ function EventFeedbackPanel({ event, adminHeaders }: { event: any; adminHeaders:
   );
 }
 
-function HeroTilesSection() {
+function HeroTilesSection({ adminPassword }: { adminPassword: string }) {
   const { toast } = useToast();
   const [tiles, setTiles] = useState<TileConfig[]>(() => getHeroTiles());
   const [dirty, setDirty] = useState(false);
+  const [uploading, setUploading] = useState<number | null>(null);
+  const requestUploadUrl = useRequestUploadUrl({ request: { headers: { Authorization: `Bearer ${adminPassword}` } } });
 
   useEffect(() => { setTiles(getHeroTiles()); }, []);
 
   const update = (idx: number, field: keyof TileConfig, value: string) => {
     setTiles(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
     setDirty(true);
+  };
+
+  const handleUpload = async (idx: number, file: File) => {
+    setUploading(idx);
+    try {
+      const result = await new Promise<{ uploadURL: string; objectPath: string }>((resolve, reject) => {
+        requestUploadUrl.mutate(
+          { data: { name: file.name, size: file.size, contentType: file.type } },
+          { onSuccess: resolve, onError: reject }
+        );
+      });
+      await fetch(result.uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      const imageUrl = `/api/storage${result.objectPath}`;
+      update(idx, "src", imageUrl);
+      toast({ title: "Image uploaded" });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(null);
+    }
   };
 
   const save = () => {
@@ -409,33 +435,37 @@ function HeroTilesSection() {
           <Button size="sm" className="rounded-xl" disabled={!dirty} onClick={save}>Save changes</Button>
         </div>
       </div>
-      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="p-6 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {tiles.map((tile, idx) => (
           <div key={tile.id} className="flex flex-col gap-2">
-            <div className="aspect-[4/5] relative rounded-xl overflow-hidden border border-border bg-muted">
-              <img src={tile.src} alt={tile.label} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <span className="absolute bottom-2 left-0 right-0 text-center text-[10px] font-medium tracking-widest uppercase text-white/90">
-                {tile.label}
-              </span>
+            <div className="aspect-[4/5] relative rounded-xl overflow-hidden border border-border bg-muted group">
+              <img src={tile.src} alt={tile.label || `Tile ${idx + 1}`} className="w-full h-full object-cover" />
+              <label className={`absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${uploading === idx ? "opacity-100" : ""}`}>
+                <div className="flex flex-col items-center gap-1 text-white">
+                  {uploading === idx ? (
+                    <span className="text-xs">Uploading…</span>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" />
+                      <span className="text-xs font-medium">Replace image</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={uploading !== null}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(idx, f); e.target.value = ""; }}
+                />
+              </label>
             </div>
-            <div className="space-y-1.5">
-              <Input
-                value={tile.label}
-                onChange={e => update(idx, "label", e.target.value)}
-                className="h-8 text-sm rounded-lg"
-                placeholder="Label"
-              />
-              <select
-                value={tile.src}
-                onChange={e => update(idx, "src", e.target.value)}
-                className="w-full h-8 text-sm rounded-lg border border-input bg-background px-2 focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {AVAILABLE_PHOTOS.map(p => (
-                  <option key={p.src} value={p.src}>{p.label}</option>
-                ))}
-              </select>
-            </div>
+            <Input
+              value={tile.label}
+              onChange={e => update(idx, "label", e.target.value)}
+              className="h-8 text-sm rounded-lg"
+              placeholder={`Tile ${idx + 1} title`}
+            />
           </div>
         ))}
       </div>
@@ -754,7 +784,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
               </div>
             </div>
 
-            <HeroTilesSection />
+            <HeroTilesSection adminPassword={adminPassword} />
 
             {/* Events List with per-event registration panels */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
