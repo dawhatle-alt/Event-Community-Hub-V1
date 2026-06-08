@@ -1,7 +1,5 @@
-import { eq, sql, and } from "drizzle-orm";
-import { db, registrationsTable, eventsTable } from "@workspace/db";
 import { logger } from "./logger";
-import { sendRegistrationConfirmation } from "./email";
+import { finalizePayment } from "./finalizePayment";
 import { createHmac, timingSafeEqual } from "crypto";
 
 /**
@@ -54,56 +52,11 @@ export class WebhookHandlers {
       const paymentId: string = payment.id;
 
       if (status === "COMPLETED" && orderId) {
-        // Only transition pending → paid; never reactivate a cancelled registration
-        const updated = await db
-          .update(registrationsTable)
-          .set({ status: "paid", squarePaymentId: paymentId || null })
-          .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
-          .returning();
-
-        if (updated.length > 0) {
-          const reg = updated[0];
+        const reg = await finalizePayment(orderId, paymentId || null);
+        if (reg) {
           logger.info({ orderId, registrationId: reg.id }, "Registration marked paid via Square webhook");
-
-          await db
-            .update(eventsTable)
-            .set({
-              spotsRemaining: sql`${eventsTable.capacity} - (
-                SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
-                FROM ${registrationsTable}
-                WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-                AND ${registrationsTable.status} != 'cancelled'
-              )`,
-            })
-            .where(eq(eventsTable.id, reg.eventId));
-
-          logger.info({ eventId: reg.eventId, qty: reg.quantity }, "Spots recalculated after Square payment confirmation");
-
-          // Send confirmation email if not already sent (idempotency guard)
-          if (!reg.confirmationEmailSent) {
-            const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId));
-            if (eventForEmail) {
-              sendRegistrationConfirmation({
-                to: reg.email,
-                firstName: reg.firstName,
-                eventTitle: eventForEmail.title,
-                eventDate: eventForEmail.date,
-                eventEndDate: eventForEmail.endDate,
-                eventLocation: eventForEmail.location,
-                eventAddress: eventForEmail.address,
-                quantity: reg.quantity,
-                totalAmount: Number(reg.totalAmount),
-              }).then((sent) => {
-                if (sent) {
-                  return db.update(registrationsTable)
-                    .set({ confirmationEmailSent: true })
-                    .where(and(eq(registrationsTable.id, reg.id), eq(registrationsTable.confirmationEmailSent, false)));
-                }
-              }).catch(() => {});
-            }
-          }
         } else {
-          logger.warn({ orderId }, "Square webhook: no registration found for order");
+          logger.warn({ orderId }, "Square webhook: no pending registration found for order");
         }
       }
     }
@@ -127,52 +80,9 @@ export class WebhookHandlers {
         logger.warn({ err, orderId }, "Could not resolve Square payment ID from order tenders");
       }
 
-      // Only transition pending → paid; never reactivate a cancelled registration
-      const updated = await db
-        .update(registrationsTable)
-        .set({ status: "paid", squarePaymentId: resolvedPaymentId })
-        .where(and(eq(registrationsTable.stripeSessionId, orderId), eq(registrationsTable.status, "pending")))
-        .returning();
-
-      if (updated.length > 0) {
-        const reg = updated[0];
+      const reg = await finalizePayment(orderId, resolvedPaymentId);
+      if (reg) {
         logger.info({ orderId, registrationId: reg.id }, "Registration marked paid via Square checkout webhook");
-
-        await db
-          .update(eventsTable)
-          .set({
-            spotsRemaining: sql`${eventsTable.capacity} - (
-              SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
-              FROM ${registrationsTable}
-              WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-              AND ${registrationsTable.status} != 'cancelled'
-            )`,
-          })
-          .where(eq(eventsTable.id, reg.eventId));
-
-        // Send confirmation email if not already sent (idempotency guard)
-        if (!reg.confirmationEmailSent) {
-          const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, reg.eventId));
-          if (eventForEmail) {
-            sendRegistrationConfirmation({
-              to: reg.email,
-              firstName: reg.firstName,
-              eventTitle: eventForEmail.title,
-              eventDate: eventForEmail.date,
-              eventEndDate: eventForEmail.endDate,
-              eventLocation: eventForEmail.location,
-              eventAddress: eventForEmail.address,
-              quantity: reg.quantity,
-              totalAmount: Number(reg.totalAmount),
-            }).then((sent) => {
-              if (sent) {
-                return db.update(registrationsTable)
-                  .set({ confirmationEmailSent: true })
-                  .where(and(eq(registrationsTable.id, reg.id), eq(registrationsTable.confirmationEmailSent, false)));
-              }
-            }).catch(() => {});
-          }
-        }
       }
     }
   }

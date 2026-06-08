@@ -9,7 +9,7 @@ export async function recalculateAllSpots(): Promise<void> {
         SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
         FROM ${registrationsTable}
         WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-        AND ${registrationsTable.status} != 'cancelled'
+        AND ${registrationsTable.status} = 'paid'
       )`,
     });
     logger.info("Spots recalculated from active registrations on startup");

@@ -59,7 +59,7 @@ export default function Confirmation() {
             You're on the list.
           </h1>
           <p className="text-lg text-muted-foreground mb-12 max-w-lg mx-auto font-light">
-            Thank you, {registration.firstName}. Your reservation for {registration.quantity} spot(s) is confirmed. We've sent the details to {registration.email}.
+            Thank you, {registration.firstName}. Your reservation for {registration.quantity} spot(s) is confirmed. We've sent the confirmation details to your email.
           </p>
 
           <div className="bg-background w-full rounded-2xl p-6 md:p-8 text-left border border-border/50 mb-10">

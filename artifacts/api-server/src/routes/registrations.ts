@@ -9,6 +9,7 @@ import {
 import { logger } from "../lib/logger";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { sendRegistrationConfirmation, sendCancellationConfirmation, sendCancelLinksEmail } from "../lib/email";
+import { finalizePayment } from "../lib/finalizePayment";
 import { createHmac, timingSafeEqual } from "crypto";
 
 const CANCEL_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -188,7 +189,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
           SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
           FROM ${registrationsTable}
           WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-          AND ${registrationsTable.status} != 'cancelled'
+          AND ${registrationsTable.status} = 'paid'
         )`,
       })
       .where(eq(eventsTable.id, eventId));
@@ -226,24 +227,55 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
 
   const idempotencyKey = `reg_${eventId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-  // Create a pending registration first
-  const [registration] = await db
-    .insert(registrationsTable)
-    .values({
-      eventId,
-      userId: userId ?? undefined,
-      firstName,
-      lastName,
-      email,
-      phone: phone ?? null,
-      quantity,
-      totalAmount: String(totalAmount),
-      status: "pending",
-      seatingPreference: seatingPreference ?? null,
-      jokersPreference: jokersPreference ?? null,
-      skillLevel: skillLevel ?? null,
-    })
-    .returning();
+  // Wrap capacity check + INSERT in a transaction with row lock to prevent concurrent over-selling.
+  // We re-count live paid registrations inside the lock rather than trusting the cached field.
+  type PaidTxResult =
+    | { ok: true; registration: typeof registrationsTable.$inferSelect }
+    | { ok: false; statusCode: number; message: string };
+
+  const paidTx = await db.transaction(async (tx): Promise<PaidTxResult> => {
+    const lockResult = await tx.execute(
+      sql`SELECT capacity FROM events WHERE id = ${eventId} FOR UPDATE`
+    );
+    const lockedEvent = lockResult.rows?.[0] as { capacity: number } | undefined;
+    if (!lockedEvent) return { ok: false, statusCode: 404, message: "Event not found" };
+
+    const takenResult = await tx.execute(
+      sql`SELECT COALESCE(SUM(quantity), 0) AS taken FROM registrations WHERE event_id = ${eventId} AND status = 'paid'`
+    );
+    const taken = Number((takenResult.rows?.[0] as any)?.taken ?? 0);
+    const realSpotsAvailable = lockedEvent.capacity - taken;
+
+    if (realSpotsAvailable < quantity) {
+      return { ok: false, statusCode: 400, message: `Only ${realSpotsAvailable} spot(s) remaining for this event.` };
+    }
+
+    const [reg] = await tx
+      .insert(registrationsTable)
+      .values({
+        eventId,
+        userId: userId ?? undefined,
+        firstName,
+        lastName,
+        email,
+        phone: phone ?? null,
+        quantity,
+        totalAmount: String(totalAmount),
+        status: "pending",
+        seatingPreference: seatingPreference ?? null,
+        jokersPreference: jokersPreference ?? null,
+        skillLevel: skillLevel ?? null,
+      })
+      .returning();
+
+    return { ok: true, registration: reg };
+  });
+
+  if (!paidTx.ok) {
+    res.status(paidTx.statusCode).json({ error: paidTx.message });
+    return;
+  }
+  const registration = paidTx.registration;
 
   // Use quickPay for a simple hosted checkout — one item, no order management overhead
   const amountCents = BigInt(Math.round(Number(event.price) * 100 * quantity));
@@ -259,7 +291,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       locationId,
     },
     checkoutOptions: {
-      redirectUrl: `${baseUrl}/events/confirmation?sessionId=${registration.id}`,
+      redirectUrl: `${baseUrl}/events/confirmation?sessionId=pending`,
       askForShippingAddress: false,
     },
     prePopulatedData: {
@@ -268,11 +300,23 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   });
 
   const paymentLink = response.paymentLink;
-  if (!paymentLink?.url || !paymentLink?.orderId) {
+  if (!paymentLink?.url || !paymentLink?.orderId || !paymentLink?.id) {
     throw new Error("Square did not return a payment link URL");
   }
 
-  // Store the Square order ID in the stripeSessionId column (reused as generic provider session ID)
+  // Update the payment link's redirectUrl to use the unguessable Square orderId so the
+  // confirmation endpoint never needs to handle sequential registration IDs.
+  await square.checkout.paymentLinks.update({
+    id: paymentLink.id,
+    paymentLink: {
+      version: paymentLink.version ?? 1,
+      checkoutOptions: {
+        redirectUrl: `${baseUrl}/events/confirmation?sessionId=${paymentLink.orderId}`,
+      },
+    },
+  });
+
+  // Store Square orderId — used by both the webhook and the confirmation endpoint for lookup
   await db
     .update(registrationsTable)
     .set({ stripeSessionId: paymentLink.orderId })
@@ -280,7 +324,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
 
   logger.info({ orderId: paymentLink.orderId, registrationId: registration.id }, "Square payment link created");
 
-  res.json({ url: paymentLink.url, sessionId: String(registration.id) });
+  res.json({ url: paymentLink.url, sessionId: paymentLink.orderId });
 }
 
 router.get("/registrations/confirmation", async (req, res): Promise<void> => {
@@ -292,8 +336,9 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
 
   const { sessionId } = query.data;
 
-  // sessionId can be: free_xxx, numeric registration id (from Square redirect), or Square order ID
-  // Try to find by stripeSessionId first, then by registration id (numeric)
+  // Look up exclusively by stripeSessionId (Square orderId UUID or free_xxx token).
+  // Numeric registration ID lookup is intentionally absent — sequential IDs allow
+  // unauthenticated enumeration of all registrant PII.
   let registration = (
     await db
       .select()
@@ -302,65 +347,27 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
       .limit(1)
   )[0];
 
-  // Square redirect uses registration.id as sessionId param
-  if (!registration && /^\d+$/.test(sessionId)) {
-    const regId = parseInt(sessionId, 10);
-    registration = (
-      await db
-        .select()
-        .from(registrationsTable)
-        .where(eq(registrationsTable.id, regId))
-        .limit(1)
-    )[0];
-
-    // If still pending, check Square order status
-    if (registration && registration.status === "pending" && registration.stripeSessionId) {
-      try {
-        const { getSquareClient } = await import("../lib/squareClient");
-        const square = getSquareClient();
-        const orderResp = await square.orders.get({ orderId: registration.stripeSessionId });
-        const order = orderResp.order;
-        if (order?.state === "COMPLETED") {
-          const [updatedReg] = await db
-            .update(registrationsTable)
-            .set({ status: "paid" })
-            .where(eq(registrationsTable.id, registration.id))
-            .returning();
-          registration = updatedReg ?? { ...registration, status: "paid" };
-
-          // Send confirmation email if not already sent (idempotency guard)
-          if (!registration.confirmationEmailSent) {
-            const [eventForEmail] = await db.select().from(eventsTable).where(eq(eventsTable.id, registration.eventId));
-            if (eventForEmail) {
-              sendRegistrationConfirmation({
-                to: registration.email,
-                firstName: registration.firstName,
-                eventTitle: eventForEmail.title,
-                eventDate: eventForEmail.date,
-                eventEndDate: eventForEmail.endDate,
-                eventLocation: eventForEmail.location,
-                eventAddress: eventForEmail.address,
-                quantity: registration.quantity,
-                totalAmount: Number(registration.totalAmount),
-              }).then((sent) => {
-                if (sent) {
-                  return db.update(registrationsTable)
-                    .set({ confirmationEmailSent: true })
-                    .where(and(eq(registrationsTable.id, registration.id), eq(registrationsTable.confirmationEmailSent, false)));
-                }
-              }).catch(() => {});
-            }
-          }
-        }
-      } catch (err) {
-        logger.warn({ err }, "Could not verify Square order status");
-      }
-    }
-  }
-
   if (!registration) {
     res.status(404).json({ error: "Registration not found" });
     return;
+  }
+
+  // If the webhook hasn't fired yet, poll Square directly and finalize if already paid
+  if (registration.status === "pending" && registration.stripeSessionId) {
+    try {
+      const { getSquareClient } = await import("../lib/squareClient");
+      const square = getSquareClient();
+      const orderResp = await square.orders.get({ orderId: registration.stripeSessionId });
+      const order = orderResp.order;
+      if ((order as any)?.state === "COMPLETED") {
+        const tenders = (order as any)?.tenders;
+        const paymentId = Array.isArray(tenders) && tenders.length > 0 ? (tenders[0].id ?? null) : null;
+        const finalized = await finalizePayment(registration.stripeSessionId, paymentId);
+        if (finalized) registration = finalized;
+      }
+    } catch (err) {
+      logger.warn({ err }, "Could not verify Square order status on confirmation page");
+    }
   }
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, registration.eventId));
@@ -370,8 +377,19 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
   }
 
   res.json({
-    registration: { ...registration, totalAmount: Number(registration.totalAmount) },
-    event: { ...event, price: Number(event.price), spotsRemaining: event.spotsRemaining ?? null },
+    registration: {
+      firstName: registration.firstName,
+      status: registration.status,
+      quantity: registration.quantity,
+      totalAmount: Number(registration.totalAmount),
+    },
+    event: {
+      title: event.title,
+      date: event.date,
+      endDate: event.endDate ?? null,
+      location: event.location,
+      address: event.address ?? null,
+    },
   });
 });
 
