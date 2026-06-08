@@ -66,7 +66,8 @@ export default function EventsScreen() {
             Bougie Events!
           </Text>
           <Text style={styles.headerTagline}>
-            Life's too short for ordinary. Let's make mahjong bougie —{" "}
+            Life's too short for ordinary. Let's make mahjong{" "}
+            <Text style={styles.headerTaglineBam}>BOUGIE</Text> —{" "}
             <Text style={styles.headerTaglineBam}>BAM!</Text>
           </Text>
           <View style={styles.founderQuote}>

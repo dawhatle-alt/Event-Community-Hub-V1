@@ -124,7 +124,7 @@ export default function Events() {
           <div className="max-w-xl">
             <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
             <p className="text-lg md:text-xl text-muted font-light whitespace-nowrap">
-              Life's too short for ordinary. Let's make mahjong bougie — <span className="font-bold text-white">BAM!</span>
+              Life's too short for ordinary. Let's make mahjong <span className="font-bold text-white">BOUGIE</span> — <span className="font-bold text-white">BAM!</span>
             </p>
             <p className="mt-6 text-base text-white/90 font-medium italic border-l-4 border-[#C9A227] pl-4">
               "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
