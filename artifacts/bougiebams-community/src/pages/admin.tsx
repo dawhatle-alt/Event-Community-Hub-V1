@@ -105,6 +105,7 @@ function StatusBadge({ status }: { status: string }) {
 function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
   const [open, setOpen] = useState(false);
   const [reinstating, setReinstating] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -126,6 +127,28 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
       { paid: 0, pending: 0, cancelled: 0 }
     );
   }, [regs]);
+
+  const handleCancel = async (regId: number, name: string) => {
+    if (!confirm(`Remove ${name}'s registration? This will cancel it and restore their spot(s) to the event.`)) return;
+    setCancelling(regId);
+    try {
+      const res = await fetch(`/api/registrations/${regId}/cancel`, {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: "Failed to remove", description: err.error ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Registration cancelled" });
+      queryClient.invalidateQueries({ queryKey });
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const handleReinstate = async (regId: number) => {
     if (!confirm("Reinstate this registration? This will mark it as paid and reduce available spots by the registered quantity.")) return;
@@ -184,7 +207,7 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
                   <span className="text-muted-foreground truncate">{r.email}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <StatusBadge status={r.status} />
-                    {r.status === "cancelled" && (
+                    {r.status === "cancelled" ? (
                       <button
                         onClick={() => handleReinstate(r.id)}
                         disabled={reinstating === r.id}
@@ -192,6 +215,15 @@ function EventRegistrationsPanel({ eventId, adminHeaders }: { eventId: number; a
                         className="ml-1 text-primary hover:text-primary/80 disabled:opacity-50"
                       >
                         <RotateCcw className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleCancel(r.id, `${r.firstName} ${r.lastName}`)}
+                        disabled={cancelling === r.id}
+                        title="Remove registration"
+                        className="ml-1 text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+                      >
+                        <XCircle className="w-3 h-3" />
                       </button>
                     )}
                   </div>

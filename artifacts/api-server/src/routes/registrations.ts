@@ -438,6 +438,68 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
   res.json({ success: true });
 });
 
+// Admin-only: cancel any registration (bypasses user-ownership check)
+router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid registration id" });
+    return;
+  }
+
+  type TxResult =
+    | { outcome: "not_found" }
+    | { outcome: "already_cancelled" }
+    | { outcome: "ok"; prevStatus: string; quantity: number; eventId: number };
+
+  const result = await db.transaction(async (tx): Promise<TxResult> => {
+    const locked = await tx.execute(
+      sql`SELECT id, status, quantity, event_id FROM registrations WHERE id = ${id} FOR UPDATE`
+    );
+    const reg = (locked.rows?.[0] ?? null) as {
+      id: number;
+      status: string;
+      quantity: number;
+      event_id: number;
+    } | null;
+
+    if (!reg) return { outcome: "not_found" };
+    if (reg.status === "cancelled") return { outcome: "already_cancelled" };
+
+    await tx
+      .update(registrationsTable)
+      .set({ status: "cancelled" })
+      .where(eq(registrationsTable.id, id));
+
+    return {
+      outcome: "ok",
+      prevStatus: reg.status,
+      quantity: Number(reg.quantity),
+      eventId: Number(reg.event_id),
+    };
+  });
+
+  if (result.outcome === "not_found") {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  if (result.outcome === "already_cancelled") {
+    res.status(400).json({ error: "Registration is already cancelled" });
+    return;
+  }
+
+  // Restore spots if the registration was paid
+  if (result.prevStatus === "paid") {
+    await db
+      .update(eventsTable)
+      .set({
+        spotsRemaining: sql`COALESCE(${eventsTable.spotsRemaining}, ${eventsTable.capacity}) + ${result.quantity}`,
+      })
+      .where(eq(eventsTable.id, result.eventId));
+  }
+
+  res.json({ success: true });
+});
+
 // Admin-only: reinstate a cancelled registration
 router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
