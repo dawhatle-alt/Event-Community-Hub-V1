@@ -537,7 +537,7 @@ router.post("/registrations/:id/cancel-by-token", async (req, res): Promise<void
       SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
       FROM ${registrationsTable}
       WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-      AND ${registrationsTable.status} != 'cancelled'
+      AND ${registrationsTable.status} = 'paid'
     )`,
   }).where(eq(eventsTable.id, result.eventId));
 
@@ -664,7 +664,7 @@ router.delete("/registrations/:id", async (req, res): Promise<void> => {
         SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
         FROM ${registrationsTable}
         WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-        AND ${registrationsTable.status} != 'cancelled'
+        AND ${registrationsTable.status} = 'paid'
       )`,
     })
     .where(eq(eventsTable.id, result.eventId));
@@ -777,7 +777,7 @@ router.post("/registrations/:id/cancel", requireAdminAuth, async (req, res): Pro
         SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
         FROM ${registrationsTable}
         WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-        AND ${registrationsTable.status} != 'cancelled'
+        AND ${registrationsTable.status} = 'paid'
       )`,
     })
     .where(eq(eventsTable.id, result.eventId));
@@ -863,7 +863,7 @@ router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): 
         SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
         FROM ${registrationsTable}
         WHERE ${registrationsTable.eventId} = ${eventsTable.id}
-        AND ${registrationsTable.status} != 'cancelled'
+        AND ${registrationsTable.status} = 'paid'
       )`,
     })
     .where(eq(eventsTable.id, result.eventId));
