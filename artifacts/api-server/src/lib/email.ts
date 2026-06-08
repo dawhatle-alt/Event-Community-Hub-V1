@@ -641,10 +641,11 @@ export interface WaitlistConfirmationOptions {
   eventEndDate?: Date | null;
   eventLocation: string;
   eventAddress?: string | null;
+  unsubscribeUrl?: string;
 }
 
 function buildWaitlistConfirmationHtml(opts: WaitlistConfirmationOptions): string {
-  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress } = opts;
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, unsubscribeUrl } = opts;
   const dateStr = formatDate(eventDate);
   const startTime = formatTime(eventDate);
   const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
@@ -669,13 +670,14 @@ function buildWaitlistConfirmationHtml(opts: WaitlistConfirmationOptions): strin
     </td></tr>
   </table>
   <p style="margin:0;font-size:13px;color:#9ca3af;font-family:Arial,sans-serif">Keep an eye on your inbox — we'll reach out as soon as a seat becomes available.</p>
+  ${unsubscribeUrl ? `<p style="margin:20px 0 0;font-size:11px;color:#d1d5db;font-family:Arial,sans-serif">Changed your mind? <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline">Remove me from the waitlist</a></p>` : ""}
 </td></tr>
 <tr><td style="background:#C9A227;padding:6px 0"></td></tr>
 </table></td></tr></table></body></html>`;
 }
 
 function buildWaitlistConfirmationText(opts: WaitlistConfirmationOptions): string {
-  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress } = opts;
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, unsubscribeUrl } = opts;
   const dateStr = formatDate(eventDate);
   const startTime = formatTime(eventDate);
   const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)} CT` : `${startTime} CT`;
@@ -690,6 +692,7 @@ function buildWaitlistConfirmationText(opts: WaitlistConfirmationOptions): strin
     "",
     "Spots are offered first-come, first-served — keep an eye on your inbox.",
     "— Bougie Bams",
+    ...(unsubscribeUrl ? ["", `Remove me from the waitlist: ${unsubscribeUrl}`] : []),
   ].join("\n");
 }
 
