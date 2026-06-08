@@ -21,6 +21,7 @@ export const eventsTable = pgTable("events", {
   stripePriceId: text("stripe_price_id"),
   autoSendFeedback: boolean("auto_send_feedback").notNull().default(false),
   couponCode: text("coupon_code"),
+  artistUrl: text("artist_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

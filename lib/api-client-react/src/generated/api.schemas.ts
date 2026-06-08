@@ -84,6 +84,11 @@ export interface Event {
      * @nullable
      */
   couponCode?: string | null;
+  /**
+     * Optional URL to the artist's website (used with "+ Meet the Artist" events)
+     * @nullable
+     */
+  artistUrl?: string | null;
   createdAt: string;
 }
 
@@ -112,6 +117,11 @@ export interface EventInput {
   stripePriceId?: string | null;
   /** @nullable */
   couponCode?: string | null;
+  /**
+     * Optional URL to the artist's website
+     * @nullable
+     */
+  artistUrl?: string | null;
 }
 
 export interface EventUpdate {
@@ -139,6 +149,11 @@ export interface EventUpdate {
   stripePriceId?: string | null;
   /** @nullable */
   couponCode?: string | null;
+  /**
+     * Optional URL to the artist's website
+     * @nullable
+     */
+  artistUrl?: string | null;
 }
 
 export type RegistrationStatus = typeof RegistrationStatus[keyof typeof RegistrationStatus];

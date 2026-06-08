@@ -125,6 +125,7 @@ export const ListEventsResponseItem = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
@@ -154,7 +155,8 @@ export const CreateEventBody = zod.object({
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish(),
-  "couponCode": zod.string().nullish()
+  "couponCode": zod.string().nullish(),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website')
 })
 
 
@@ -180,6 +182,7 @@ export const ListFeaturedEventsResponseItem = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 export const ListFeaturedEventsResponse = zod.array(ListFeaturedEventsResponseItem)
@@ -250,6 +253,7 @@ export const GetEventResponse = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -282,7 +286,8 @@ export const UpdateEventPutBody = zod.object({
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish(),
-  "couponCode": zod.string().nullish()
+  "couponCode": zod.string().nullish(),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website')
 })
 
 export const UpdateEventPutResponse = zod.object({
@@ -303,6 +308,7 @@ export const UpdateEventPutResponse = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -335,7 +341,8 @@ export const UpdateEventBody = zod.object({
   "featured": zod.boolean().optional(),
   "published": zod.boolean().optional(),
   "stripePriceId": zod.string().nullish(),
-  "couponCode": zod.string().nullish()
+  "couponCode": zod.string().nullish(),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website')
 })
 
 export const UpdateEventResponse = zod.object({
@@ -356,6 +363,7 @@ export const UpdateEventResponse = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -453,6 +461,7 @@ export const GetMyRegistrationsResponseItem = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 })
@@ -542,6 +551,7 @@ export const GetRegistrationBySessionResponse = zod.object({
   "published": zod.boolean(),
   "stripePriceId": zod.string().nullish(),
   "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
+  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
   "createdAt": zod.coerce.date()
 })
 })

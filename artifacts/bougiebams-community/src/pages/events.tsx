@@ -217,9 +217,13 @@ export default function Events() {
                     className="group cursor-pointer flex flex-col h-full bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300"
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-                      {event.imageUrl ? (
+                      {event.imageUrl && !event.imageUrl.toLowerCase().endsWith(".svg") && !event.imageUrl.toLowerCase().includes("logo") ? (
                         <img
-                          src={event.imageUrl}
+                          src={
+                            event.imageUrl.startsWith("/api/") || event.imageUrl.startsWith("http")
+                              ? event.imageUrl
+                              : `${import.meta.env.BASE_URL}${event.imageUrl.replace(/^\//, "")}`
+                          }
                           alt={event.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
@@ -240,7 +244,29 @@ export default function Events() {
                         {event.category}
                       </div>
                       <h3 className="font-serif text-2xl font-medium mb-3 group-hover:text-primary transition-colors">
-                        {event.title}
+                        {(() => {
+                          const ARTIST_SUFFIX = "+ Meet the Artist";
+                          const artistUrl = (event as any).artistUrl as string | null | undefined;
+                          if (artistUrl && event.title.endsWith(ARTIST_SUFFIX)) {
+                            const base = event.title.slice(0, event.title.length - ARTIST_SUFFIX.length);
+                            return (
+                              <>
+                                {base}
+                                <span
+                                  className="text-primary hover:underline cursor-pointer"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(artistUrl, "_blank", "noopener");
+                                  }}
+                                >
+                                  {ARTIST_SUFFIX}
+                                </span>
+                              </>
+                            );
+                          }
+                          return event.title;
+                        })()}
                       </h3>
                       <div className="mt-auto space-y-2 pt-4">
                         <div className="flex items-center text-sm text-muted-foreground gap-2">
@@ -272,8 +298,16 @@ export default function Events() {
                     className="group cursor-pointer flex items-center gap-6 bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 p-4"
                   >
                     <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-muted">
-                      {event.imageUrl ? (
-                        <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+                      {event.imageUrl && !event.imageUrl.toLowerCase().endsWith(".svg") && !event.imageUrl.toLowerCase().includes("logo") ? (
+                        <img
+                          src={
+                            event.imageUrl.startsWith("/api/") || event.imageUrl.startsWith("http")
+                              ? event.imageUrl
+                              : `${import.meta.env.BASE_URL}${event.imageUrl.replace(/^\//, "")}`
+                          }
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-foreground/10">
                           <span className="font-serif text-xl text-primary/40">BB</span>
@@ -282,7 +316,31 @@ export default function Events() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-primary font-medium text-xs mb-1 uppercase tracking-wider">{event.category}</div>
-                      <h3 className="font-serif text-xl font-medium group-hover:text-primary transition-colors truncate">{event.title}</h3>
+                      <h3 className="font-serif text-xl font-medium group-hover:text-primary transition-colors truncate">
+                        {(() => {
+                          const ARTIST_SUFFIX = "+ Meet the Artist";
+                          const artistUrl = (event as any).artistUrl as string | null | undefined;
+                          if (artistUrl && event.title.endsWith(ARTIST_SUFFIX)) {
+                            const base = event.title.slice(0, event.title.length - ARTIST_SUFFIX.length);
+                            return (
+                              <>
+                                {base}
+                                <span
+                                  className="text-primary hover:underline cursor-pointer"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(artistUrl, "_blank", "noopener");
+                                  }}
+                                >
+                                  {ARTIST_SUFFIX}
+                                </span>
+                              </>
+                            );
+                          }
+                          return event.title;
+                        })()}
+                      </h3>
                       <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDateTimeCT(event.date)} CT</span>
                         <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>

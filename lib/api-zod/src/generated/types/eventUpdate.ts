@@ -31,4 +31,9 @@ export interface EventUpdate {
   stripePriceId?: string | null;
   /** @nullable */
   couponCode?: string | null;
+  /**
+     * Optional URL to the artist's website
+     * @nullable
+     */
+  artistUrl?: string | null;
 }

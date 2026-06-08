@@ -160,7 +160,11 @@ export default function EventDetail() {
       <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
         {(() => {
           const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo") || event.imageUrl.toLowerCase().endsWith(".svg");
-          const src = isLogo ? `${import.meta.env.BASE_URL}bougie-zebra-banner.png` : event.imageUrl!;
+          const src = isLogo
+            ? `${import.meta.env.BASE_URL}bougie-zebra-banner.png`
+            : event.imageUrl!.startsWith("/api/") || event.imageUrl!.startsWith("http")
+            ? event.imageUrl!
+            : `${import.meta.env.BASE_URL}${event.imageUrl!.replace(/^\//, "")}`;
           return (
             <img
               src={src}
@@ -192,7 +196,29 @@ export default function EventDetail() {
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-card p-8 md:p-12 rounded-3xl shadow-sm border border-border">
-              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6 text-foreground">{event.title}</h1>
+              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6 text-foreground">
+                {(() => {
+                  const ARTIST_SUFFIX = "+ Meet the Artist";
+                  const artistUrl = (event as any).artistUrl as string | null | undefined;
+                  if (artistUrl && event.title.endsWith(ARTIST_SUFFIX)) {
+                    const base = event.title.slice(0, event.title.length - ARTIST_SUFFIX.length);
+                    return (
+                      <>
+                        {base}
+                        <a
+                          href={artistUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {ARTIST_SUFFIX}
+                        </a>
+                      </>
+                    );
+                  }
+                  return event.title;
+                })()}
+              </h1>
               
               <div className="flex flex-wrap gap-6 mb-8 text-muted-foreground border-b border-border pb-8">
                 <div className="flex items-center gap-2">

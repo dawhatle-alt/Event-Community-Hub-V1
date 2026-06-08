@@ -677,16 +677,23 @@ function HeroTilesSection({ adminPassword }: { adminPassword: string }) {
   );
 }
 
+function toLocalDatetimeInput(date: Date | string): string {
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const BLANK_FORM = {
   title: "",
   description: "",
-  date: new Date().toISOString().slice(0, 16),
+  date: toLocalDatetimeInput(new Date()),
   location: "",
   address: "",
   price: 0,
   capacity: 20,
   category: "Brunch",
   imageUrl: "",
+  artistUrl: "",
   featured: false,
   published: false,
   autoSendFeedback: false,
@@ -799,13 +806,14 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
     setFormData({
       title: event.title,
       description: event.description,
-      date: new Date(event.date).toISOString().slice(0, 16),
+      date: toLocalDatetimeInput(event.date),
       location: event.location,
       address: event.address || "",
       price: event.price,
       capacity: event.capacity,
       category: event.category,
       imageUrl: event.imageUrl || "",
+      artistUrl: (event as any).artistUrl ?? "",
       featured: event.featured,
       published: event.published,
       autoSendFeedback: (event as any).autoSendFeedback ?? false,
@@ -907,6 +915,23 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
                   <Label>Capacity</Label>
                   <Input type="number" required min="1" value={formData.capacity} onChange={e => setFormData({ ...formData, capacity: Number(e.target.value) })} />
                 </div>
+              </div>
+
+              {/* Artist URL */}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="artistUrl">
+                  Artist Website URL
+                  <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                    Optional — when set, the "+ Meet the Artist" part of the title becomes a clickable link
+                  </span>
+                </Label>
+                <Input
+                  id="artistUrl"
+                  type="url"
+                  placeholder="https://…"
+                  value={(formData as any).artistUrl ?? ""}
+                  onChange={e => setFormData({ ...formData, artistUrl: e.target.value } as any)}
+                />
               </div>
 
               {/* Image upload */}

@@ -827,6 +827,9 @@ components:
         couponCode:
           type: ["string", "null"]
           description: Per-event coupon code (admin only)
+        artistUrl:
+          type: ["string", "null"]
+          description: Optional URL to the artist's website (used with "+ Meet the Artist" events)
         createdAt:
           type: string
           format: date-time
@@ -870,6 +873,9 @@ components:
           type: ["string", "null"]
         couponCode:
           type: ["string", "null"]
+        artistUrl:
+          type: ["string", "null"]
+          description: Optional URL to the artist's website
 
     EventUpdate:
       type: object
@@ -909,6 +915,9 @@ components:
           type: ["string", "null"]
         couponCode:
           type: ["string", "null"]
+        artistUrl:
+          type: ["string", "null"]
+          description: Optional URL to the artist's website
 
     Registration:
       type: object

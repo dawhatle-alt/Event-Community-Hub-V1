@@ -38,5 +38,10 @@ export interface Event {
      * @nullable
      */
   couponCode?: string | null;
+  /**
+     * Optional URL to the artist's website (used with "+ Meet the Artist" events)
+     * @nullable
+     */
+  artistUrl?: string | null;
   createdAt: Date;
 }
