@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  ImageBackground,
   Platform,
   Pressable,
   RefreshControl,
@@ -13,6 +14,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+const zebraBanner = require("@/assets/bougie-zebra-banner.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EventCard } from "@/components/EventCard";
@@ -47,34 +50,33 @@ export default function EventsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: topPad + 12,
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
-        ]}
+      <ImageBackground
+        source={zebraBanner}
+        style={[styles.headerBanner, { paddingTop: topPad + 12, borderBottomColor: colors.border }]}
+        imageStyle={styles.headerBannerImage}
       >
-        <Text
-          style={[
-            styles.headerTitle,
-            { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
-          ]}
-        >
-          Bougie Events!
-        </Text>
-        <Text style={[styles.headerTagline, { color: colors.mutedForeground }]}>
-          Life's too short for ordinary. Let's make mahjong bougie — bam!
-        </Text>
-        <View style={[styles.founderQuote, { borderLeftColor: "#C9A227" }]}>
-          <Text style={[styles.founderQuoteText, { color: colors.mutedForeground }]}>
-            "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+        <View style={styles.headerOverlay} />
+        <View style={styles.header}>
+          <Text
+            style={[
+              styles.headerTitle,
+              { color: "#FFFFFF", fontFamily: "CormorantGaramond_500Medium" },
+            ]}
+          >
+            Bougie Events!
           </Text>
-          <Text style={[styles.founderAttribution, { color: colors.mutedForeground }]}>
-            — Patsy Miller, Founder &amp; CEO
+          <Text style={styles.headerTagline}>
+            Life's too short for ordinary. Let's make mahjong bougie —{" "}
+            <Text style={styles.headerTaglineBam}>BAM!</Text>
           </Text>
+          <View style={styles.founderQuote}>
+            <Text style={styles.founderQuoteText}>
+              "Bougie Bams is more than a business. It's an extension of who I am — a colorful, slightly over-the-top Texan who believes life is better when people gather around a beautiful table."
+            </Text>
+            <Text style={styles.founderAttribution}>
+              — Patsy Miller, Founder & CEO
+            </Text>
+          </View>
         </View>
 
         {/* Search */}
@@ -163,7 +165,7 @@ export default function EventsScreen() {
             ))}
           </ScrollView>
         )}
-      </View>
+      </ImageBackground>
 
       {/* Events List */}
       {isLoading ? (
@@ -223,10 +225,20 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerBanner: {
+    borderBottomWidth: 1,
+    overflow: "hidden",
+  },
+  headerBannerImage: {
+    resizeMode: "cover",
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(24,29,55,0.6)",
+  },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 14,
-    borderBottomWidth: 1,
     gap: 12,
   },
   headerTitle: {
@@ -235,11 +247,18 @@ const styles = StyleSheet.create({
   headerTagline: {
     fontSize: 13,
     fontStyle: "italic",
+    color: "rgba(255,255,255,0.85)",
     marginTop: 2,
     marginBottom: 4,
   },
+  headerTaglineBam: {
+    fontWeight: "700",
+    fontStyle: "normal",
+    color: "#FFFFFF",
+  },
   founderQuote: {
-    borderLeftWidth: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: "#C9A227",
     paddingLeft: 10,
     marginTop: 4,
   },
@@ -247,11 +266,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontStyle: "italic",
     lineHeight: 17,
+    color: "rgba(255,255,255,0.90)",
+    fontWeight: "500",
   },
   founderAttribution: {
     fontSize: 10,
     marginTop: 3,
-    opacity: 0.7,
+    color: "rgba(255,255,255,0.65)",
   },
   searchContainer: {
     flexDirection: "row",
