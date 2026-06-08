@@ -21,7 +21,20 @@ export type ReminderRecord = {
   eventTitle: string;
   eventDate: string;
   notificationIdentifier: string;
+  reminderLabel?: string;
+  scheduledAt?: string;
 };
+
+export type ReminderTiming = {
+  label: string;
+  offsetDays: number;
+};
+
+export const REMINDER_OPTIONS: ReminderTiming[] = [
+  { label: "1 week before", offsetDays: 7 },
+  { label: "1 day before", offsetDays: 1 },
+  { label: "Morning of", offsetDays: 0 },
+];
 
 async function loadReminderRecords(): Promise<ReminderRecord[]> {
   try {
@@ -45,11 +58,21 @@ export async function saveReminderIdentifier(
   eventId: number,
   eventTitle: string,
   eventDate: string,
-  notificationIdentifier: string
+  notificationIdentifier: string,
+  reminderLabel?: string,
+  scheduledAt?: string
 ): Promise<void> {
   const records = await loadReminderRecords();
   const filtered = records.filter((r) => r.registrationId !== registrationId);
-  filtered.push({ registrationId, eventId, eventTitle, eventDate, notificationIdentifier });
+  filtered.push({
+    registrationId,
+    eventId,
+    eventTitle,
+    eventDate,
+    notificationIdentifier,
+    reminderLabel,
+    scheduledAt,
+  });
   await saveReminderRecords(filtered);
 }
 
@@ -202,12 +225,21 @@ export async function scheduleConfirmationNotification(event: {
   });
 }
 
-export async function scheduleDayBeforeReminder(event: {
-  id: number;
-  title: string;
-  date: string;
-  location: string;
-}): Promise<string | null> {
+/**
+ * Schedule a reminder for an event based on a chosen timing offset.
+ * offsetDays = 0 means morning of the event; 1 = day before; 7 = week before.
+ * Returns the notification identifier and the scheduled Date, or null if
+ * the reminder would fire in the past or permissions are not granted.
+ */
+export async function scheduleReminderWithOffset(
+  event: {
+    id: number;
+    title: string;
+    date: string;
+    location: string;
+  },
+  timing: ReminderTiming
+): Promise<{ identifier: string; scheduledAt: Date } | null> {
   if (Platform.OS === "web") return null;
 
   const { status } = await Notifications.getPermissionsAsync();
@@ -215,18 +247,39 @@ export async function scheduleDayBeforeReminder(event: {
 
   const eventDate = new Date(event.date);
   const reminderDate = new Date(eventDate);
-  reminderDate.setDate(reminderDate.getDate() - 1);
+  reminderDate.setDate(reminderDate.getDate() - timing.offsetDays);
   reminderDate.setHours(9, 0, 0, 0);
 
   if (reminderDate <= new Date()) return null;
 
+  const timeStr = eventDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const dateStr = eventDate.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+  let notifTitle: string;
+  let notifBody: string;
+
+  if (timing.offsetDays === 0) {
+    notifTitle = "Your event is today! 🌟";
+    notifBody = `${event.title} is today at ${timeStr} at ${event.location}`;
+  } else if (timing.offsetDays === 1) {
+    notifTitle = "Your event is tomorrow! ✨";
+    notifBody = `Don't forget — ${event.title} is tomorrow at ${timeStr} at ${event.location}`;
+  } else {
+    notifTitle = "Upcoming event reminder 📅";
+    notifBody = `Coming up in ${timing.offsetDays} days — ${event.title} on ${dateStr} at ${event.location}`;
+  }
+
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Your event is tomorrow! ✨",
-      body: `Don't forget — ${event.title} is tomorrow at ${eventDate.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })} at ${event.location}`,
+      title: notifTitle,
+      body: notifBody,
       data: { eventId: event.id, screen: "event" },
     },
     trigger: {
@@ -235,7 +288,18 @@ export async function scheduleDayBeforeReminder(event: {
     },
   });
 
-  return identifier;
+  return { identifier, scheduledAt: reminderDate };
+}
+
+/** @deprecated Use scheduleReminderWithOffset instead */
+export async function scheduleDayBeforeReminder(event: {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+}): Promise<string | null> {
+  const result = await scheduleReminderWithOffset(event, { label: "1 day before", offsetDays: 1 });
+  return result?.identifier ?? null;
 }
 
 export async function cancelEventReminder(identifier: string): Promise<void> {

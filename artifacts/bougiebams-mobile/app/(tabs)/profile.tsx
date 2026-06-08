@@ -146,9 +146,17 @@ function ReminderRow({
   onCancel: (reminder: ReminderRecord) => void;
 }) {
   const colors = useColors();
-  const reminderDate = new Date(reminder.eventDate);
-  reminderDate.setDate(reminderDate.getDate() - 1);
-  reminderDate.setHours(9, 0, 0, 0);
+
+  const reminderDate = reminder.scheduledAt
+    ? new Date(reminder.scheduledAt)
+    : (() => {
+        const d = new Date(reminder.eventDate);
+        d.setDate(d.getDate() - 1);
+        d.setHours(9, 0, 0, 0);
+        return d;
+      })();
+
+  const timingLabel = reminder.reminderLabel ?? "1 day before";
 
   return (
     <View
@@ -172,7 +180,7 @@ function ReminderRow({
           {reminder.eventTitle}
         </Text>
         <Text style={[styles.reminderMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          {format(reminderDate, "EEE, MMM d · h:mm a")}
+          {timingLabel} · {format(reminderDate, "MMM d · h:mm a")}
         </Text>
       </View>
       <Pressable
@@ -520,7 +528,7 @@ export default function ProfileScreen() {
                       { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
                     ]}
                   >
-                    Day-before reminders for your upcoming events.
+                    Reminders for your upcoming events.
                   </Text>
                 </View>
               )}

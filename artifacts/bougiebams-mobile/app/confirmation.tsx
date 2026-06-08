@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useGetRegistrationBySession } from "@workspace/api-client-react";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -19,7 +19,9 @@ import { useColors } from "@/hooks/useColors";
 import {
   saveReminderIdentifier,
   scheduleConfirmationNotification,
-  scheduleDayBeforeReminder,
+  scheduleReminderWithOffset,
+  REMINDER_OPTIONS,
+  type ReminderTiming,
 } from "@/lib/notifications";
 
 export default function ConfirmationScreen() {
@@ -27,7 +29,11 @@ export default function ConfirmationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  const notificationsScheduled = useRef(false);
+  const confirmationScheduled = useRef(false);
+  const [reminderSet, setReminderSet] = useState(false);
+  const [chosenTiming, setChosenTiming] = useState<ReminderTiming | null>(null);
+  const [reminderPending, setReminderPending] = useState(false);
+  const [reminderUnavailable, setReminderUnavailable] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -38,8 +44,8 @@ export default function ConfirmationScreen() {
   );
 
   useEffect(() => {
-    if (data?.registration && data?.event && !notificationsScheduled.current) {
-      notificationsScheduled.current = true;
+    if (data?.registration && data?.event && !confirmationScheduled.current) {
+      confirmationScheduled.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       const event = {
@@ -50,19 +56,41 @@ export default function ConfirmationScreen() {
       };
 
       scheduleConfirmationNotification(event);
-      scheduleDayBeforeReminder(event).then((identifier) => {
-        if (identifier && data.registration) {
-          saveReminderIdentifier(
-            data.registration.id,
-            event.id,
-            event.title,
-            event.date,
-            identifier
-          );
-        }
-      });
     }
   }, [data]);
+
+  const handleReminderChoice = async (timing: ReminderTiming) => {
+    if (!data?.registration || !data?.event || reminderPending) return;
+
+    setReminderPending(true);
+
+    const event = {
+      id: data.event.id,
+      title: data.event.title,
+      date: data.event.date,
+      location: data.event.location,
+    };
+
+    const result = await scheduleReminderWithOffset(event, timing);
+
+    if (result) {
+      await saveReminderIdentifier(
+        data.registration.id,
+        event.id,
+        event.title,
+        event.date,
+        result.identifier,
+        timing.label,
+        result.scheduledAt.toISOString()
+      );
+      setChosenTiming(timing);
+      setReminderSet(true);
+    } else {
+      setReminderUnavailable(true);
+    }
+
+    setReminderPending(false);
+  };
 
   const registration = data?.registration;
   const event = data?.event;
@@ -181,6 +209,76 @@ export default function ConfirmationScreen() {
             </View>
           </View>
 
+          {/* Reminder picker */}
+          {Platform.OS !== "web" && (
+            <View
+              style={[
+                styles.reminderCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                },
+              ]}
+            >
+              <View style={styles.reminderCardHeader}>
+                <Feather name="bell" size={18} color={colors.primary} />
+                <Text style={[styles.reminderCardTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
+                  Set a Reminder
+                </Text>
+              </View>
+
+              {reminderSet && chosenTiming ? (
+                <View style={styles.reminderConfirmed}>
+                  <View style={[styles.reminderConfirmedIcon, { backgroundColor: `${colors.primary}18` }]}>
+                    <Feather name="check" size={16} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.reminderConfirmedText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    Reminder set for{" "}
+                    <Text style={{ fontFamily: "Inter_600SemiBold" }}>{chosenTiming.label}</Text>
+                  </Text>
+                </View>
+              ) : reminderUnavailable ? (
+                <Text style={[styles.reminderHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  This event is too soon to set a reminder for that option.
+                </Text>
+              ) : (
+                <>
+                  <Text style={[styles.reminderHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    When would you like to be reminded?
+                  </Text>
+                  <View style={styles.reminderOptions}>
+                    {REMINDER_OPTIONS.map((option) => (
+                      <Pressable
+                        key={option.label}
+                        testID={`reminder-option-${option.label.replace(/\s+/g, "-").toLowerCase()}`}
+                        style={({ pressed }) => [
+                          styles.reminderOptionBtn,
+                          {
+                            borderColor: colors.border,
+                            borderRadius: colors.radius - 2,
+                            backgroundColor: pressed ? `${colors.primary}10` : colors.background,
+                            opacity: reminderPending ? 0.5 : 1,
+                          },
+                        ]}
+                        onPress={() => handleReminderChoice(option)}
+                        disabled={reminderPending}
+                      >
+                        {reminderPending ? (
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
+                          <Text style={[styles.reminderOptionText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                            {option.label}
+                          </Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
           <Pressable
             testID="go-home-button"
             style={({ pressed }) => [
@@ -278,6 +376,51 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
+  },
+  reminderCard: {
+    padding: 20,
+    borderWidth: 1,
+    gap: 12,
+  },
+  reminderCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  reminderCardTitle: {
+    fontSize: 22,
+  },
+  reminderHint: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  reminderOptions: {
+    gap: 10,
+  },
+  reminderOptionBtn: {
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  reminderOptionText: {
+    fontSize: 15,
+  },
+  reminderConfirmed: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  reminderConfirmedIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderConfirmedText: {
+    fontSize: 15,
+    flex: 1,
   },
   homeBtn: {
     paddingVertical: 16,
