@@ -223,10 +223,41 @@ export default function EventDetail() {
                 <span className="text-muted-foreground ml-2">per person</span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm mb-8 bg-muted/50 p-3 rounded-lg">
-                <Users className="w-4 h-4 text-primary" />
-                <span className="font-medium">{event.spotsRemaining} spots remaining</span>
-              </div>
+              {event.spotsRemaining != null && (
+                <div className="mb-8">
+                  {(() => {
+                    const filled = event.capacity - event.spotsRemaining;
+                    const pct = Math.min(100, Math.round((filled / event.capacity) * 100));
+                    const isAlmostFull = event.spotsRemaining <= 5;
+                    return (
+                      <>
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <Users className="w-4 h-4 text-primary" />
+                            {event.spotsRemaining === 0
+                              ? "Sold out"
+                              : isAlmostFull
+                              ? `Only ${event.spotsRemaining} spot${event.spotsRemaining === 1 ? "" : "s"} left!`
+                              : `${event.spotsRemaining} spot${event.spotsRemaining === 1 ? "" : "s"} remaining`}
+                          </span>
+                          <span className="text-muted-foreground">{filled} / {event.capacity} filled</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              background: isAlmostFull
+                                ? "linear-gradient(90deg, #C9A227, #e8b84b)"
+                                : "linear-gradient(90deg, #C9A227, #d4aa3a)",
+                            }}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
 
               {isSoldOut ? (
                 <Button className="w-full h-14 text-lg rounded-xl" disabled>
