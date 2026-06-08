@@ -121,9 +121,9 @@ export default function Events() {
         />
         <div className="absolute inset-0 bg-foreground/70" />
         <div className="container mx-auto max-w-5xl text-center relative z-10">
-          <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Our Gatherings</h1>
+          <h1 className="font-serif text-5xl md:text-6xl font-medium mb-6">Bougie Events!</h1>
           <p className="text-lg md:text-xl text-muted font-light max-w-2xl mx-auto">
-            From intimate wine tastings to vibrant brunches, discover our upcoming curated experiences.
+            Life's too short for ordinary. Come dressed, come ready, and let's make it bougie — bam!
           </p>
         </div>
       </section>
