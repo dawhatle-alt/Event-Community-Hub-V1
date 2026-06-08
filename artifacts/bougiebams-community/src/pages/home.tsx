@@ -50,7 +50,7 @@ export default function Home() {
                   </Button>
                 </AnimatedGradientBorder>
                 <AnimatedGradientBorder className="inline-block">
-                  <Button size="lg" variant="outline" className="w-full rounded-xl bg-transparent border-[#FAF8F5]/20 text-[#FAF8F5]/75 hover:bg-[#FAF8F5]/[0.05] font-medium px-8 h-14 text-base" asChild>
+                  <Button size="lg" className="w-full rounded-xl bg-[#181D37] text-[#FAF8F5] hover:bg-[#181D37]/90 font-medium px-8 h-14 text-base" asChild>
                     <Link href="/about">Our Story</Link>
                   </Button>
                 </AnimatedGradientBorder>
@@ -81,7 +81,7 @@ export default function Home() {
                 Choose from over <strong className="font-semibold text-primary">40 premium mats, tile sets, and racks</strong> to create a setup that's completely your own. Every detail is yours to customize — from the feel of the tiles to the look of the table — for an experience that's as unique as you are.
               </p>
               <AnimatedGradientBorder className="inline-block">
-                <Button size="lg" variant="outline" className="rounded-xl border-background/30 text-background hover:bg-background/10 h-12 px-8" asChild>
+                <Button size="lg" className="rounded-xl bg-primary text-[#181D37] hover:bg-primary/90 font-medium h-14 px-8 text-base" asChild>
                   <Link href="/events">Browse Upcoming Events</Link>
                 </Button>
               </AnimatedGradientBorder>
