@@ -29,6 +29,9 @@ export const AVAILABLE_PHOTOS = [
   { src: "/event-book-club.jpeg",  label: "Book Club" },
   { src: "/mahjong-table.jpeg",    label: "Mahjong Table" },
   { src: "/mahjong-tiles.jpeg",    label: "Mahjong Tiles" },
+  { src: "/mats-rack-1.jpg",       label: "Mat Rack (1)" },
+  { src: "/mats-rack-2.jpg",       label: "Mat Rack (2)" },
+  { src: "/tiles-collection.jpg",  label: "Tile Collection" },
 ];
 
 export function getHeroTiles(): TileConfig[] {

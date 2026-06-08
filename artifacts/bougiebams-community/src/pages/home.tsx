@@ -82,13 +82,22 @@ export default function Home() {
               </AnimatedGradientBorder>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="aspect-square rounded-2xl overflow-hidden border border-background/10">
-                <img src={`${import.meta.env.BASE_URL}mats-rack-1.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-              </div>
-              <div className="aspect-square rounded-2xl overflow-hidden border border-background/10">
-                <img src={`${import.meta.env.BASE_URL}mats-rack-2.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-              </div>
-              <div className="col-span-2 rounded-2xl overflow-hidden border border-background/10 h-44">
+              {[
+                `${import.meta.env.BASE_URL}mats-rack-1.jpg`,
+                `${import.meta.env.BASE_URL}mats-rack-2.jpg`,
+              ].map((src, i) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/90"
+                  style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.6), 0 0 18px 4px rgba(201,162,39,0.55), 0 0 48px 12px rgba(201,162,39,0.25)" }}
+                >
+                  <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                </div>
+              ))}
+              <div
+                className="col-span-2 rounded-2xl overflow-hidden border-2 border-primary/90 h-44"
+                style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.6), 0 0 18px 4px rgba(201,162,39,0.55), 0 0 48px 12px rgba(201,162,39,0.25)" }}
+              >
                 <img src={`${import.meta.env.BASE_URL}tiles-collection.jpg`} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
               </div>
             </div>
