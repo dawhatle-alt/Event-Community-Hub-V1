@@ -1,7 +1,7 @@
 import { useAuth } from "@workspace/replit-auth-web";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { formatDateTimeFullCT } from "@/lib/dateUtils";
 import { Calendar, MapPin, Users, LogIn, X, Mail, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -429,7 +429,7 @@ function RegistrationCard({
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5 shrink-0" />
-            <span>{format(new Date(event.date), "EEEE, MMMM d, yyyy · h:mm a")}</span>
+            <span>{formatDateTimeFullCT(event.date)} CT</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 shrink-0" />

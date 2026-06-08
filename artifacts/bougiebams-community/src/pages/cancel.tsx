@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { formatDateTimeFullCT } from "@/lib/dateUtils";
 import { Calendar, MapPin, Users, Mail, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -252,7 +252,7 @@ function CancelConfirmPage({ regId, token }: { regId: number; token: string }) {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5 shrink-0" />
-                <span>{format(new Date(info.eventDate), "EEEE, MMMM d, yyyy · h:mm a")}</span>
+                <span>{formatDateTimeFullCT(info.eventDate)} CT</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />

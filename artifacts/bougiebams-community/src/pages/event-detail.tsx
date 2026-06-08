@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { format } from "date-fns";
+import { formatDateCT, formatTimeCT, formatDateShortCT } from "@/lib/dateUtils";
 import { Calendar, MapPin, Users, ArrowLeft, Loader2, ExternalLink, X } from "lucide-react";
 import { useGetEvent, useCreateCheckoutSession, getGetEventQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -142,8 +142,8 @@ export default function EventDetail() {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
                   <div>
-                    <div className="font-medium text-foreground">{format(new Date(event.date), "MMMM d, yyyy")}</div>
-                    <div className="text-sm">{format(new Date(event.date), "h:mm a")}</div>
+                    <div className="font-medium text-foreground">{formatDateCT(event.date)}</div>
+                    <div className="text-sm">{formatTimeCT(event.date)} CT</div>
                   </div>
                 </div>
                 <a
@@ -185,7 +185,7 @@ export default function EventDetail() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Date</span>
-                      <span className="font-medium">{format(new Date(event.date), "MMM d, yyyy")}</span>
+                      <span className="font-medium">{formatDateShortCT(event.date)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Tickets</span>

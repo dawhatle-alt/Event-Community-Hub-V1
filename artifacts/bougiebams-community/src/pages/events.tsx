@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, format } from "date-fns";
+import { formatDateShortCT, formatTimeCT, formatDateTimeCT } from "@/lib/dateUtils";
 import { Calendar, Users, MapPin, Search, LayoutGrid, LayoutList, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useListEvents, useListEventCategories } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -245,7 +246,7 @@ export default function Events() {
                         </div>
                       )}
                       <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium border border-border/50">
-                        {format(new Date(event.date), "MMM d, yyyy")}
+                        {formatDateShortCT(event.date)}
                       </div>
                       <div className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
                         ${event.price}
@@ -261,7 +262,7 @@ export default function Events() {
                       <div className="mt-auto space-y-2 pt-4">
                         <div className="flex items-center text-sm text-muted-foreground gap-2">
                           <Calendar className="w-4 h-4 text-primary/70" />
-                          <span>{format(new Date(event.date), "h:mm a")}</span>
+                          <span>{formatTimeCT(event.date)} CT</span>
                         </div>
                         <div className="flex items-center text-sm text-muted-foreground gap-2">
                           <MapPin className="w-4 h-4 text-primary/70" />
@@ -300,7 +301,7 @@ export default function Events() {
                       <div className="text-primary font-medium text-xs mb-1 uppercase tracking-wider">{event.category}</div>
                       <h3 className="font-serif text-xl font-medium group-hover:text-primary transition-colors truncate">{event.title}</h3>
                       <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(event.date), "MMM d, yyyy · h:mm a")}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDateTimeCT(event.date)} CT</span>
                         <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{event.location}</span>
                       </div>
                     </div>

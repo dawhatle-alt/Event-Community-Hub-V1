@@ -8,7 +8,7 @@ import { HeroShuffleGrid } from "@/components/HeroShuffleGrid";
 import { AnimatedGradientBorder } from "@/components/AnimatedGradientBorder";
 import { SpotlightBackground } from "@/components/SpotlightBackground";
 import { useListFeaturedEvents } from "@workspace/api-client-react";
-import { format } from "date-fns";
+import { formatDateShortCT, formatTimeCT } from "@/lib/dateUtils";
 
 export default function Home() {
   const { data: featuredEvents, isLoading } = useListFeaturedEvents();
@@ -160,7 +160,7 @@ export default function Home() {
                         </div>
                       )}
                       <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium border border-border/50 shadow-sm">
-                        {format(new Date(event.date), "MMM d, yyyy")}
+                        {formatDateShortCT(event.date)}
                       </div>
                       <div className="absolute bottom-4 right-4 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
                         {Number(event.price) === 0 ? "Free" : `$${event.price}`}
@@ -173,7 +173,7 @@ export default function Home() {
                       <h3 className="font-serif text-3xl font-medium mb-3 group-hover:text-primary transition-colors">{event.title}</h3>
                       <p className="text-muted-foreground line-clamp-2 mb-6 font-light">{event.description}</p>
                       <div className="mt-auto flex items-center text-sm text-muted-foreground gap-4">
-                        <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {format(new Date(event.date), "h:mm a")}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {formatTimeCT(event.date)} CT</span>
                         <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {event.spotsRemaining ?? event.capacity} spots left</span>
                       </div>
                     </div>
