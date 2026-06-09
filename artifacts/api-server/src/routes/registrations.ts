@@ -147,6 +147,16 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
+  // Reject unpublished events and events that have already passed
+  if (!event.published) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  if (new Date(event.date) < new Date()) {
+    res.status(400).json({ error: "This event has already passed." });
+    return;
+  }
+
   // Server-side capacity enforcement
   const spotsAvailable = event.spotsRemaining ?? event.capacity;
   if (spotsAvailable < quantity) {
@@ -171,35 +181,65 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
   // Free events or valid coupon: skip Square entirely, confirm immediately
   if (effectivePrice === 0) {
     const sessionId = `free_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const [freeReg] = await db.insert(registrationsTable).values({
-      eventId,
-      userId: userId ?? undefined,
-      firstName,
-      lastName,
-      email,
-      phone: phone ?? null,
-      quantity,
-      totalAmount: "0",
-      stripeSessionId: sessionId,
-      status: "paid",
-      seatingPreference: seatingPreference ?? null,
-      jokersPreference: jokersPreference ?? null,
-      skillLevel: skillLevel ?? null,
-      referralCode,
-      referredBy: referredBy ?? null,
-    }).returning();
 
-    await db
-      .update(eventsTable)
-      .set({
+    // Use the same row-lock transaction as the paid path to prevent concurrent overselling
+    type FreeTxResult =
+      | { ok: true; reg: typeof registrationsTable.$inferSelect }
+      | { ok: false; statusCode: number; message: string };
+
+    const freeTx = await db.transaction(async (tx): Promise<FreeTxResult> => {
+      const lockResult = await tx.execute(
+        sql`SELECT capacity FROM events WHERE id = ${eventId} FOR UPDATE`
+      );
+      const lockedEvent = lockResult.rows?.[0] as { capacity: number } | undefined;
+      if (!lockedEvent) return { ok: false, statusCode: 404, message: "Event not found" };
+
+      const takenResult = await tx.execute(
+        sql`SELECT COALESCE(SUM(quantity), 0) AS taken FROM registrations WHERE event_id = ${eventId} AND status = 'paid'`
+      );
+      const taken = Number((takenResult.rows?.[0] as any)?.taken ?? 0);
+      const realSpotsAvailable = lockedEvent.capacity - taken;
+
+      if (realSpotsAvailable < quantity) {
+        return { ok: false, statusCode: 400, message: `Only ${realSpotsAvailable} spot(s) remaining for this event.` };
+      }
+
+      const [reg] = await tx.insert(registrationsTable).values({
+        eventId,
+        userId: userId ?? undefined,
+        firstName,
+        lastName,
+        email,
+        phone: phone ?? null,
+        quantity,
+        totalAmount: "0",
+        stripeSessionId: sessionId,
+        status: "paid",
+        seatingPreference: seatingPreference ?? null,
+        jokersPreference: jokersPreference ?? null,
+        skillLevel: skillLevel ?? null,
+        referralCode,
+        referredBy: referredBy ?? null,
+      }).returning();
+
+      await tx.update(eventsTable).set({
         spotsRemaining: sql`${eventsTable.capacity} - (
           SELECT COALESCE(SUM(${registrationsTable.quantity}), 0)
           FROM ${registrationsTable}
           WHERE ${registrationsTable.eventId} = ${eventsTable.id}
           AND ${registrationsTable.status} = 'paid'
         )`,
-      })
-      .where(eq(eventsTable.id, eventId));
+      }).where(eq(eventsTable.id, eventId));
+
+      return { ok: true, reg };
+    });
+
+    if (!freeTx.ok) {
+      res.status(freeTx.statusCode).json({ error: freeTx.message });
+      return;
+    }
+
+    const freeReg = freeTx.reg;
 
     // Send confirmation email (non-blocking — never fail the registration if email fails)
     sendRegistrationConfirmation({
@@ -386,7 +426,20 @@ router.post("/registrations/pay", async (req, res): Promise<void> => {
 
   const finalized = await finalizePayment(sessionId, payment.id ?? null);
   if (!finalized) {
-    res.status(409).json({ error: "This event is now sold out. Your card was not charged." });
+    // Payment was already captured by Square but the event is now sold out.
+    // Immediately refund so the customer is not charged.
+    try {
+      await square.refunds.refundPayment({
+        idempotencyKey: `oversold-refund-${payment.id!}-${Date.now()}`,
+        paymentId: payment.id!,
+        amountMoney: { amount: amountCents, currency: "USD" },
+        reason: "Event sold out — automatic refund",
+      });
+      logger.info({ paymentId: payment.id }, "Refund issued for oversold event via /registrations/pay");
+    } catch (refundErr) {
+      logger.error({ refundErr, paymentId: payment.id }, "CRITICAL: Could not refund oversold charge — manual intervention required");
+    }
+    res.status(409).json({ error: "This event is now sold out. Your payment has been refunded." });
     return;
   }
 
@@ -445,7 +498,10 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
 
   res.json({
     registration: {
+      id: registration.id,
       firstName: registration.firstName,
+      lastName: registration.lastName,
+      email: registration.email,
       status: registration.status,
       quantity: registration.quantity,
       totalAmount: Number(registration.totalAmount),

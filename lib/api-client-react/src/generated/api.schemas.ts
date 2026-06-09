@@ -192,7 +192,10 @@ export interface Registration {
 }
 
 export type RegistrationConfirmationRegistration = {
+  id: number;
   firstName: string;
+  lastName: string;
+  email: string;
   status: string;
   quantity: number;
   totalAmount: number;

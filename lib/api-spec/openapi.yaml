@@ -961,10 +961,17 @@ components:
       properties:
         registration:
           type: object
-          required: [firstName, status, quantity, totalAmount]
+          required: [id, firstName, lastName, email, status, quantity, totalAmount]
           properties:
+            id:
+              type: integer
             firstName:
               type: string
+            lastName:
+              type: string
+            email:
+              type: string
+              format: email
             status:
               type: string
             quantity:

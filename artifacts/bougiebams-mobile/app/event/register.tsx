@@ -121,8 +121,11 @@ export default function RegisterScreen() {
               response.url.includes("payment"));
           if (isCheckoutUrl) {
             if (Platform.OS === "web") {
-              window.open(response.url, "_blank");
+              // On web, replace the current tab so Square can redirect back to confirmation
+              window.location.href = response.url;
+              return;
             } else {
+              // On native, await the in-app browser — user completes (or abandons) payment there
               await WebBrowser.openBrowserAsync(response.url);
             }
           }

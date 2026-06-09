@@ -529,7 +529,10 @@ export const GetRegistrationBySessionQueryParams = zod.object({
 
 export const GetRegistrationBySessionResponse = zod.object({
   "registration": zod.object({
+  "id": zod.number(),
   "firstName": zod.string(),
+  "lastName": zod.string(),
+  "email": zod.string().email(),
   "status": zod.string(),
   "quantity": zod.number(),
   "totalAmount": zod.number(),
