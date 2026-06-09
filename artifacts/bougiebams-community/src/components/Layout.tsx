@@ -30,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     setMobileMenuOpen(false);
+    window.scrollTo(0, 0);
   }, [location]);
 
   const initials = user
