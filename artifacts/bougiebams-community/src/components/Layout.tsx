@@ -39,9 +39,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white">
-        <div className="container mx-auto px-4 h-28 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-36 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src={logoPath} alt="Bougie Bams Events" className="h-20 w-auto" />
+            <img src={logoPath} alt="Bougie Bams Events" className="h-32 w-auto" />
           </Link>
 
           {/* Desktop Nav */}
