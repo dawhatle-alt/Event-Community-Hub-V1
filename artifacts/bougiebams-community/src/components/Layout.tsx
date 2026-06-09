@@ -59,7 +59,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     href={href}
                     className={cn(
-                      "relative z-10 flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200",
+                      "relative z-10 flex items-center px-4 py-2 rounded-xl text-base font-medium transition-colors duration-200",
                       isHovered
                         ? "text-[#FAF8F5]"
                         : isActive
