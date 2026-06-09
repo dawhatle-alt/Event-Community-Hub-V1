@@ -26,6 +26,9 @@ export const registrationsTable = pgTable("registrations", {
   skillLevel: text("skill_level"),
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
+  reminderIdentifier: text("reminder_identifier"),
+  reminderLabel: text("reminder_label"),
+  reminderScheduledAt: timestamp("reminder_scheduled_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

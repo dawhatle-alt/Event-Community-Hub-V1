@@ -19,18 +19,24 @@ const zebraBanner = require("@/assets/bougie-zebra-banner.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/auth";
 import {
   saveReminderIdentifier,
   scheduleConfirmationNotification,
   scheduleReminderWithOffset,
+  syncReminderToServer,
+  getStoredAuthToken,
   REMINDER_OPTIONS,
   type ReminderTiming,
 } from "@/lib/notifications";
+
+const API_BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export default function ConfirmationScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const confirmationScheduled = useRef(false);
   const [reminderSet, setReminderSet] = useState(false);
@@ -77,6 +83,7 @@ export default function ConfirmationScreen() {
     const result = await scheduleReminderWithOffset(event, timing);
 
     if (result) {
+      const scheduledAtIso = result.scheduledAt.toISOString();
       await saveReminderIdentifier(
         data.registration.id,
         event.id,
@@ -84,8 +91,19 @@ export default function ConfirmationScreen() {
         event.date,
         result.identifier,
         timing.label,
-        result.scheduledAt.toISOString()
+        scheduledAtIso
       );
+      if (isAuthenticated) {
+        syncReminderToServer(API_BASE_URL, getStoredAuthToken, {
+          registrationId: data.registration.id,
+          eventId: event.id,
+          eventTitle: event.title,
+          eventDate: event.date,
+          notificationIdentifier: result.identifier,
+          reminderLabel: timing.label,
+          scheduledAt: scheduledAtIso,
+        }).catch(() => {});
+      }
       setChosenTiming(timing);
       setReminderSet(true);
     } else {

@@ -4,12 +4,34 @@ import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { RemindersProvider, useReminders } from "@/context/reminders";
+import { useAuth } from "@/context/auth";
+import { getStoredAuthToken } from "@/lib/notifications";
+
+const API_BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+function RemindersRehydrator() {
+  const { isAuthenticated } = useAuth();
+  const { rehydrateFromServer } = useReminders();
+  const hasRehydrated = React.useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !hasRehydrated.current) {
+      hasRehydrated.current = true;
+      rehydrateFromServer(API_BASE_URL, getStoredAuthToken);
+    }
+    if (!isAuthenticated) {
+      hasRehydrated.current = false;
+    }
+  }, [isAuthenticated, rehydrateFromServer]);
+
+  return null;
+}
 
 function NativeTabLayout() {
   return (
@@ -123,6 +145,7 @@ function TabLayoutInner() {
 export default function TabLayout() {
   return (
     <RemindersProvider>
+      <RemindersRehydrator />
       <TabLayoutInner />
     </RemindersProvider>
   );

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
@@ -14,6 +15,7 @@ Notifications.setNotificationHandler({
 });
 
 const REMINDERS_STORAGE_KEY = "bb_reminder_identifiers";
+const TOKEN_KEY = "bb_session_token";
 
 export type ReminderRecord = {
   registrationId: number;
@@ -36,7 +38,27 @@ export const REMINDER_OPTIONS: ReminderTiming[] = [
   { label: "Morning of", offsetDays: 0 },
 ];
 
-async function loadReminderRecords(): Promise<ReminderRecord[]> {
+type ServerReminderRecord = {
+  registrationId: number;
+  eventId: number;
+  eventTitle: string;
+  eventDate: string;
+  eventLocation: string;
+  notificationIdentifier: string;
+  reminderLabel: string | null;
+  scheduledAt: string | null;
+};
+
+export async function getStoredAuthToken(): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadReminderRecords(): Promise<ReminderRecord[]> {
   try {
     const raw = await AsyncStorage.getItem(REMINDERS_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -45,7 +67,7 @@ async function loadReminderRecords(): Promise<ReminderRecord[]> {
   }
 }
 
-async function saveReminderRecords(records: ReminderRecord[]): Promise<void> {
+export async function saveReminderRecords(records: ReminderRecord[]): Promise<void> {
   try {
     await AsyncStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(records));
   } catch {
@@ -198,6 +220,213 @@ export async function unregisterPushTokenFromServer(
   } catch {
     // Non-critical
   }
+}
+
+/**
+ * Persist a reminder record to the server tied to the user's account.
+ * Silently no-ops if not authenticated or the request fails.
+ */
+export async function syncReminderToServer(
+  apiBaseUrl: string,
+  getAuthToken: () => Promise<string | null>,
+  record: ReminderRecord
+): Promise<void> {
+  if (Platform.OS === "web") return;
+  const authToken = await getAuthToken();
+  if (!authToken) return;
+  try {
+    await fetch(`${apiBaseUrl}/api/registrations/my/${record.registrationId}/reminder`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        notificationIdentifier: record.notificationIdentifier,
+        reminderLabel: record.reminderLabel ?? null,
+        scheduledAt: record.scheduledAt ?? null,
+      }),
+    });
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Remove a reminder record from the server.
+ * Silently no-ops if not authenticated or the request fails.
+ */
+export async function removeReminderFromServer(
+  apiBaseUrl: string,
+  getAuthToken: () => Promise<string | null>,
+  registrationId: number
+): Promise<void> {
+  if (Platform.OS === "web") return;
+  const authToken = await getAuthToken();
+  if (!authToken) return;
+  try {
+    await fetch(`${apiBaseUrl}/api/registrations/my/${registrationId}/reminder`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+  } catch {
+    // Non-critical
+  }
+}
+
+function buildReminderContent(
+  serverRec: ServerReminderRecord
+): Notifications.NotificationContentInput {
+  const timing = REMINDER_OPTIONS.find((o) => o.label === serverRec.reminderLabel);
+  const offsetDays = timing?.offsetDays ?? 1;
+
+  const eventDate = new Date(serverRec.eventDate);
+  const timeStr = eventDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const dateStr = eventDate.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+  let title: string;
+  let body: string;
+  if (offsetDays === 0) {
+    title = "Your event is today! 🌟";
+    body = `${serverRec.eventTitle} is today at ${timeStr} at ${serverRec.eventLocation}`;
+  } else if (offsetDays === 1) {
+    title = "Your event is tomorrow! ✨";
+    body = `Don't forget — ${serverRec.eventTitle} is tomorrow at ${timeStr} at ${serverRec.eventLocation}`;
+  } else {
+    title = "Upcoming event reminder 📅";
+    body = `Coming up in ${offsetDays} days — ${serverRec.eventTitle} on ${dateStr} at ${serverRec.eventLocation}`;
+  }
+
+  return {
+    title,
+    body,
+    data: { eventId: serverRec.eventId, screen: "event" },
+  };
+}
+
+/**
+ * On sign-in (or app launch after reinstall), fetch reminder records from the server
+ * and reconcile them with the OS notification scheduler.
+ *
+ * - Records already in the OS scheduler are preserved as-is.
+ * - Records missing from the OS scheduler (e.g. after reinstall) are rescheduled.
+ * - Records whose scheduled time has already passed are pruned from the server.
+ *
+ * Returns the up-to-date list of active reminder records and persists them to
+ * local AsyncStorage.
+ */
+export async function rehydrateRemindersFromServer(
+  apiBaseUrl: string,
+  getAuthToken: () => Promise<string | null>
+): Promise<ReminderRecord[]> {
+  if (Platform.OS === "web") return [];
+
+  const authToken = await getAuthToken();
+  if (!authToken) return getPendingReminders();
+
+  let serverRecords: ServerReminderRecord[];
+  try {
+    const resp = await fetch(`${apiBaseUrl}/api/registrations/my/reminders`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (!resp.ok) return getPendingReminders();
+    serverRecords = await resp.json();
+  } catch {
+    return getPendingReminders();
+  }
+
+  if (serverRecords.length === 0) {
+    await saveReminderRecords([]);
+    return [];
+  }
+
+  let scheduled: Notifications.NotificationRequest[] = [];
+  try {
+    scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  } catch {
+    return getPendingReminders();
+  }
+  const scheduledIds = new Set(scheduled.map((n) => n.identifier));
+
+  const { status: permStatus } = await Notifications.getPermissionsAsync();
+  const hasPermission = permStatus === "granted";
+
+  const now = new Date();
+  const updatedRecords: ReminderRecord[] = [];
+  const toPrune: number[] = [];
+
+  for (const serverRec of serverRecords) {
+    const eventDate = new Date(serverRec.eventDate);
+    const scheduledAt = serverRec.scheduledAt ? new Date(serverRec.scheduledAt) : null;
+
+    // Event has already passed — prune server entry
+    if (eventDate < now) {
+      toPrune.push(serverRec.registrationId);
+      continue;
+    }
+
+    if (scheduledIds.has(serverRec.notificationIdentifier)) {
+      // Already in the OS scheduler — keep the record exactly as stored
+      updatedRecords.push({
+        registrationId: serverRec.registrationId,
+        eventId: serverRec.eventId,
+        eventTitle: serverRec.eventTitle,
+        eventDate: serverRec.eventDate,
+        notificationIdentifier: serverRec.notificationIdentifier,
+        reminderLabel: serverRec.reminderLabel ?? undefined,
+        scheduledAt: serverRec.scheduledAt ?? undefined,
+      });
+    } else if (scheduledAt && scheduledAt > now && hasPermission) {
+      // Not in OS (reinstall/restore) but the reminder time is still in the future — reschedule
+      try {
+        const newIdentifier = await Notifications.scheduleNotificationAsync({
+          content: buildReminderContent(serverRec),
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: scheduledAt,
+          },
+        });
+
+        const newRecord: ReminderRecord = {
+          registrationId: serverRec.registrationId,
+          eventId: serverRec.eventId,
+          eventTitle: serverRec.eventTitle,
+          eventDate: serverRec.eventDate,
+          notificationIdentifier: newIdentifier,
+          reminderLabel: serverRec.reminderLabel ?? undefined,
+          scheduledAt: serverRec.scheduledAt ?? undefined,
+        };
+
+        updatedRecords.push(newRecord);
+
+        // Update the server with the fresh OS identifier
+        syncReminderToServer(apiBaseUrl, getAuthToken, newRecord).catch(() => {});
+      } catch {
+        // If rescheduling fails, skip this entry
+      }
+    } else {
+      // scheduledAt is in the past (or null) and not in OS — notification already fired
+      toPrune.push(serverRec.registrationId);
+    }
+  }
+
+  // Prune stale entries from server (fire-and-forget)
+  for (const regId of toPrune) {
+    removeReminderFromServer(apiBaseUrl, getAuthToken, regId).catch(() => {});
+  }
+
+  await saveReminderRecords(updatedRecords);
+  return updatedRecords;
 }
 
 export async function scheduleConfirmationNotification(event: {

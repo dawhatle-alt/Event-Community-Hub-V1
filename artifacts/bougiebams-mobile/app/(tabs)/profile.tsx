@@ -28,8 +28,12 @@ import {
   cancelEventReminder,
   getPendingReminders,
   removeReminderByRegistrationId,
+  removeReminderFromServer,
+  getStoredAuthToken,
   type ReminderRecord,
 } from "@/lib/notifications";
+
+const API_BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type TabFilter = "upcoming" | "past";
 
@@ -287,6 +291,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             await cancelEventReminder(reminder.notificationIdentifier);
             await removeReminderByRegistrationId(reminder.registrationId);
+            removeReminderFromServer(API_BASE_URL, getStoredAuthToken, reminder.registrationId).catch(() => {});
             setReminders((prev) =>
               prev.filter((r) => r.registrationId !== reminder.registrationId)
             );
