@@ -42,7 +42,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 h-28 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src={logoPath} alt="Bougie Bams Events" className="h-20 w-auto" />
-            <span className="font-serif font-semibold text-xl tracking-tight hidden sm:inline-block">Bougie Bams Events</span>
           </Link>
 
           {/* Desktop Nav */}
