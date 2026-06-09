@@ -11,3 +11,9 @@ id = "zrbS4TynE3yy2lDV8f8jI"
 uri = "file://artifacts/bougiebams-community/public/event-style-table.svg"
 type = "image"
 title = "Style-Your-Own Table Event Image (logo + event name)"
+
+[[outputs]]
+id = "bLG0zeW6DeEAJz1YPxTuI"
+uri = "file://artifacts/bougiebams-community/public/favicon.svg"
+type = "image"
+title = "New Crown Favicon"
