@@ -153,6 +153,7 @@ export async function sendDayBeforeReminders(): Promise<number> {
   // 5. Send in batches of 100 (Expo limit)
   const BATCH_SIZE = 100;
   let successCount = 0;
+  const staleTokens: string[] = [];
 
   for (let i = 0; i < messages.length; i += BATCH_SIZE) {
     const batch = messages.slice(i, i + BATCH_SIZE);
@@ -162,6 +163,14 @@ export async function sendDayBeforeReminders(): Promise<number> {
       const errors = tickets.filter((t) => t.status === "error");
       successCount += ok;
 
+      // Collect tokens reported as DeviceNotRegistered for pruning
+      for (let j = 0; j < tickets.length; j++) {
+        const ticket = tickets[j];
+        if (ticket.status === "error" && ticket.details?.error === "DeviceNotRegistered") {
+          staleTokens.push(batch[j].to);
+        }
+      }
+
       if (errors.length > 0) {
         logger.warn({ errors }, "Some push notifications failed in batch");
       }
@@ -169,6 +178,18 @@ export async function sendDayBeforeReminders(): Promise<number> {
     } catch (err) {
       logger.error({ err, batchStart: i }, "Failed to send push notification batch");
     }
+  }
+
+  // 6. Prune stale / invalid tokens from the database
+  if (staleTokens.length > 0) {
+    try {
+      await db.delete(pushTokensTable).where(inArray(pushTokensTable.token, staleTokens));
+      logger.info({ pruned: staleTokens.length }, "Pruned stale push tokens (DeviceNotRegistered)");
+    } catch (err) {
+      logger.error({ err, staleTokens }, "Failed to prune stale push tokens");
+    }
+  } else {
+    logger.info("No stale push tokens to prune this run");
   }
 
   logger.info({ successCount, total: messages.length }, "Day-before push reminders complete");
