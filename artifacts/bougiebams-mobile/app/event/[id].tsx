@@ -188,7 +188,6 @@ export default function EventDetailScreen() {
               <Feather name="clock" size={14} color={colors.primary} />
               <Text style={[styles.pillText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                 {format(new Date(event.date), "h:mm a")}
-                {event.endDate ? ` – ${format(new Date(event.endDate), "h:mm a")}` : ""}
               </Text>
             </View>
             <Pressable

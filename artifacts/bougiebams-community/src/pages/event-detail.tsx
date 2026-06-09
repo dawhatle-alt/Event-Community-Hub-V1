@@ -228,7 +228,7 @@ export default function EventDetail() {
                   <Calendar className="w-5 h-5 text-primary" />
                   <div>
                     <div className="font-medium text-foreground">{formatDateCT(event.date)}</div>
-                    <div className="text-sm">{formatTimeRangeCT(event.date, event.endDate)}</div>
+                    <div className="text-sm">{formatTimeRangeCT(event.date)}</div>
                     <div className="flex items-center gap-2 mt-1.5">
                       <a
                         href={googleCalUrl()}
