@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const zebraBanner = require("@/assets/bougie-zebra-banner.png");
+const zebraBanner = require("@/assets/bougie-zebra-mobile.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EventCard } from "@/components/EventCard";
