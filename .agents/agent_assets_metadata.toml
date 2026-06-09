@@ -22,10 +22,10 @@ title = "New Crown Favicon"
 id = "KVApZgQbaHzhnFb3v48Wt"
 uri = "file://artifacts/bougiebams-community/public/favicon.png"
 type = "image"
-title = "Final Crown Favicon — 64×64 transparent PNG"
+title = "Web Favicon — 64×64"
 
 [[outputs]]
 id = "b1mBSA5ivj5B4he7mdTir"
 uri = "file://artifacts/bougiebams-mobile/assets/images/icon.png"
 type = "image"
-title = "Mobile App Icon — 1024×1024 navy + gold crown"
+title = "Mobile App Icon — 1024×1024"
