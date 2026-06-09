@@ -10,6 +10,7 @@ import Events from "@/pages/events";
 import EventDetail from "@/pages/event-detail";
 import Confirmation from "@/pages/confirmation";
 import About from "@/pages/about";
+import Founder from "@/pages/founder";
 import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
 import MyEvents from "@/pages/my-events";
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/events/pay" component={Pay} />
         <Route path="/events/:id" component={EventDetail} />
         <Route path="/about" component={About} />
+        <Route path="/founder" component={Founder} />
         <Route path="/contact" component={Contact} />
         <Route path="/admin" component={Admin} />
         <Route path="/my-events" component={MyEvents} />

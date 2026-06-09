@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import logoPath from "@assets/Bougie_Bams_NEW_logo_-_white_1780941860680.png";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogIn, LogOut, CalendarDays, Instagram, Facebook } from "lucide-react";
+import { Menu, X, LogIn, LogOut, CalendarDays, Instagram, Facebook, ChevronDown } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,12 +15,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const NAV_LINKS = [
+type SubItem = { href: string; label: string };
+type NavLink = { id: string; href: string; label: string; subItems?: SubItem[] };
+
+const NAV_LINKS: NavLink[] = [
   { id: "home",    href: "/",        label: "Home" },
   { id: "events",  href: "/events",  label: "Events" },
-  { id: "about",   href: "/about",   label: "About" },
+  {
+    id: "about", href: "/about", label: "About",
+    subItems: [
+      { href: "/about",    label: "About Bougie Bams" },
+      { href: "/founder",  label: "Meet the Founder" },
+    ],
+  },
   { id: "contact", href: "/contact", label: "Contact" },
-] as const;
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -47,8 +56,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map(({ id, href, label }) => {
-              const isActive = location === href;
+            {NAV_LINKS.map(({ id, href, label, subItems }) => {
+              const isActive = location === href || (subItems?.some(s => s.href === location) ?? false);
               const isHovered = hoveredId === id;
               return (
                 <div
@@ -60,7 +69,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     href={href}
                     className={cn(
-                      "relative z-10 flex items-center px-4 py-2 rounded-xl text-base font-medium transition-colors duration-200",
+                      "relative z-10 flex items-center gap-1 px-4 py-2 rounded-xl text-base font-medium transition-colors duration-200",
                       isHovered
                         ? "text-[#FAF8F5]"
                         : isActive
@@ -69,6 +78,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     )}
                   >
                     {label}
+                    {subItems && <ChevronDown className="h-3.5 w-3.5 opacity-70" />}
                   </Link>
                   <AnimatePresence>
                     {isHovered && (
@@ -85,6 +95,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             "0 8px 30px rgba(201,162,39,0.25), 0 4px 12px rgba(24,29,55,0.5), 0 0 0 1px rgba(201,162,39,0.2)",
                         }}
                       />
+                    )}
+                  </AnimatePresence>
+                  {/* Sub-item dropdown */}
+                  <AnimatePresence>
+                    {isHovered && subItems && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 mt-1 w-52 rounded-xl overflow-hidden shadow-xl border border-border/30 bg-white z-50"
+                      >
+                        {subItems.map(sub => (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={cn(
+                              "block px-4 py-3 text-sm font-medium transition-colors hover:bg-muted",
+                              location === sub.href ? "text-primary" : "text-foreground"
+                            )}
+                          >
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -148,7 +183,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col p-4 space-y-4">
                 <Link href="/" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Home</Link>
                 <Link href="/events" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Events</Link>
-                <Link href="/about" className="text-lg font-medium p-2 hover:bg-muted rounded-md">About</Link>
+                <Link href="/about" className="text-lg font-medium p-2 hover:bg-muted rounded-md">About Bougie Bams</Link>
+                <Link href="/founder" className="text-base font-medium p-2 pl-5 hover:bg-muted rounded-md text-muted-foreground">Meet the Founder</Link>
                 <Link href="/contact" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Contact</Link>
                 {isAuthenticated && (
                   <>
