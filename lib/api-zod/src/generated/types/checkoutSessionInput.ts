@@ -28,4 +28,9 @@ export interface CheckoutSessionInput {
      * @nullable
      */
   couponCode?: string | null;
+  /**
+     * Referral code of the person who referred this registration
+     * @nullable
+     */
+  referredBy?: string | null;
 }

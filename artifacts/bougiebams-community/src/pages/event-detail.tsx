@@ -16,6 +16,8 @@ export default function EventDetail() {
   const [, setLocation] = useLocation();
   const eventId = parseInt(id || "0", 10);
 
+  const refCode = new URLSearchParams(window.location.search).get("ref") ?? undefined;
+
   const { data: event, isLoading } = useGetEvent(eventId, {
     query: { enabled: !!eventId, queryKey: getGetEventQueryKey(eventId) }
   });
@@ -145,6 +147,7 @@ export default function EventDetail() {
           jokersPreference: (formData.jokersPreference || undefined) as "yes" | "no" | "open" | undefined,
           skillLevel: (formData.skillLevel || undefined) as "learn" | "learning" | "intermediate" | "advanced" | undefined,
           couponCode: formData.couponCode || undefined,
+          referredBy: refCode || undefined,
         }
       },
       {

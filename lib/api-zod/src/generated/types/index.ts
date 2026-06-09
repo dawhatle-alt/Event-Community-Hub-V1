@@ -30,6 +30,8 @@ export * from './mobileTokenExchangeRequest';
 export * from './mobileTokenExchangeSuccess';
 export * from './registration';
 export * from './registrationConfirmation';
+export * from './registrationConfirmationEvent';
+export * from './registrationConfirmationRegistration';
 export * from './registrationStats';
 export * from './registrationStatus';
 export * from './registrationWithEvent';

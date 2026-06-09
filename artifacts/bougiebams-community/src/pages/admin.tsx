@@ -111,7 +111,7 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
 
   const handleExportCSV = () => {
     if (!regs?.length) return;
-    const headers = ["First Name", "Last Name", "Email", "Phone", "Qty", "Total ($)", "Status", "Seating", "Jokers", "Skill Level", "Registered At", "Reminder Sent"];
+    const headers = ["First Name", "Last Name", "Email", "Phone", "Qty", "Total ($)", "Status", "Seating", "Jokers", "Skill Level", "Referred By", "Referral Code", "Registered At", "Reminder Sent"];
     const rows = regs.map(r => [
       r.firstName,
       r.lastName,
@@ -123,6 +123,8 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
       (r as any).seatingPreference ?? "",
       (r as any).jokersPreference ?? "",
       (r as any).skillLevel ?? "",
+      (r as any).referredBy ?? "",
+      (r as any).referralCode ?? "",
       r.createdAt ? new Date(r.createdAt).toLocaleString() : "",
       (r as any).reminderSentAt ? new Date((r as any).reminderSentAt).toLocaleString() : "",
     ]);
@@ -286,7 +288,7 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
                     )}
                   </div>
                 </div>
-                {((r as any).seatingPreference || (r as any).jokersPreference || (r as any).skillLevel) && (
+                {((r as any).seatingPreference || (r as any).jokersPreference || (r as any).skillLevel || (r as any).referredBy) && (
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-0.5">
                     {(r as any).seatingPreference && (
                       <span><span className="font-medium text-foreground/70">Seating:</span> {(r as any).seatingPreference}</span>
@@ -296,6 +298,9 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
                     )}
                     {(r as any).skillLevel && (
                       <span><span className="font-medium text-foreground/70">Skill:</span> {{ learn: "Want to learn", learning: "Still learning", intermediate: "Intermediate", advanced: "Advanced" }[(r as any).skillLevel] ?? (r as any).skillLevel}</span>
+                    )}
+                    {(r as any).referredBy && (
+                      <span className="text-[#C9A227]"><span className="font-medium text-foreground/70">Referred by:</span> <span className="font-mono">{(r as any).referredBy}</span></span>
                     )}
                   </div>
                 )}

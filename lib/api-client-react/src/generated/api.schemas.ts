@@ -178,12 +178,44 @@ export interface Registration {
   /** @nullable */
   stripeSessionId?: string | null;
   status: RegistrationStatus;
+  /**
+     * Unique referral code for this registration
+     * @nullable
+     */
+  referralCode?: string | null;
+  /**
+     * Referral code of the person who referred this registrant
+     * @nullable
+     */
+  referredBy?: string | null;
   createdAt: string;
 }
 
+export type RegistrationConfirmationRegistration = {
+  firstName: string;
+  status: string;
+  quantity: number;
+  totalAmount: number;
+  /** @nullable */
+  referralCode?: string | null;
+  /** @nullable */
+  referredBy?: string | null;
+};
+
+export type RegistrationConfirmationEvent = {
+  id: number;
+  title: string;
+  date: string;
+  /** @nullable */
+  endDate?: string | null;
+  location: string;
+  /** @nullable */
+  address?: string | null;
+};
+
 export interface RegistrationConfirmation {
-  registration: Registration;
-  event: Event;
+  registration: RegistrationConfirmationRegistration;
+  event: RegistrationConfirmationEvent;
 }
 
 export interface RegistrationWithEvent {
@@ -230,6 +262,11 @@ export interface CheckoutSessionInput {
      * @nullable
      */
   couponCode?: string | null;
+  /**
+     * Referral code of the person who referred this registration
+     * @nullable
+     */
+  referredBy?: string | null;
 }
 
 export interface CheckoutSessionResponse {

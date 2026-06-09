@@ -20,5 +20,15 @@ export interface Registration {
   /** @nullable */
   stripeSessionId?: string | null;
   status: RegistrationStatus;
+  /**
+     * Unique referral code for this registration
+     * @nullable
+     */
+  referralCode?: string | null;
+  /**
+     * Referral code of the person who referred this registrant
+     * @nullable
+     */
+  referredBy?: string | null;
   createdAt: Date;
 }

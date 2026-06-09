@@ -48,9 +48,21 @@ export default function Confirmation() {
   const { registration, event } = confirmation;
 
   const [copied, setCopied] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
 
   const shareText = `I'm going to "${event.title}" with @bougiebams! 🀄 Join me — ${window.location.origin}/events/${event.id}`;
   const shareUrl = `${window.location.origin}/events/${event.id}`;
+
+  const referralLink = registration.referralCode
+    ? `${window.location.origin}/events/${event.id}?ref=${registration.referralCode}`
+    : null;
+
+  const handleCopyReferral = async () => {
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
+    setRefCopied(true);
+    setTimeout(() => setRefCopied(false), 2500);
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -100,6 +112,26 @@ export default function Confirmation() {
               </div>
             </div>
           </div>
+
+          {/* Refer a Friend section */}
+          {referralLink && (
+            <div className="w-full rounded-2xl border border-[#C9A227]/30 bg-[#C9A227]/5 p-6 mb-6 text-center">
+              <p className="text-xs tracking-[3px] uppercase text-[#C9A227] font-medium mb-2">Refer a Friend</p>
+              <p className="text-sm text-muted-foreground mb-4 font-light">
+                Share your unique link — when a friend signs up through it, we'll know you sent them!
+              </p>
+              <div className="flex items-center gap-2 bg-background rounded-xl border border-border px-4 py-2.5 mb-3 text-left">
+                <span className="flex-1 text-xs text-muted-foreground truncate font-mono">{referralLink}</span>
+                <button
+                  onClick={handleCopyReferral}
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#C9A227] text-white font-medium text-xs hover:bg-[#b08f22] transition-colors"
+                >
+                  {refCopied ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground/70 font-light">Your code: <span className="font-mono font-medium text-foreground/60">{registration.referralCode}</span></p>
+            </div>
+          )}
 
           {/* Share section */}
           <div className="w-full rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-6 text-center">

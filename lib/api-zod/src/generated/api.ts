@@ -219,7 +219,8 @@ export const RegisterForEventBody = zod.object({
   "seatingPreference": zod.string().nullish(),
   "jokersPreference": zod.enum(['yes', 'no', 'open']).nullish(),
   "skillLevel": zod.enum(['learn', 'learning', 'intermediate', 'advanced']).nullish(),
-  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration')
+  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registration')
 })
 
 export const RegisterForEventResponse = zod.object({
@@ -394,6 +395,8 @@ export const ListEventRegistrationsResponseItem = zod.object({
   "totalAmount": zod.number().optional(),
   "stripeSessionId": zod.string().nullish(),
   "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "referralCode": zod.string().nullish().describe('Unique referral code for this registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registrant'),
   "createdAt": zod.coerce.date()
 })
 export const ListEventRegistrationsResponse = zod.array(ListEventRegistrationsResponseItem)
@@ -417,6 +420,8 @@ export const ListRegistrationsResponseItem = zod.object({
   "totalAmount": zod.number().optional(),
   "stripeSessionId": zod.string().nullish(),
   "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "referralCode": zod.string().nullish().describe('Unique referral code for this registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registrant'),
   "createdAt": zod.coerce.date()
 })
 export const ListRegistrationsResponse = zod.array(ListRegistrationsResponseItem)
@@ -441,6 +446,8 @@ export const GetMyRegistrationsResponseItem = zod.object({
   "totalAmount": zod.number().optional(),
   "stripeSessionId": zod.string().nullish(),
   "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "referralCode": zod.string().nullish().describe('Unique referral code for this registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registrant'),
   "createdAt": zod.coerce.date()
 }),
   "event": zod.object({
@@ -503,7 +510,8 @@ export const CreateCheckoutSessionBody = zod.object({
   "seatingPreference": zod.string().nullish(),
   "jokersPreference": zod.enum(['yes', 'no', 'open']).nullish(),
   "skillLevel": zod.enum(['learn', 'learning', 'intermediate', 'advanced']).nullish(),
-  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration')
+  "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registration')
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
@@ -521,38 +529,20 @@ export const GetRegistrationBySessionQueryParams = zod.object({
 
 export const GetRegistrationBySessionResponse = zod.object({
   "registration": zod.object({
-  "id": zod.number(),
-  "eventId": zod.number(),
   "firstName": zod.string(),
-  "lastName": zod.string(),
-  "email": zod.string().email(),
-  "phone": zod.string().nullish(),
-  "quantity": zod.number().optional(),
-  "totalAmount": zod.number().optional(),
-  "stripeSessionId": zod.string().nullish(),
-  "status": zod.enum(['pending', 'paid', 'cancelled']),
-  "createdAt": zod.coerce.date()
+  "status": zod.string(),
+  "quantity": zod.number(),
+  "totalAmount": zod.number(),
+  "referralCode": zod.string().nullish(),
+  "referredBy": zod.string().nullish()
 }),
   "event": zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "description": zod.string(),
   "date": zod.coerce.date(),
   "endDate": zod.coerce.date().nullish(),
   "location": zod.string(),
-  "address": zod.string().nullish(),
-  "price": zod.number().describe('Price in dollars'),
-  "capacity": zod.number(),
-  "spotsRemaining": zod.number().nullish(),
-  "imageUrl": zod.string().nullable(),
-  "category": zod.string(),
-  "tags": zod.string().nullish().describe('Comma-separated tags'),
-  "featured": zod.boolean(),
-  "published": zod.boolean(),
-  "stripePriceId": zod.string().nullish(),
-  "couponCode": zod.string().nullish().describe('Per-event coupon code (admin only)'),
-  "artistUrl": zod.string().nullish().describe('Optional URL to the artist\'s website (used with \"+ Meet the Artist\" events)'),
-  "createdAt": zod.coerce.date()
+  "address": zod.string().nullish()
 })
 })
 
@@ -576,6 +566,8 @@ export const GetRegistrationStatsResponse = zod.object({
   "totalAmount": zod.number().optional(),
   "stripeSessionId": zod.string().nullish(),
   "status": zod.enum(['pending', 'paid', 'cancelled']),
+  "referralCode": zod.string().nullish().describe('Unique referral code for this registration'),
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registrant'),
   "createdAt": zod.coerce.date()
 })).optional()
 })

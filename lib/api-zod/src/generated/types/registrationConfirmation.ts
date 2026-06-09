@@ -5,10 +5,10 @@
  * BougieBams Community & Events API
  * OpenAPI spec version: 0.1.0
  */
-import type { Event } from './event';
-import type { Registration } from './registration';
+import type { RegistrationConfirmationEvent } from './registrationConfirmationEvent';
+import type { RegistrationConfirmationRegistration } from './registrationConfirmationRegistration';
 
 export interface RegistrationConfirmation {
-  registration: Registration;
-  event: Event;
+  registration: RegistrationConfirmationRegistration;
+  event: RegistrationConfirmationEvent;
 }

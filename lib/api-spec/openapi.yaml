@@ -945,6 +945,12 @@ components:
         status:
           type: string
           enum: [pending, paid, cancelled]
+        referralCode:
+          type: ["string", "null"]
+          description: Unique referral code for this registration
+        referredBy:
+          type: ["string", "null"]
+          description: Referral code of the person who referred this registrant
         createdAt:
           type: string
           format: date-time
@@ -954,9 +960,39 @@ components:
       required: [registration, event]
       properties:
         registration:
-          $ref: "#/components/schemas/Registration"
+          type: object
+          required: [firstName, status, quantity, totalAmount]
+          properties:
+            firstName:
+              type: string
+            status:
+              type: string
+            quantity:
+              type: integer
+            totalAmount:
+              type: number
+            referralCode:
+              type: ["string", "null"]
+            referredBy:
+              type: ["string", "null"]
         event:
-          $ref: "#/components/schemas/Event"
+          type: object
+          required: [id, title, date, location]
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            date:
+              type: string
+              format: date-time
+            endDate:
+              type: ["string", "null"]
+              format: date-time
+            location:
+              type: string
+            address:
+              type: ["string", "null"]
 
     RegistrationWithEvent:
       type: object
@@ -1001,6 +1037,9 @@ components:
         couponCode:
           type: ["string", "null"]
           description: Optional coupon code for a free registration
+        referredBy:
+          type: ["string", "null"]
+          description: Referral code of the person who referred this registration
 
     CheckoutSessionResponse:
       type: object

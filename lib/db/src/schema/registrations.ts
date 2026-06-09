@@ -24,6 +24,8 @@ export const registrationsTable = pgTable("registrations", {
   seatingPreference: text("seating_preference"),
   jokersPreference: text("jokers_preference"),
   skillLevel: text("skill_level"),
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

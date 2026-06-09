@@ -136,8 +136,10 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode } = parsed.data;
+  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode, referredBy } = parsed.data;
   const userId = req.isAuthenticated() ? req.user.id : null;
+  const { randomBytes } = await import("crypto");
+  const referralCode = `BB${randomBytes(4).toString("hex").toUpperCase()}`;
 
   const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId));
   if (!event) {
@@ -183,6 +185,8 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       seatingPreference: seatingPreference ?? null,
       jokersPreference: jokersPreference ?? null,
       skillLevel: skillLevel ?? null,
+      referralCode,
+      referredBy: referredBy ?? null,
     }).returning();
 
     await db
@@ -268,6 +272,8 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
         seatingPreference: seatingPreference ?? null,
         jokersPreference: jokersPreference ?? null,
         skillLevel: skillLevel ?? null,
+        referralCode,
+        referredBy: referredBy ?? null,
       })
       .returning();
 
@@ -443,8 +449,11 @@ router.get("/registrations/confirmation", async (req, res): Promise<void> => {
       status: registration.status,
       quantity: registration.quantity,
       totalAmount: Number(registration.totalAmount),
+      referralCode: registration.referralCode ?? null,
+      referredBy: registration.referredBy ?? null,
     },
     event: {
+      id: event.id,
       title: event.title,
       date: event.date,
       endDate: event.endDate ?? null,
