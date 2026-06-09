@@ -17,3 +17,9 @@ id = "bLG0zeW6DeEAJz1YPxTuI"
 uri = "file://artifacts/bougiebams-community/public/favicon.svg"
 type = "image"
 title = "New Crown Favicon"
+
+[[outputs]]
+id = "KVApZgQbaHzhnFb3v48Wt"
+uri = "file://artifacts/bougiebams-community/public/favicon.png"
+type = "image"
+title = "Crown Favicon"
