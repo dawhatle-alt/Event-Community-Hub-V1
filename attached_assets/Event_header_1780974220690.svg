@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#ffffff"/>
+  <rect width="800" height="8" fill="#C9A227"/>
+  <rect y="592" width="800" height="8" fill="#C9A227"/>
+  
+  <line x1="240" y1="340" x2="560" y2="340" stroke="#C9A227" stroke-width="1.5"/>
+  <text x="400" y="390" font-family="Georgia, serif" font-size="32" font-weight="bold" fill="#181D37" text-anchor="middle">Style-Your-Own</text>
+  <text x="400" y="433" font-family="Georgia, serif" font-size="32" font-weight="bold" fill="#181D37" text-anchor="middle">Mahjong Table Event</text>
+  <text x="400" y="490" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#C9A227" text-anchor="middle">+ Meet the Artist</text>
+</svg>

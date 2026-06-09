@@ -119,12 +119,12 @@ const SEED_EVENTS = [
  */
 export async function applyDataFixups(): Promise<void> {
   try {
-    // Fix: event-style-table.svg was the placeholder for the "Style-Your-Own" event.
-    // Replace it with the real mat-rack photo so the event banner displays correctly.
+    // Ensure the Style-Your-Own event uses its custom SVG banner.
+    // This is idempotent and safe to run on every startup.
     await db
       .update(eventsTable)
-      .set({ imageUrl: "mats-rack-2.jpg" })
-      .where(sql`${eventsTable.imageUrl} = '/event-style-table.svg'`);
+      .set({ imageUrl: "event-style-table.svg" })
+      .where(sql`${eventsTable.title} ILIKE '%Style-Your-Own%' AND (${eventsTable.imageUrl} IS NULL OR ${eventsTable.imageUrl} != 'event-style-table.svg')`);
   } catch (err) {
     logger.error({ err }, "Data fixup failed — continuing startup");
   }

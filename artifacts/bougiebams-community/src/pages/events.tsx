@@ -217,7 +217,7 @@ export default function Events() {
                     className="group cursor-pointer flex flex-col h-full bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300"
                   >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-                      {event.imageUrl && !event.imageUrl.toLowerCase().endsWith(".svg") && !event.imageUrl.toLowerCase().includes("logo") ? (
+                      {event.imageUrl && !event.imageUrl.toLowerCase().includes("logo") ? (
                         <img
                           src={
                             event.imageUrl.startsWith("/api/") || event.imageUrl.startsWith("http")
@@ -298,7 +298,7 @@ export default function Events() {
                     className="group cursor-pointer flex items-center gap-6 bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 p-4"
                   >
                     <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-muted">
-                      {event.imageUrl && !event.imageUrl.toLowerCase().endsWith(".svg") && !event.imageUrl.toLowerCase().includes("logo") ? (
+                      {event.imageUrl && !event.imageUrl.toLowerCase().includes("logo") ? (
                         <img
                           src={
                             event.imageUrl.startsWith("/api/") || event.imageUrl.startsWith("http")
