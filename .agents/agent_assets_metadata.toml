@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "BhkwDbueQZMGCOHozr4Z1"
 uri = "file://artifacts/bougiebams-mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "zrbS4TynE3yy2lDV8f8jI"
+uri = "file://artifacts/bougiebams-community/public/event-style-table.svg"
+type = "image"
+title = "Style-Your-Own Table Event Image (logo + event name)"
