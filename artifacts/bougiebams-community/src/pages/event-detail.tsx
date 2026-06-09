@@ -152,7 +152,13 @@ export default function EventDetail() {
       },
       {
         onSuccess: (data) => {
-          setCheckoutData({ sessionId: data.sessionId });
+          // Free events (or full-discount coupons): the API creates the registration
+          // immediately and returns a confirmation URL — skip the payment step entirely
+          if (data.url && data.url.includes("/events/confirmation")) {
+            setLocation(`/events/confirmation?sessionId=${encodeURIComponent(data.sessionId)}`);
+          } else {
+            setCheckoutData({ sessionId: data.sessionId });
+          }
         }
       }
     );
