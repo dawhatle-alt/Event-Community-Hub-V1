@@ -16,6 +16,10 @@ export default function Confirmation() {
     { query: { enabled: !!sessionId, queryKey: getGetRegistrationBySessionQueryKey({ sessionId: sessionId || "" }) } }
   );
 
+  // Hooks must be called unconditionally — before any early returns
+  const [copied, setCopied] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
+
   if (!sessionId) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
@@ -46,9 +50,6 @@ export default function Confirmation() {
   }
 
   const { registration, event } = confirmation;
-
-  const [copied, setCopied] = useState(false);
-  const [refCopied, setRefCopied] = useState(false);
 
   const shareText = `I'm going to "${event.title}" with @bougiebams! 🀄 Join me — ${window.location.origin}/events/${event.id}`;
   const shareUrl = `${window.location.origin}/events/${event.id}`;
