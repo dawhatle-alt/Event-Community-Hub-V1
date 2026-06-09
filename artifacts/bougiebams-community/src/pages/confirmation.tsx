@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGetRegistrationBySession, getGetRegistrationBySessionQueryKey } from "@workspace/api-client-react";
-import { CheckCircle2, Calendar, MapPin, Loader2 } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Loader2, Share2, Copy, Check } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,23 @@ export default function Confirmation() {
 
   const { registration, event } = confirmation;
 
+  const [copied, setCopied] = useState(false);
+
+  const shareText = `I'm going to "${event.title}" with @bougiebams! 🀄 Join me — ${window.location.origin}/events/${event.id}`;
+  const shareUrl = `${window.location.origin}/events/${event.id}`;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: event.title, text: shareText, url: shareUrl });
+      } catch (_) {}
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
   return (
     <div className="w-full bg-background min-h-[80vh] py-20">
       <div className="container mx-auto px-4 max-w-3xl">
@@ -82,6 +99,40 @@ export default function Confirmation() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Share section */}
+          <div className="w-full rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-6 text-center">
+            <p className="text-xs tracking-[3px] uppercase text-primary font-medium mb-2">Spread the Word</p>
+            <p className="text-sm text-muted-foreground mb-4 font-light">
+              Let your friends know — share on Instagram Stories or anywhere else!
+            </p>
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-medium text-sm shadow-md hover:opacity-90 transition-opacity"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Copied to clipboard!
+                </>
+              ) : navigator.share ? (
+                <>
+                  <Share2 className="w-4 h-4" />
+                  Share to Instagram Stories
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  Copy share message
+                </>
+              )}
+            </button>
+            {!navigator.share && !copied && (
+              <p className="text-xs text-muted-foreground mt-3 font-light italic">
+                Copies a ready-to-paste message with your event link.
+              </p>
+            )}
           </div>
 
           <Button size="lg" className="rounded-xl px-8 h-14 text-base" asChild>
