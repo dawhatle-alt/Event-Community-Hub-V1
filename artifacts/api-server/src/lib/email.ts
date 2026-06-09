@@ -67,8 +67,7 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
   const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity, totalAmount } = opts;
 
   const dateStr = formatDate(eventDate);
-  const startTime = formatTime(eventDate);
-  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)}` : startTime;
+  const timeStr = formatTime(eventDate);
   const amountStr = totalAmount === 0 ? "Free" : `$${totalAmount.toFixed(2)}`;
   const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
 
@@ -200,10 +199,9 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
 }
 
 function buildText(opts: ConfirmationEmailOptions): string {
-  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity, totalAmount } = opts;
+  const { firstName, eventTitle, eventDate, eventLocation, eventAddress, quantity, totalAmount } = opts;
   const dateStr = formatDate(eventDate);
-  const startTime = formatTime(eventDate);
-  const timeStr = eventEndDate ? `${startTime} – ${formatTime(eventEndDate)}` : startTime;
+  const timeStr = formatTime(eventDate);
   const amountStr = totalAmount === 0 ? "Free" : `$${totalAmount.toFixed(2)}`;
   const ticketLine = quantity === 1 ? "1 ticket" : `${quantity} tickets`;
   const locationLine = eventAddress ? `${eventLocation}, ${eventAddress}` : eventLocation;
