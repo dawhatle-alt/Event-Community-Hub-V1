@@ -117,7 +117,7 @@ export default function Events() {
         <img
           src={`${import.meta.env.BASE_URL}bougie-zebra-banner.png`}
           alt="Bougie Zebra — Events banner"
-          className="absolute inset-0 w-full h-full object-cover object-[70%_center]"
+          className="absolute inset-0 w-full h-full object-cover object-[60%_center] md:object-[70%_center]"
         />
         <div className="absolute inset-0 bg-foreground/40" />
         <div className="container mx-auto max-w-6xl relative z-10">
