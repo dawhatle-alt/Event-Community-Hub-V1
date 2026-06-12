@@ -406,8 +406,18 @@ router.post("/registrations/pay", async (req, res): Promise<void> => {
   const square = getSquareClient();
   const locationId = getSquareLocationId();
 
+  const [eventForNote] = await db
+    .select({ title: eventsTable.title })
+    .from(eventsTable)
+    .where(eq(eventsTable.id, registration.eventId))
+    .limit(1);
+
   const amountCents = BigInt(Math.round(Number(registration.totalAmount) * 100));
   const idempotencyKey = `pay_${registration.id}_${Date.now()}`;
+  const ticketLabel = registration.quantity === 1 ? "ticket" : "tickets";
+  const paymentNote = eventForNote
+    ? `${registration.firstName} ${registration.lastName} — ${eventForNote.title} (${registration.quantity} ${ticketLabel})`
+    : `${registration.firstName} ${registration.lastName}`;
 
   const paymentResponse = await square.payments.create({
     idempotencyKey,
@@ -415,6 +425,7 @@ router.post("/registrations/pay", async (req, res): Promise<void> => {
     amountMoney: { amount: amountCents, currency: "USD" },
     locationId,
     buyerEmailAddress: registration.email,
+    note: paymentNote,
   });
 
   const payment = paymentResponse.payment;
