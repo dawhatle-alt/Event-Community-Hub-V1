@@ -13,7 +13,15 @@ export default function Confirmation() {
 
   const { data: confirmation, isLoading } = useGetRegistrationBySession(
     { sessionId: sessionId || "" },
-    { query: { enabled: !!sessionId, queryKey: getGetRegistrationBySessionQueryKey({ sessionId: sessionId || "" }) } }
+    {
+      query: {
+        enabled: !!sessionId,
+        queryKey: getGetRegistrationBySessionQueryKey({ sessionId: sessionId || "" }),
+        // Keep polling every 3 s while payment is still being processed by Square
+        refetchInterval: (query: any) =>
+          query.state.data?.registration?.status === "pending" ? 3000 : false,
+      },
+    }
   );
 
   // Hooks must be called unconditionally — before any early returns
@@ -50,6 +58,30 @@ export default function Confirmation() {
   }
 
   const { registration, event } = confirmation;
+
+  // Payment still being confirmed by Square — poll until it resolves
+  if (registration.status === "pending") {
+    return (
+      <div className="w-full bg-background min-h-[80vh] py-20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="bg-card rounded-3xl p-8 md:p-12 shadow-lg border border-border text-center flex flex-col items-center">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-8">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-4 text-foreground">
+              Processing payment…
+            </h1>
+            <p className="text-lg text-muted-foreground mb-4 max-w-lg mx-auto font-light">
+              Hi {registration.firstName}, your registration is in — we're just waiting on confirmation from Square. This usually takes a few seconds.
+            </p>
+            <p className="text-sm text-muted-foreground font-light">
+              This page will update automatically. Please don't close it.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const shareText = `I'm going to "${event.title}" with @bougiebams! 🀄 Join me — ${window.location.origin}/events/${event.id}`;
   const shareUrl = `${window.location.origin}/events/${event.id}`;

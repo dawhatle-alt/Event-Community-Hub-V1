@@ -49,11 +49,18 @@ export default function ConfirmationScreen() {
 
   const { data, isLoading, error } = useGetRegistrationBySession(
     { sessionId: sessionId ?? "" },
-    { query: { enabled: !!sessionId } }
+    {
+      query: {
+        enabled: !!sessionId,
+        // Keep polling every 3 s while Square is still confirming the payment
+        refetchInterval: (query: any) =>
+          query.state.data?.registration?.status === "pending" ? 3000 : false,
+      },
+    }
   );
 
   useEffect(() => {
-    if (data?.registration && data?.event && !confirmationScheduled.current) {
+    if (data?.registration?.status === "paid" && data?.event && !confirmationScheduled.current) {
       confirmationScheduled.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
