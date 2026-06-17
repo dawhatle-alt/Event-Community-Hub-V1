@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, sum, sql, and, gt, ne } from "drizzle-orm";
+import { eq, count, sum, sql, and, gt, ne, or, ilike } from "drizzle-orm";
 import { db, eventsTable, registrationsTable } from "@workspace/db";
 import {
   ListEventRegistrationsParams,
@@ -1015,6 +1015,44 @@ router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): 
     .where(eq(eventsTable.id, result.eventId));
 
   res.json({ success: true });
+});
+
+// Admin-only: search registrations across all events by name or email
+router.get("/registrations/search", requireAdminAuth, async (req, res): Promise<void> => {
+  const q = String(req.query.q ?? "").trim();
+  if (q.length < 2) {
+    res.json([]);
+    return;
+  }
+  const pattern = `%${q}%`;
+  const results = await db
+    .select({
+      id: registrationsTable.id,
+      firstName: registrationsTable.firstName,
+      lastName: registrationsTable.lastName,
+      email: registrationsTable.email,
+      status: registrationsTable.status,
+      quantity: registrationsTable.quantity,
+      totalAmount: registrationsTable.totalAmount,
+      createdAt: registrationsTable.createdAt,
+      stripeSessionId: registrationsTable.stripeSessionId,
+      eventId: registrationsTable.eventId,
+      eventTitle: eventsTable.title,
+      eventDate: eventsTable.date,
+    })
+    .from(registrationsTable)
+    .innerJoin(eventsTable, eq(registrationsTable.eventId, eventsTable.id))
+    .where(
+      or(
+        ilike(registrationsTable.firstName, pattern),
+        ilike(registrationsTable.lastName, pattern),
+        ilike(registrationsTable.email, pattern),
+        sql`CONCAT(${registrationsTable.firstName}, ' ', ${registrationsTable.lastName}) ILIKE ${pattern}`
+      )
+    )
+    .orderBy(sql`${registrationsTable.createdAt} DESC`)
+    .limit(50);
+  res.json(results.map((r) => ({ ...r, totalAmount: Number(r.totalAmount) })));
 });
 
 // Admin-only: manually mark a pending registration as paid (e.g. when Square webhook was missed)

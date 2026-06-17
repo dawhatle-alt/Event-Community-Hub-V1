@@ -15,9 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, CheckCircle2, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, CheckCircle2, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download, Search } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 const ADMIN_KEY = "bb_admin_auth";
@@ -762,6 +762,64 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
   const [capacityEdits, setCapacityEdits] = useState<Record<number, { open: boolean; value: string }>>({});
   const [reminderSending, setReminderSending] = useState(false);
   const [reminderResult, setReminderResult] = useState<{ sent: number; ts: Date } | null>(null);
+  const [searchQ, setSearchQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(searchQ.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
+  type SearchResult = {
+    id: number; firstName: string; lastName: string; email: string;
+    status: string; quantity: number; totalAmount: number;
+    createdAt: string; stripeSessionId: string | null;
+    eventId: number; eventTitle: string; eventDate: string;
+  };
+
+  const { data: searchResults, isFetching: searchFetching } = useQuery<SearchResult[]>({
+    queryKey: ["admin-search", debouncedQ],
+    queryFn: async () => {
+      if (debouncedQ.length < 2) return [];
+      const res = await fetch(`/api/registrations/search?q=${encodeURIComponent(debouncedQ)}`, {
+        headers: adminHeaders,
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: debouncedQ.length >= 2,
+    staleTime: 10_000,
+  });
+
+  const [searchMarkingPaid, setSearchMarkingPaid] = useState<number | null>(null);
+  const [searchCancelling, setSearchCancelling] = useState<number | null>(null);
+  const queryClient2 = useQueryClient();
+
+  const handleSearchMarkPaid = async (reg: SearchResult) => {
+    if (!confirm(`Mark ${reg.firstName} ${reg.lastName}'s registration as paid?`)) return;
+    setSearchMarkingPaid(reg.id);
+    try {
+      const res = await fetch(`/api/registrations/${reg.id}/mark-paid`, { method: "POST", headers: adminHeaders });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); toast({ title: "Failed", description: e.error, variant: "destructive" }); return; }
+      toast({ title: "Marked as paid", description: "Confirmation email sent." });
+      queryClient2.invalidateQueries({ queryKey: ["admin-search", debouncedQ] });
+      queryClient2.invalidateQueries({ queryKey: ["event-registrations", reg.eventId] });
+    } catch { toast({ title: "Network error", variant: "destructive" }); }
+    finally { setSearchMarkingPaid(null); }
+  };
+
+  const handleSearchCancel = async (reg: SearchResult) => {
+    if (!confirm(`Remove ${reg.firstName} ${reg.lastName}'s registration?`)) return;
+    setSearchCancelling(reg.id);
+    try {
+      const res = await fetch(`/api/registrations/${reg.id}/cancel`, { method: "POST", headers: { "Content-Type": "application/json", ...adminHeaders }, body: JSON.stringify({ reason: "admin" }) });
+      if (!res.ok) { toast({ title: "Failed to cancel", variant: "destructive" }); return; }
+      toast({ title: "Cancelled" });
+      queryClient2.invalidateQueries({ queryKey: ["admin-search", debouncedQ] });
+      queryClient2.invalidateQueries({ queryKey: ["event-registrations", reg.eventId] });
+    } catch { toast({ title: "Network error", variant: "destructive" }); }
+    finally { setSearchCancelling(null); }
+  };
 
   const handleSendReminders = async () => {
     if (!confirm("Send 48-hour reminder emails to all paid attendees of upcoming events who haven't received one yet? This is idempotent — already-reminded attendees are skipped.")) return;
@@ -1126,6 +1184,76 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
             </div>
 
             <HeroTilesSection adminPassword={adminPassword} />
+
+            {/* Attendee Search */}
+            <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+              <div className="p-6 border-b border-border">
+                <h3 className="font-serif text-xl font-medium mb-3">Search Attendees</h3>
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={searchQ}
+                    onChange={e => setSearchQ(e.target.value)}
+                    placeholder="Name or email…"
+                    className="pl-9 rounded-xl"
+                  />
+                </div>
+              </div>
+              {debouncedQ.length >= 2 && (
+                <div>
+                  {searchFetching && !searchResults && (
+                    <div className="px-6 py-4 text-sm text-muted-foreground">Searching…</div>
+                  )}
+                  {!searchFetching && searchResults?.length === 0 && (
+                    <div className="px-6 py-4 text-sm text-muted-foreground">No matches for "{debouncedQ}"</div>
+                  )}
+                  {searchResults && searchResults.length > 0 && (
+                    <div className="divide-y divide-border">
+                      {searchResults.map(r => (
+                        <div key={r.id} className="px-6 py-3 flex items-center gap-4 hover:bg-muted/10 transition-colors text-sm">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{r.firstName} {r.lastName}</div>
+                            <div className="text-xs text-muted-foreground truncate">{r.email}</div>
+                          </div>
+                          <div className="hidden sm:block text-xs text-muted-foreground min-w-0 max-w-[180px] truncate" title={r.eventTitle}>
+                            {r.eventTitle}
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {r.quantity} ticket{r.quantity !== 1 ? "s" : ""} · ${Number(r.totalAmount).toFixed(2)}
+                          </div>
+                          <StatusBadge status={r.status} />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {r.status === "pending" && (
+                              <button
+                                onClick={() => handleSearchMarkPaid(r)}
+                                disabled={searchMarkingPaid === r.id}
+                                title="Mark as paid"
+                                className="text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {r.status === "cancelled" ? null : (
+                              <button
+                                onClick={() => handleSearchCancel(r)}
+                                disabled={searchCancelling === r.id}
+                                title="Remove registration"
+                                className="text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {debouncedQ.length < 2 && (
+                <div className="px-6 py-4 text-sm text-muted-foreground">Type at least 2 characters to search across all events.</div>
+              )}
+            </div>
 
             {/* Events List with per-event registration panels */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
