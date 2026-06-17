@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, CheckCircle2, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -106,6 +106,7 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
   const [open, setOpen] = useState(false);
   const [reinstating, setReinstating] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState<number | null>(null);
+  const [markingPaid, setMarkingPaid] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -186,6 +187,28 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
       toast({ title: "Network error", variant: "destructive" });
     } finally {
       setCancelling(null);
+    }
+  };
+
+  const handleMarkPaid = async (regId: number, name: string) => {
+    if (!confirm(`Mark ${name}'s registration as paid? This confirms their spot and sends them a confirmation email.`)) return;
+    setMarkingPaid(regId);
+    try {
+      const res = await fetch(`/api/registrations/${regId}/mark-paid`, {
+        method: "POST",
+        headers: adminHeaders,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: "Failed to mark as paid", description: err.error ?? "Unknown error", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Marked as paid", description: "Registration confirmed and confirmation email sent." });
+      queryClient.invalidateQueries({ queryKey });
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setMarkingPaid(null);
     }
   };
 
@@ -277,14 +300,26 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
                         <RotateCcw className="w-3 h-3" />
                       </button>
                     ) : (
-                      <button
-                        onClick={() => handleCancel(r.id, `${r.firstName} ${r.lastName}`)}
-                        disabled={cancelling === r.id}
-                        title="Remove registration"
-                        className="ml-1 text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
-                      >
-                        <XCircle className="w-3 h-3" />
-                      </button>
+                      <>
+                        {r.status === "pending" && (
+                          <button
+                            onClick={() => handleMarkPaid(r.id, `${r.firstName} ${r.lastName}`)}
+                            disabled={markingPaid === r.id}
+                            title="Mark as paid"
+                            className="ml-1 text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCancel(r.id, `${r.firstName} ${r.lastName}`)}
+                          disabled={cancelling === r.id}
+                          title="Remove registration"
+                          className="ml-1 text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+                        >
+                          <XCircle className="w-3 h-3" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

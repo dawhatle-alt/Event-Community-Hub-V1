@@ -1017,6 +1017,43 @@ router.post("/registrations/:id/reinstate", requireAdminAuth, async (req, res): 
   res.json({ success: true });
 });
 
+// Admin-only: manually mark a pending registration as paid (e.g. when Square webhook was missed)
+router.post("/registrations/:id/mark-paid", requireAdminAuth, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid registration id" });
+    return;
+  }
+
+  const [registration] = await db
+    .select()
+    .from(registrationsTable)
+    .where(eq(registrationsTable.id, id))
+    .limit(1);
+
+  if (!registration) {
+    res.status(404).json({ error: "Registration not found" });
+    return;
+  }
+  if (registration.status !== "pending") {
+    res.status(400).json({ error: `Registration is already ${registration.status}` });
+    return;
+  }
+  if (!registration.stripeSessionId) {
+    res.status(400).json({ error: "Registration has no payment session to finalize" });
+    return;
+  }
+
+  const finalized = await finalizePayment(registration.stripeSessionId, null);
+  if (!finalized) {
+    res.status(409).json({ error: "Could not mark as paid — event may be at capacity" });
+    return;
+  }
+
+  logger.info({ registrationId: id }, "Registration manually marked as paid by admin");
+  res.json({ success: true });
+});
+
 // Admin-only: registration stats
 router.get("/registrations/stats", requireAdminAuth, async (_req, res): Promise<void> => {
   const [totals] = await db
