@@ -42,6 +42,7 @@ export interface ConfirmationEmailOptions {
   eventAddress?: string | null;
   quantity: number;
   totalAmount: number;
+  guestNames?: string[] | null;
 }
 
 function formatDate(date: Date): string {
@@ -64,7 +65,7 @@ function formatTime(date: Date): string {
 }
 
 function buildHtml(opts: ConfirmationEmailOptions): string {
-  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity, totalAmount } = opts;
+  const { firstName, eventTitle, eventDate, eventEndDate, eventLocation, eventAddress, quantity, totalAmount, guestNames } = opts;
 
   const dateStr = formatDate(eventDate);
   const timeStr = formatTime(eventDate);
@@ -153,6 +154,14 @@ function buildHtml(opts: ConfirmationEmailOptions): string {
                           ${ticketLine} · ${amountStr}
                         </td>
                       </tr>
+                      ${guestNames && guestNames.length > 0 ? `<tr>
+                        <td style="padding:6px 0;vertical-align:top;width:28px;">
+                          <span style="font-size:18px;">👥</span>
+                        </td>
+                        <td style="padding:6px 0 6px 8px;font-size:15px;color:#374151;">
+                          <span style="font-weight:600;color:#374151;">Guests:</span> ${guestNames.map((n, i) => `Guest ${i + 2}: ${n}`).join(", ")}
+                        </td>
+                      </tr>` : ""}
                     </table>
                   </td>
                 </tr>

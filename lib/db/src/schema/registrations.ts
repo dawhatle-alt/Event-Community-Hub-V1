@@ -29,6 +29,7 @@ export const registrationsTable = pgTable("registrations", {
   reminderIdentifier: text("reminder_identifier"),
   reminderLabel: text("reminder_label"),
   reminderScheduledAt: timestamp("reminder_scheduled_at", { withTimezone: true }),
+  guestNames: text("guest_names"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

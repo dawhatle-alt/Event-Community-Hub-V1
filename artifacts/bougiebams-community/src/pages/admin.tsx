@@ -112,7 +112,7 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
 
   const handleExportCSV = () => {
     if (!regs?.length) return;
-    const headers = ["First Name", "Last Name", "Email", "Phone", "Qty", "Total ($)", "Status", "Seating", "Jokers", "Skill Level", "Referred By", "Referral Code", "Registered At", "Reminder Sent"];
+    const headers = ["First Name", "Last Name", "Email", "Phone", "Qty", "Total ($)", "Status", "Seating", "Jokers", "Skill Level", "Referred By", "Referral Code", "Guest Names", "Registered At", "Reminder Sent"];
     const rows = regs.map(r => [
       r.firstName,
       r.lastName,
@@ -126,6 +126,7 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
       (r as any).skillLevel ?? "",
       (r as any).referredBy ?? "",
       (r as any).referralCode ?? "",
+      (() => { try { const g = (r as any).guestNames; return g ? JSON.parse(g).join("; ") : ""; } catch { return (r as any).guestNames ?? ""; } })(),
       r.createdAt ? new Date(r.createdAt).toLocaleString() : "",
       (r as any).reminderSentAt ? new Date((r as any).reminderSentAt).toLocaleString() : "",
     ]);
@@ -323,8 +324,9 @@ function EventRegistrationsPanel({ eventId, eventTitle, adminHeaders }: { eventI
                     )}
                   </div>
                 </div>
-                {((r as any).seatingPreference || (r as any).jokersPreference || (r as any).skillLevel || (r as any).referredBy) && (
+                {((r as any).seatingPreference || (r as any).jokersPreference || (r as any).skillLevel || (r as any).referredBy || (r as any).guestNames) && (
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pl-0.5">
+                    {(r as any).guestNames && (() => { try { const g: string[] = JSON.parse((r as any).guestNames); return g.length > 0 ? <span><span className="font-medium text-foreground/70">Guests:</span> {g.join(", ")}</span> : null; } catch { return null; } })()}
                     {(r as any).seatingPreference && (
                       <span><span className="font-medium text-foreground/70">Seating:</span> {(r as any).seatingPreference}</span>
                     )}

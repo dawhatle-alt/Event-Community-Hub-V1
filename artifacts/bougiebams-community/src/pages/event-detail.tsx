@@ -32,6 +32,7 @@ export default function EventDetail() {
     email: "",
     phone: "",
     quantity: 1,
+    guestNames: [] as string[],
     seatingPreference: "",
     jokersPreference: "" as "" | "yes" | "no" | "open",
     skillLevel: "" as "" | "learn" | "learning" | "intermediate" | "advanced",
@@ -143,6 +144,7 @@ export default function EventDetail() {
           email: formData.email,
           phone: formData.phone || undefined,
           quantity: formData.quantity,
+          guestNames: formData.guestNames.filter(n => n.trim()).length > 0 ? formData.guestNames.map(n => n.trim()).filter(Boolean) : undefined,
           seatingPreference: formData.seatingPreference || undefined,
           jokersPreference: (formData.jokersPreference || undefined) as "yes" | "no" | "open" | undefined,
           skillLevel: (formData.skillLevel || undefined) as "learn" | "learning" | "intermediate" | "advanced" | undefined,
@@ -507,8 +509,44 @@ export default function EventDetail() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="quantity">Number of Tickets</Label>
-                    <Input id="quantity" type="number" min="1" max={event.spotsRemaining ?? event.capacity} required value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value, 10) || 1})} className="bg-background" />
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      max={event.spotsRemaining ?? event.capacity}
+                      required
+                      value={formData.quantity}
+                      onChange={e => {
+                        const q = parseInt(e.target.value, 10) || 1;
+                        const newNames = Array.from({ length: Math.max(0, q - 1) }, (_, i) => formData.guestNames[i] ?? "");
+                        setFormData({...formData, quantity: q, guestNames: newNames});
+                      }}
+                      className="bg-background"
+                    />
                   </div>
+
+                  {formData.quantity > 1 && (
+                    <div className="space-y-2">
+                      <Label>
+                        Guest Names
+                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">Optional — helps us greet your group by name</span>
+                      </Label>
+                      {Array.from({ length: formData.quantity - 1 }, (_, i) => (
+                        <Input
+                          key={i}
+                          placeholder={`Guest ${i + 2} full name`}
+                          value={formData.guestNames[i] ?? ""}
+                          onChange={e => {
+                            const updated = [...formData.guestNames];
+                            while (updated.length < formData.quantity - 1) updated.push("");
+                            updated[i] = e.target.value;
+                            setFormData({...formData, guestNames: updated});
+                          }}
+                          className="bg-background"
+                        />
+                      ))}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="seatingPreference">

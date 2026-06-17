@@ -511,7 +511,8 @@ export const CreateCheckoutSessionBody = zod.object({
   "jokersPreference": zod.enum(['yes', 'no', 'open']).nullish(),
   "skillLevel": zod.enum(['learn', 'learning', 'intermediate', 'advanced']).nullish(),
   "couponCode": zod.string().nullish().describe('Optional coupon code for a free registration'),
-  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registration')
+  "referredBy": zod.string().nullish().describe('Referral code of the person who referred this registration'),
+  "guestNames": zod.array(zod.string()).nullish().describe('Names of additional guests for multi-ticket purchases')
 })
 
 export const CreateCheckoutSessionResponse = zod.object({

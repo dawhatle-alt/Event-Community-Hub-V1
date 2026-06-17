@@ -102,6 +102,10 @@ export async function finalizePayment(
       .from(eventsTable)
       .where(eq(eventsTable.id, reg.eventId));
     if (eventForEmail) {
+      const parsedGuestNames = (() => {
+        try { return reg.guestNames ? JSON.parse(reg.guestNames) : undefined; }
+        catch { return undefined; }
+      })();
       sendRegistrationConfirmation({
         to: reg.email,
         firstName: reg.firstName,
@@ -112,6 +116,7 @@ export async function finalizePayment(
         eventAddress: eventForEmail.address,
         quantity: reg.quantity,
         totalAmount: Number(reg.totalAmount),
+        guestNames: parsedGuestNames,
       })
         .then((sent) => {
           if (sent) {

@@ -60,8 +60,17 @@ export default function RegisterScreen() {
 
   const [couponCode, setCouponCode] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [guestNames, setGuestNames] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    setGuestNames(prev => {
+      const newLen = Math.max(0, quantity - 1);
+      if (prev.length === newLen) return prev;
+      return Array.from({ length: newLen }, (_, i) => prev[i] ?? "");
+    });
+  }, [quantity]);
 
   const lastNameRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
@@ -98,6 +107,7 @@ export default function RegisterScreen() {
     setErrors({});
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    const filteredGuests = guestNames.map(n => n.trim()).filter(Boolean);
     register(
       {
         id: Number(id),
@@ -108,6 +118,7 @@ export default function RegisterScreen() {
           email: email.trim(),
           phone: phone.replace(/\D/g, "") || null,
           quantity,
+          guestNames: filteredGuests.length > 0 ? filteredGuests : undefined,
           couponCode: couponCode.trim() || undefined,
         },
       },
@@ -347,6 +358,40 @@ export default function RegisterScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Guest Names — shown when buying more than 1 ticket */}
+        {quantity > 1 && (
+          <View style={[styles.section, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 24 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" }]}>
+              Guest Names
+            </Text>
+            <Text style={[styles.preFillNoticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: -8 }]}>
+              Optional — helps us greet your group
+            </Text>
+            {Array.from({ length: quantity - 1 }, (_, i) => (
+              <View key={i} style={{ gap: 6 }}>
+                <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  Guest {i + 2}
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius / 1.5, color: colors.foreground }]}
+                  placeholder="Full name"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={guestNames[i] ?? ""}
+                  onChangeText={v => {
+                    const updated = [...guestNames];
+                    while (updated.length <= i) updated.push("");
+                    updated[i] = v;
+                    setGuestNames(updated);
+                  }}
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  returnKeyType="next"
+                />
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Order Summary */}
         {!isFree && (

@@ -136,7 +136,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode, referredBy } = parsed.data;
+  const { eventId, firstName, lastName, email, phone, quantity = 1, seatingPreference, jokersPreference, skillLevel, couponCode, referredBy, guestNames } = parsed.data;
   const userId = req.isAuthenticated() ? req.user.id : null;
   const { randomBytes } = await import("crypto");
   const referralCode = `BB${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -220,6 +220,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
         skillLevel: skillLevel ?? null,
         referralCode,
         referredBy: referredBy ?? null,
+        guestNames: guestNames?.length ? JSON.stringify(guestNames) : null,
       }).returning();
 
       await tx.update(eventsTable).set({
@@ -252,6 +253,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
       eventAddress: event.address,
       quantity,
       totalAmount: 0,
+      guestNames: guestNames?.length ? guestNames : undefined,
     }).then((sent) => {
       if (sent) {
         return db.update(registrationsTable)
@@ -314,6 +316,7 @@ async function checkoutHandler(req: any, res: any): Promise<void> {
         skillLevel: skillLevel ?? null,
         referralCode,
         referredBy: referredBy ?? null,
+        guestNames: guestNames?.length ? JSON.stringify(guestNames) : null,
       })
       .returning();
 
