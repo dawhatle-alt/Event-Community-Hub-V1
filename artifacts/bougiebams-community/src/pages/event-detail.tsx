@@ -169,21 +169,11 @@ export default function EventDetail() {
   return (
     <div className="w-full bg-background min-h-screen pb-24">
       <div className="relative h-[40vh] min-h-[300px] w-full bg-[#181D37]">
-        {(() => {
-          const isLogo = !event.imageUrl || event.imageUrl.toLowerCase().includes("logo") || event.imageUrl.toLowerCase().endsWith(".svg");
-          const src = isLogo
-            ? `${import.meta.env.BASE_URL}bougie-zebra-banner.png`
-            : event.imageUrl!.startsWith("/api/") || event.imageUrl!.startsWith("http")
-            ? event.imageUrl!
-            : `${import.meta.env.BASE_URL}${event.imageUrl!.replace(/^\//, "")}`;
-          return (
-            <img
-              src={src}
-              alt={event.title}
-              className="w-full h-full object-cover object-center"
-            />
-          );
-        })()}
+        <img
+          src={`${import.meta.env.BASE_URL}bougie-zebra-banner.png`}
+          alt={event.title}
+          className="w-full h-full object-cover object-[50%_center] md:object-[70%_center]"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 
