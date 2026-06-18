@@ -18,7 +18,7 @@ import {
 const zebraBanner = require("@/assets/bougie-zebra-banner.png");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { KeyboardAwareScrollViewCompat, KeyboardStickyFooter } from "@/components/KeyboardAwareScrollViewCompat";
 import { useAuth } from "@/context/auth";
 import { useColors } from "@/hooks/useColors";
 
@@ -188,7 +188,7 @@ export default function RegisterScreen() {
 
       <KeyboardAwareScrollViewCompat
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 120 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bottomOffset={120}
@@ -416,8 +416,11 @@ export default function RegisterScreen() {
           </View>
         )}
 
+      </KeyboardAwareScrollViewCompat>
+
+      <KeyboardStickyFooter style={{ paddingHorizontal: 24, paddingTop: 12, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }}>
         {errors.submit && (
-          <View style={[styles.errorBanner, { backgroundColor: `${colors.destructive}15`, borderColor: colors.destructive, borderRadius: colors.radius }]}>
+          <View style={[styles.errorBanner, { backgroundColor: `${colors.destructive}15`, borderColor: colors.destructive, borderRadius: colors.radius, marginBottom: 12 }]}>
             <Feather name="alert-circle" size={16} color={colors.destructive} />
             <Text style={[styles.errorBannerText, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>
               {errors.submit}
@@ -425,7 +428,6 @@ export default function RegisterScreen() {
           </View>
         )}
 
-        {/* Submit */}
         <Pressable
           testID="submit-registration"
           style={({ pressed }) => [
@@ -451,10 +453,10 @@ export default function RegisterScreen() {
           )}
         </Pressable>
 
-        <Text style={[styles.secureNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+        <Text style={[styles.secureNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: 8 }]}>
           {isFree ? "Your spot will be reserved immediately." : "Payments are securely processed by Square."}
         </Text>
-      </KeyboardAwareScrollViewCompat>
+      </KeyboardStickyFooter>
     </View>
   );
 }
