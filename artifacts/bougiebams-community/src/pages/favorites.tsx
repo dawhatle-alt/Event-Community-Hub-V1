@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
-import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS, type FavoriteCategory } from "@/data/favorites";
+import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS, type FavoriteCategory, type FavoriteProduct } from "@/data/favorites";
 
 const PAGE_TITLE = "BougieBams Favorites | Mahjong Accessories & Winner Brags";
 const META_DESCRIPTION =
@@ -58,9 +59,23 @@ function useJsonLd(data: object) {
   }, []);
 }
 
+function useFavoriteImages(): Record<string, string> {
+  const { data } = useQuery<{ images: Record<string, string> }>({
+    queryKey: ["favorites-images"],
+    queryFn: async () => {
+      const res = await fetch("/api/favorites/images");
+      if (!res.ok) return { images: {} };
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  return data?.images ?? {};
+}
+
 export default function Favorites() {
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory | "All">("All");
   const [search, setSearch] = useState("");
+  const imageMap = useFavoriteImages();
 
   usePageMeta(PAGE_TITLE, META_DESCRIPTION, "/favorites");
 
@@ -83,8 +98,13 @@ export default function Favorites() {
     })),
   });
 
+  const withImages: FavoriteProduct[] = useMemo(
+    () => FAVORITES.map((p) => imageMap[p.id] ? { ...p, image: imageMap[p.id] } : p),
+    [imageMap]
+  );
+
   const filtered = useMemo(() => {
-    return FAVORITES.filter((p) => {
+    return withImages.filter((p) => {
       const matchCat = activeCategory === "All" || p.category === activeCategory;
       if (!matchCat) return false;
       if (!search.trim()) return true;
@@ -95,7 +115,7 @@ export default function Favorites() {
         p.category.toLowerCase().includes(q)
       );
     });
-  }, [activeCategory, search]);
+  }, [activeCategory, search, withImages]);
 
   const visibleCategories = activeCategory === "All" ? CATEGORIES : [activeCategory];
 

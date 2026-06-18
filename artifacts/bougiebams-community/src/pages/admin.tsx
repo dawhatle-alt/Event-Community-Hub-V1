@@ -15,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, CheckCircle2, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Users, DollarSign, Lock, Upload, X, ChevronDown, ChevronRight, XCircle, RotateCcw, CheckCircle2, LayoutGrid, Star, MessageSquare, Send, ClipboardList, BellRing, Bell, Download, Search, ShoppingBag, Trash } from "lucide-react";
 import { getHeroTiles, saveHeroTiles, AVAILABLE_PHOTOS, DEFAULT_TILES, type TileConfig } from "@/lib/heroTiles";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS } from "@/data/favorites";
 
 const ADMIN_KEY = "bb_admin_auth";
 
@@ -714,6 +715,162 @@ function EventAnnouncementPanel({ eventId, adminHeaders }: { eventId: number; ad
   );
 }
 
+function FavoritesSection({ adminPassword }: { adminPassword: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const requestUploadUrl = useRequestUploadUrl({ request: { headers: { Authorization: `Bearer ${adminPassword}` } } });
+  const adminHeaders = { Authorization: `Bearer ${adminPassword}` };
+
+  const { data: imagesData } = useQuery<{ images: Record<string, string> }>({
+    queryKey: ["favorites-images"],
+    queryFn: async () => {
+      const res = await fetch("/api/favorites/images");
+      if (!res.ok) return { images: {} };
+      return res.json();
+    },
+    staleTime: 0,
+  });
+  const imageMap = imagesData?.images ?? {};
+
+  const handleUpload = async (productId: string, file: File) => {
+    setUploading(productId);
+    try {
+      const result = await new Promise<{ uploadURL: string; objectPath: string }>((resolve, reject) => {
+        requestUploadUrl.mutate(
+          { data: { name: file.name, size: file.size, contentType: file.type } },
+          { onSuccess: resolve, onError: reject }
+        );
+      });
+      await fetch(result.uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      const res = await fetch(`/api/admin/favorites/${productId}/image`, {
+        method: "POST",
+        headers: { ...adminHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ objectPath: result.objectPath }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      await queryClient.invalidateQueries({ queryKey: ["favorites-images"] });
+      toast({ title: "Photo uploaded" });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleRemove = async (productId: string) => {
+    setRemoving(productId);
+    try {
+      await fetch(`/api/admin/favorites/${productId}/image`, {
+        method: "DELETE",
+        headers: adminHeaders,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["favorites-images"] });
+      toast({ title: "Photo removed" });
+    } catch {
+      toast({ title: "Remove failed", variant: "destructive" });
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  const uploadedCount = Object.keys(imageMap).length;
+
+  return (
+    <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5 text-primary" />
+          <h3 className="font-serif text-xl font-medium">Favorites Product Photos</h3>
+        </div>
+        <span className="text-sm text-muted-foreground">{uploadedCount} of {FAVORITES.length} photos uploaded</span>
+      </div>
+      <div className="p-6 space-y-10">
+        {CATEGORIES.map((cat) => {
+          const products = FAVORITES.filter((p) => p.category === cat);
+          return (
+            <div key={cat}>
+              <div className="mb-4">
+                <h4 className="font-serif text-lg font-medium text-foreground">{cat}</h4>
+                <p className="text-xs text-muted-foreground">{CATEGORY_DESCRIPTIONS[cat]}</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
+                {products.map((product) => {
+                  const currentImage = imageMap[product.id];
+                  const isUploading = uploading === product.id;
+                  const isRemoving = removing === product.id;
+                  return (
+                    <div key={product.id} className="flex flex-col gap-2">
+                      <div className="aspect-square relative rounded-xl overflow-hidden border border-border bg-muted group">
+                        {currentImage ? (
+                          <img
+                            src={currentImage}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#C9A227]/20 to-[#181D37]/20">
+                            <span className="font-serif text-2xl text-[#C9A227]/50 font-medium">BB</span>
+                          </div>
+                        )}
+                        <label className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${isUploading ? "opacity-100" : ""}`}>
+                          <div className="flex flex-col items-center gap-1 text-white text-center px-2">
+                            {isUploading ? (
+                              <span className="text-xs">Uploading…</span>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4" />
+                                <span className="text-xs font-medium leading-tight">
+                                  {currentImage ? "Replace" : "Upload"}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            disabled={uploading !== null || removing !== null}
+                            onChange={e => {
+                              const f = e.target.files?.[0];
+                              if (f) handleUpload(product.id, f);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        {currentImage && !isUploading && (
+                          <button
+                            onClick={() => handleRemove(product.id)}
+                            disabled={removing !== null || uploading !== null}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive disabled:opacity-40"
+                            title="Remove photo"
+                          >
+                            {isRemoving ? (
+                              <span className="text-[8px]">…</span>
+                            ) : (
+                              <X className="w-3 h-3" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs font-medium text-foreground leading-tight text-center line-clamp-2">{product.name}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function HeroTilesSection({ adminPassword }: { adminPassword: string }) {
   const { toast } = useToast();
   const [tiles, setTiles] = useState<TileConfig[]>(() => getHeroTiles());
@@ -1282,6 +1439,8 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
             </div>
 
             <HeroTilesSection adminPassword={adminPassword} />
+
+            <FavoritesSection adminPassword={adminPassword} />
 
             {/* Attendee Search */}
             <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
