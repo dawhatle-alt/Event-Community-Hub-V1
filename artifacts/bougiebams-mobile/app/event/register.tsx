@@ -270,6 +270,13 @@ export default function RegisterScreen() {
               placeholderTextColor={colors.mutedForeground}
               value={email}
               onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: "" })); }}
+              onBlur={() => {
+                if (!email.trim()) {
+                  setErrors((e) => ({ ...e, email: "Email is required" }));
+                } else if (!/\S+@\S+\.\S+/.test(email)) {
+                  setErrors((e) => ({ ...e, email: "Enter a valid email" }));
+                }
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
