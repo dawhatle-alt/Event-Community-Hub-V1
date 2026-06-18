@@ -40,9 +40,7 @@ function usePageMeta(title: string, description: string, path: string) {
       })();
     canonical.setAttribute("href", `https://bougiebams.com${path}`);
 
-    return () => {
-      document.title = prev;
-    };
+    return () => { document.title = prev; };
   }, [title, description, path]);
 }
 
@@ -53,10 +51,17 @@ function useJsonLd(data: object) {
     script.id = "favorites-jsonld";
     script.textContent = JSON.stringify(data);
     document.head.appendChild(script);
-    return () => {
-      document.getElementById("favorites-jsonld")?.remove();
-    };
+    return () => { document.getElementById("favorites-jsonld")?.remove(); };
   }, []);
+}
+
+interface CustomProduct {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  affiliateUrl: string;
+  image: string | null;
 }
 
 function useFavoriteImages(): Record<string, string> {
@@ -72,13 +77,26 @@ function useFavoriteImages(): Record<string, string> {
   return data?.images ?? {};
 }
 
+function useCustomProducts(): CustomProduct[] {
+  const { data } = useQuery<{ products: CustomProduct[] }>({
+    queryKey: ["favorites-custom-products"],
+    queryFn: async () => {
+      const res = await fetch("/api/favorites/custom-products");
+      if (!res.ok) return { products: [] };
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  return data?.products ?? [];
+}
+
 export default function Favorites() {
   const [activeCategory, setActiveCategory] = useState<FavoriteCategory | "All">("All");
   const [search, setSearch] = useState("");
   const imageMap = useFavoriteImages();
+  const customProducts = useCustomProducts();
 
   usePageMeta(PAGE_TITLE, META_DESCRIPTION, "/favorites");
-
   useJsonLd({
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -88,23 +106,36 @@ export default function Favorites() {
     itemListElement: FAVORITES.map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      item: {
-        "@type": "Product",
-        name: p.name,
-        description: p.description,
-        url: p.affiliateUrl,
-        category: p.category,
-      },
+      item: { "@type": "Product", name: p.name, description: p.description, url: p.affiliateUrl, category: p.category },
     })),
   });
 
-  const withImages: FavoriteProduct[] = useMemo(
-    () => FAVORITES.map((p) => imageMap[p.id] ? { ...p, image: imageMap[p.id] } : p),
-    [imageMap]
-  );
+  const allProducts: FavoriteProduct[] = useMemo(() => {
+    const statics = FAVORITES.map((p) =>
+      imageMap[p.id] ? { ...p, image: imageMap[p.id] } : p
+    );
+    const customs: FavoriteProduct[] = customProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category as FavoriteCategory,
+      description: p.description,
+      affiliateUrl: p.affiliateUrl,
+      image: p.image ?? `/images/placeholder.jpg`,
+    }));
+    return [...statics, ...customs];
+  }, [imageMap, customProducts]);
+
+  const visibleCategories = useMemo(() => {
+    if (activeCategory !== "All") return [activeCategory];
+    const extraCats = customProducts
+      .map((p) => p.category as FavoriteCategory)
+      .filter((c) => !CATEGORIES.includes(c));
+    const unique = [...new Set(extraCats)];
+    return [...CATEGORIES, ...unique];
+  }, [activeCategory, customProducts]);
 
   const filtered = useMemo(() => {
-    return withImages.filter((p) => {
+    return allProducts.filter((p) => {
       const matchCat = activeCategory === "All" || p.category === activeCategory;
       if (!matchCat) return false;
       if (!search.trim()) return true;
@@ -115,9 +146,9 @@ export default function Favorites() {
         p.category.toLowerCase().includes(q)
       );
     });
-  }, [activeCategory, search, withImages]);
+  }, [activeCategory, search, allProducts]);
 
-  const visibleCategories = activeCategory === "All" ? CATEGORIES : [activeCategory];
+  const allCategories = visibleCategories;
 
   return (
     <div className="w-full">
@@ -143,7 +174,6 @@ export default function Favorites() {
       <section className="sticky top-[144px] z-30 bg-background border-b border-border shadow-sm">
         <div className="container mx-auto px-4 max-w-7xl py-4">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            {/* Category pills */}
             <div className="flex flex-wrap items-center gap-2 flex-1">
               <button
                 onClick={() => setActiveCategory("All")}
@@ -153,10 +183,10 @@ export default function Favorites() {
                     : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                 }`}
               >
-                All ({FAVORITES.length})
+                All ({allProducts.length})
               </button>
-              {CATEGORIES.map((cat) => {
-                const count = FAVORITES.filter((p) => p.category === cat).length;
+              {allCategories.map((cat) => {
+                const count = allProducts.filter((p) => p.category === cat).length;
                 return (
                   <button
                     key={cat}
@@ -172,8 +202,6 @@ export default function Favorites() {
                 );
               })}
             </div>
-
-            {/* Search */}
             <div className="relative w-full sm:w-64 flex-shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -201,14 +229,15 @@ export default function Favorites() {
               </button>
             </div>
           ) : (
-            visibleCategories.map((cat) => {
+            allCategories.map((cat) => {
               const products = filtered.filter((p) => p.category === cat);
               if (products.length === 0) return null;
+              const desc = CATEGORY_DESCRIPTIONS[cat as FavoriteCategory];
               return (
                 <div key={cat}>
                   <div className="mb-6">
                     <h2 className="font-serif text-3xl font-medium text-foreground mb-1">{cat}</h2>
-                    <p className="text-muted-foreground text-sm">{CATEGORY_DESCRIPTIONS[cat]}</p>
+                    {desc && <p className="text-muted-foreground text-sm">{desc}</p>}
                   </div>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {products.map((product) => (

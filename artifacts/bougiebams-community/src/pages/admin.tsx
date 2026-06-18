@@ -715,14 +715,88 @@ function EventAnnouncementPanel({ eventId, adminHeaders }: { eventId: number; ad
   );
 }
 
+interface CustomProduct {
+  id: string;
+  dbId: number;
+  name: string;
+  category: string;
+  description: string;
+  affiliateUrl: string;
+  image: string | null;
+}
+
+const BLANK_CUSTOM = { name: "", category: CATEGORIES[0], description: "", affiliateUrl: "" };
+
+function PhotoTile({
+  image,
+  name,
+  isUploading,
+  isRemoving,
+  anyBusy,
+  onUpload,
+  onRemove,
+}: {
+  image: string | null;
+  name: string;
+  isUploading: boolean;
+  isRemoving: boolean;
+  anyBusy: boolean;
+  onUpload: (f: File) => void;
+  onRemove?: () => void;
+}) {
+  return (
+    <div className="aspect-square relative rounded-xl overflow-hidden border border-border bg-muted group flex-shrink-0 w-16 h-16">
+      {image ? (
+        <img src={image} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#C9A227]/20 to-[#181D37]/20">
+          <span className="font-serif text-lg text-[#C9A227]/50 font-medium">BB</span>
+        </div>
+      )}
+      <label className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${isUploading ? "opacity-100" : ""}`}>
+        <div className="flex flex-col items-center gap-0.5 text-white text-center px-1">
+          {isUploading ? <span className="text-[10px]">…</span> : <Upload className="w-3 h-3" />}
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          disabled={anyBusy}
+          onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }}
+        />
+      </label>
+      {image && !isUploading && onRemove && (
+        <button
+          onClick={onRemove}
+          disabled={anyBusy}
+          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive disabled:opacity-40"
+          title="Remove photo"
+        >
+          {isRemoving ? <span className="text-[8px]">…</span> : <X className="w-2.5 h-2.5" />}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function FavoritesSection({ adminPassword }: { adminPassword: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [uploading, setUploading] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<string | null>(null);
   const requestUploadUrl = useRequestUploadUrl({ request: { headers: { Authorization: `Bearer ${adminPassword}` } } });
   const adminHeaders = { Authorization: `Bearer ${adminPassword}` };
 
+  // ── state ──────────────────────────────────────────────────────────────────
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(BLANK_CUSTOM);
+  const [formFile, setFormFile] = useState<File | null>(null);
+  const [formFilePreview, setFormFilePreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  // ── data ───────────────────────────────────────────────────────────────────
   const { data: imagesData } = useQuery<{ images: Record<string, string> }>({
     queryKey: ["favorites-images"],
     queryFn: async () => {
@@ -734,26 +808,42 @@ function FavoritesSection({ adminPassword }: { adminPassword: string }) {
   });
   const imageMap = imagesData?.images ?? {};
 
-  const handleUpload = async (productId: string, file: File) => {
+  const { data: customData, refetch: refetchCustom } = useQuery<{ products: CustomProduct[] }>({
+    queryKey: ["admin-favorites-custom"],
+    queryFn: async () => {
+      const res = await fetch("/api/favorites/custom-products");
+      if (!res.ok) return { products: [] };
+      return res.json();
+    },
+    staleTime: 0,
+  });
+  const customProducts = customData?.products ?? [];
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+  const anyBusy = uploading !== null || removing !== null || saving || deleting !== null;
+
+  const doUpload = async (file: File): Promise<string> => {
+    const result = await new Promise<{ uploadURL: string; objectPath: string }>((resolve, reject) => {
+      requestUploadUrl.mutate(
+        { data: { name: file.name, size: file.size, contentType: file.type } },
+        { onSuccess: resolve, onError: reject }
+      );
+    });
+    await fetch(result.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    return result.objectPath;
+  };
+
+  // ── static product photo upload / remove ──────────────────────────────────
+  const handleStaticUpload = async (productId: string, file: File) => {
     setUploading(productId);
     try {
-      const result = await new Promise<{ uploadURL: string; objectPath: string }>((resolve, reject) => {
-        requestUploadUrl.mutate(
-          { data: { name: file.name, size: file.size, contentType: file.type } },
-          { onSuccess: resolve, onError: reject }
-        );
-      });
-      await fetch(result.uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
+      const objectPath = await doUpload(file);
       const res = await fetch(`/api/admin/favorites/${productId}/image`, {
         method: "POST",
         headers: { ...adminHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ objectPath: result.objectPath }),
+        body: JSON.stringify({ objectPath }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) throw new Error();
       await queryClient.invalidateQueries({ queryKey: ["favorites-images"] });
       toast({ title: "Photo uploaded" });
     } catch {
@@ -763,13 +853,10 @@ function FavoritesSection({ adminPassword }: { adminPassword: string }) {
     }
   };
 
-  const handleRemove = async (productId: string) => {
+  const handleStaticRemove = async (productId: string) => {
     setRemoving(productId);
     try {
-      await fetch(`/api/admin/favorites/${productId}/image`, {
-        method: "DELETE",
-        headers: adminHeaders,
-      });
+      await fetch(`/api/admin/favorites/${productId}/image`, { method: "DELETE", headers: adminHeaders });
       await queryClient.invalidateQueries({ queryKey: ["favorites-images"] });
       toast({ title: "Photo removed" });
     } catch {
@@ -779,93 +866,328 @@ function FavoritesSection({ adminPassword }: { adminPassword: string }) {
     }
   };
 
+  // ── custom product photo upload ────────────────────────────────────────────
+  const handleCustomPhotoUpload = async (dbId: number, file: File) => {
+    const key = `cp-${dbId}`;
+    setUploading(key);
+    try {
+      const objectPath = await doUpload(file);
+      const res = await fetch(`/api/admin/favorites/custom-products/${dbId}/image`, {
+        method: "POST",
+        headers: { ...adminHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ objectPath }),
+      });
+      if (!res.ok) throw new Error();
+      await refetchCustom();
+      await queryClient.invalidateQueries({ queryKey: ["favorites-custom-products"] });
+      toast({ title: "Photo uploaded" });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  // ── form helpers ──────────────────────────────────────────────────────────
+  const openAddForm = () => {
+    setEditingId(null);
+    setForm(BLANK_CUSTOM);
+    setFormFile(null);
+    setFormFilePreview(null);
+    setShowAddForm(true);
+  };
+
+  const openEditForm = (p: CustomProduct) => {
+    setEditingId(p.dbId);
+    setForm({ name: p.name, category: p.category, description: p.description, affiliateUrl: p.affiliateUrl });
+    setFormFile(null);
+    setFormFilePreview(p.image);
+    setShowAddForm(true);
+  };
+
+  const cancelForm = () => {
+    setShowAddForm(false);
+    setEditingId(null);
+    setForm(BLANK_CUSTOM);
+    setFormFile(null);
+    setFormFilePreview(null);
+  };
+
+  const handleFormFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFormFile(f);
+    const url = URL.createObjectURL(f);
+    setFormFilePreview(url);
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.category.trim()) {
+      toast({ title: "Name and category are required", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      let objectPath: string | undefined;
+      if (formFile) {
+        objectPath = await doUpload(formFile);
+      }
+
+      if (editingId !== null) {
+        const body: Record<string, unknown> = { ...form };
+        if (objectPath) body.objectPath = objectPath;
+        const res = await fetch(`/api/admin/favorites/custom-products/${editingId}`, {
+          method: "PUT",
+          headers: { ...adminHeaders, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error();
+        if (objectPath) {
+          await fetch(`/api/admin/favorites/custom-products/${editingId}/image`, {
+            method: "POST",
+            headers: { ...adminHeaders, "Content-Type": "application/json" },
+            body: JSON.stringify({ objectPath }),
+          });
+        }
+        toast({ title: "Product updated" });
+      } else {
+        const body: Record<string, unknown> = { ...form };
+        if (objectPath) body.objectPath = objectPath;
+        const res = await fetch("/api/admin/favorites/custom-products", {
+          method: "POST",
+          headers: { ...adminHeaders, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error();
+        toast({ title: "Product added" });
+      }
+
+      await refetchCustom();
+      await queryClient.invalidateQueries({ queryKey: ["favorites-custom-products"] });
+      cancelForm();
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (dbId: number) => {
+    setDeleting(dbId);
+    try {
+      await fetch(`/api/admin/favorites/custom-products/${dbId}`, { method: "DELETE", headers: adminHeaders });
+      await refetchCustom();
+      await queryClient.invalidateQueries({ queryKey: ["favorites-custom-products"] });
+      toast({ title: "Product deleted" });
+    } catch {
+      toast({ title: "Delete failed", variant: "destructive" });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const uploadedCount = Object.keys(imageMap).length;
 
   return (
     <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-      <div className="p-6 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-primary" />
-          <h3 className="font-serif text-xl font-medium">Favorites Product Photos</h3>
-        </div>
-        <span className="text-sm text-muted-foreground">{uploadedCount} of {FAVORITES.length} photos uploaded</span>
+      <div className="p-6 border-b border-border flex items-center gap-2">
+        <ShoppingBag className="w-5 h-5 text-primary" />
+        <h3 className="font-serif text-xl font-medium">Favorites Products</h3>
       </div>
-      <div className="p-6 space-y-10">
-        {CATEGORIES.map((cat) => {
-          const products = FAVORITES.filter((p) => p.category === cat);
-          return (
-            <div key={cat}>
-              <div className="mb-4">
-                <h4 className="font-serif text-lg font-medium text-foreground">{cat}</h4>
-                <p className="text-xs text-muted-foreground">{CATEGORY_DESCRIPTIONS[cat]}</p>
+
+      {/* ── Custom Products ─────────────────────────────────── */}
+      <div className="p-6 border-b border-border space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-sm">Custom Products</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">Add new products that appear on the Favorites page alongside the existing ones.</p>
+          </div>
+          {!showAddForm && (
+            <Button size="sm" className="rounded-xl gap-1.5" onClick={openAddForm}>
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          )}
+        </div>
+
+        {/* Add / Edit form */}
+        {showAddForm && (
+          <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/30">
+            <p className="text-sm font-medium">{editingId !== null ? "Edit Product" : "New Product"}</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Name *</Label>
+                <Input
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Pink Flamingos"
+                  className="h-9 text-sm"
+                />
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
-                {products.map((product) => {
-                  const currentImage = imageMap[product.id];
-                  const isUploading = uploading === product.id;
-                  const isRemoving = removing === product.id;
-                  return (
-                    <div key={product.id} className="flex flex-col gap-2">
-                      <div className="aspect-square relative rounded-xl overflow-hidden border border-border bg-muted group">
-                        {currentImage ? (
-                          <img
-                            src={currentImage}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#C9A227]/20 to-[#181D37]/20">
-                            <span className="font-serif text-2xl text-[#C9A227]/50 font-medium">BB</span>
-                          </div>
-                        )}
-                        <label className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${isUploading ? "opacity-100" : ""}`}>
-                          <div className="flex flex-col items-center gap-1 text-white text-center px-2">
-                            {isUploading ? (
-                              <span className="text-xs">Uploading…</span>
-                            ) : (
-                              <>
-                                <Upload className="w-4 h-4" />
-                                <span className="text-xs font-medium leading-tight">
-                                  {currentImage ? "Replace" : "Upload"}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            disabled={uploading !== null || removing !== null}
-                            onChange={e => {
-                              const f = e.target.files?.[0];
-                              if (f) handleUpload(product.id, f);
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-                        {currentImage && !isUploading && (
-                          <button
-                            onClick={() => handleRemove(product.id)}
-                            disabled={removing !== null || uploading !== null}
-                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive disabled:opacity-40"
-                            title="Remove photo"
-                          >
-                            {isRemoving ? (
-                              <span className="text-[8px]">…</span>
-                            ) : (
-                              <X className="w-3 h-3" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs font-medium text-foreground leading-tight text-center line-clamp-2">{product.name}</p>
-                    </div>
-                  );
-                })}
+              <div className="space-y-1">
+                <Label className="text-xs">Category *</Label>
+                <select
+                  value={form.category}
+                  onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Description</Label>
+                <Textarea
+                  value={form.description}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Short description shown on the card"
+                  className="text-sm resize-none h-16"
+                />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Amazon Affiliate URL</Label>
+                <Input
+                  value={form.affiliateUrl}
+                  onChange={e => setForm(p => ({ ...p, affiliateUrl: e.target.value }))}
+                  placeholder="https://amzn.to/..."
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Photo (optional)</Label>
+                <div className="flex items-center gap-3">
+                  {formFilePreview && (
+                    <img src={formFilePreview} alt="preview" className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0" />
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-primary/50 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    {formFilePreview ? "Replace photo" : "Choose photo"}
+                    <input type="file" accept="image/*" className="sr-only" onChange={handleFormFileChange} />
+                  </label>
+                </div>
               </div>
             </div>
-          );
-        })}
+            <div className="flex gap-2 pt-1">
+              <Button size="sm" className="rounded-xl" disabled={saving} onClick={handleSave}>
+                {saving ? "Saving…" : editingId !== null ? "Save Changes" : "Add Product"}
+              </Button>
+              <Button size="sm" variant="ghost" className="rounded-xl" disabled={saving} onClick={cancelForm}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Custom product list */}
+        {customProducts.length > 0 ? (
+          <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+            {customProducts.map((p) => {
+              const key = `cp-${p.dbId}`;
+              return (
+                <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
+                  <PhotoTile
+                    image={p.image}
+                    name={p.name}
+                    isUploading={uploading === key}
+                    isRemoving={false}
+                    anyBusy={anyBusy}
+                    onUpload={(f) => handleCustomPhotoUpload(p.dbId, f)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.category}</p>
+                    {p.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button variant="ghost" size="icon" className="w-8 h-8" title="Edit" onClick={() => openEditForm(p)}>
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-8 h-8 text-destructive hover:text-destructive"
+                      title="Delete"
+                      disabled={deleting === p.dbId || anyBusy}
+                      onClick={() => handleDelete(p.dbId)}
+                    >
+                      {deleting === p.dbId ? <span className="text-xs">…</span> : <Trash className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          !showAddForm && (
+            <p className="text-sm text-muted-foreground py-2">No custom products yet. Click "Add Product" to get started.</p>
+          )
+        )}
+      </div>
+
+      {/* ── Static product photo management ─────────────────── */}
+      <div className="p-6 space-y-1">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="font-medium text-sm">Existing Products — Photo Management</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">{uploadedCount} of {FAVORITES.length} photos uploaded. Hover a tile to upload or replace its photo.</p>
+          </div>
+        </div>
+        <div className="space-y-8">
+          {CATEGORIES.map((cat) => {
+            const products = FAVORITES.filter((p) => p.category === cat);
+            return (
+              <div key={cat}>
+                <div className="mb-3">
+                  <h5 className="font-serif text-base font-medium text-foreground">{cat}</h5>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {products.map((product) => {
+                    const currentImage = imageMap[product.id];
+                    return (
+                      <div key={product.id} className="flex flex-col gap-1.5">
+                        <div className="aspect-square relative rounded-xl overflow-hidden border border-border bg-muted group w-full">
+                          {currentImage ? (
+                            <img src={currentImage} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#C9A227]/20 to-[#181D37]/20">
+                              <span className="font-serif text-2xl text-[#C9A227]/50 font-medium">BB</span>
+                            </div>
+                          )}
+                          <label className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${uploading === product.id ? "opacity-100" : ""}`}>
+                            <div className="flex flex-col items-center gap-1 text-white text-center px-2">
+                              {uploading === product.id ? (
+                                <span className="text-xs">Uploading…</span>
+                              ) : (
+                                <>
+                                  <Upload className="w-4 h-4" />
+                                  <span className="text-xs font-medium leading-tight">{currentImage ? "Replace" : "Upload"}</span>
+                                </>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              disabled={anyBusy}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) handleStaticUpload(product.id, f); e.target.value = ""; }}
+                            />
+                          </label>
+                          {currentImage && uploading !== product.id && (
+                            <button
+                              onClick={() => handleStaticRemove(product.id)}
+                              disabled={anyBusy}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive disabled:opacity-40"
+                            >
+                              {removing === product.id ? <span className="text-[8px]">…</span> : <X className="w-3 h-3" />}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs font-medium text-foreground leading-tight text-center line-clamp-2">{product.name}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
