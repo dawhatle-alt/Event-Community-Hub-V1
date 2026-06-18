@@ -618,6 +618,102 @@ function WaitlistPanel({ eventId, adminHeaders }: { eventId: number; adminHeader
   );
 }
 
+function EventAnnouncementPanel({ eventId, adminHeaders }: { eventId: number; adminHeaders: Record<string, string> }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [lastResult, setLastResult] = useState<{ sent: number; total: number; ts: Date } | null>(null);
+  const { toast } = useToast();
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !body.trim()) return;
+    if (!confirm(`Send this push notification to all paid registrants of this event who have the app installed?`)) return;
+    setSending(true);
+    try {
+      const res = await fetch(`/api/notifications/blast/${eventId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...adminHeaders },
+        body: JSON.stringify({ title: title.trim(), body: body.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLastResult({ sent: data.sent, total: data.total ?? data.sent, ts: new Date() });
+        if (data.sent === 0) {
+          toast({ title: "No notifications sent", description: data.message ?? "No registrants have push tokens registered." });
+        } else {
+          toast({ title: `Announcement sent to ${data.sent} device${data.sent !== 1 ? "s" : ""}` });
+        }
+        setTitle("");
+        setBody("");
+      } else {
+        toast({ title: "Failed to send", description: data.error ?? "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-border mt-2 pt-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+      >
+        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        <BellRing className="w-3 h-3" />
+        Send Announcement
+        {lastResult && (
+          <span className="ml-1 text-muted-foreground font-normal">
+            — last sent {format(lastResult.ts, "h:mm a")} ({lastResult.sent}/{lastResult.total} delivered)
+          </span>
+        )}
+      </button>
+      {open && (
+        <form onSubmit={handleSend} className="mt-2 space-y-2">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground/70">Notification Title</label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. Doors open early tonight!"
+              className="h-7 text-xs rounded-lg"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground/70">Message</label>
+            <Textarea
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              placeholder="e.g. We're opening doors at 6 PM instead of 7 PM. See you soon!"
+              className="text-xs rounded-lg min-h-[60px] resize-none"
+              maxLength={256}
+              required
+            />
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            className="h-7 text-xs rounded-lg"
+            disabled={sending || !title.trim() || !body.trim()}
+          >
+            <Send className="w-3 h-3 mr-1" />
+            {sending ? "Sending…" : "Send to all registrants"}
+          </Button>
+          <p className="text-[10px] text-muted-foreground">
+            Sends immediately to all paid registrants who have the mobile app installed and notifications enabled.
+          </p>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function HeroTilesSection({ adminPassword }: { adminPassword: string }) {
   const { toast } = useToast();
   const [tiles, setTiles] = useState<TileConfig[]>(() => getHeroTiles());
@@ -1317,6 +1413,7 @@ function AdminDashboard({ adminPassword, onLogout }: { adminPassword: string; on
 
                     <EventRegistrationsPanel eventId={event.id} eventTitle={event.title} adminHeaders={adminHeaders} />
                     <WaitlistPanel eventId={event.id} adminHeaders={adminHeaders} />
+                    <EventAnnouncementPanel eventId={event.id} adminHeaders={adminHeaders} />
                     <EventFeedbackPanel event={event} adminHeaders={adminHeaders} />
                   </div>
                 ))}

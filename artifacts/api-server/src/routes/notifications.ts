@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { eq, and, isNotNull, ne } from "drizzle-orm";
+import { eq, and, isNotNull, ne, inArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db, pushTokensTable, registrationsTable, eventsTable } from "@workspace/db";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
-import { sendDayBeforeReminders, send48HourReminders } from "../lib/pushScheduler";
+import { sendDayBeforeReminders, send48HourReminders, sendExpoPushNotifications } from "../lib/pushScheduler";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,112 @@ router.delete("/notifications/push-token", async (req, res): Promise<void> => {
   } catch (err) {
     logger.error({ err }, "Failed to remove push token");
     res.status(500).json({ error: "Failed to remove push token" });
+  }
+});
+
+// Admin-only: send a custom push notification blast to all paid registrants of a specific event
+router.post("/notifications/blast/:eventId", requireAdminAuth, async (req, res): Promise<void> => {
+  const eventId = Number(req.params.eventId);
+  if (isNaN(eventId)) {
+    res.status(400).json({ error: "Invalid event ID" });
+    return;
+  }
+
+  const { title, body } = req.body;
+  if (!title || typeof title !== "string" || title.trim().length === 0) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  if (!body || typeof body !== "string" || body.trim().length === 0) {
+    res.status(400).json({ error: "body is required" });
+    return;
+  }
+
+  try {
+    // 1. Verify the event exists
+    const [event] = await db
+      .select({ id: eventsTable.id, title: eventsTable.title })
+      .from(eventsTable)
+      .where(eq(eventsTable.id, eventId))
+      .limit(1);
+
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
+
+    // 2. Find paid registrants for this event who have a user account
+    const paidRegistrations = await db
+      .select({ userId: registrationsTable.userId })
+      .from(registrationsTable)
+      .where(
+        and(
+          eq(registrationsTable.eventId, eventId),
+          eq(registrationsTable.status, "paid"),
+          sql`${registrationsTable.userId} IS NOT NULL`
+        )
+      );
+
+    if (paidRegistrations.length === 0) {
+      res.json({ success: true, sent: 0, message: "No paid registrants with accounts for this event" });
+      return;
+    }
+
+    const userIds = [...new Set(paidRegistrations.map((r) => r.userId).filter(Boolean))] as string[];
+
+    // 3. Look up push tokens for those users
+    const tokenRows = await db
+      .select()
+      .from(pushTokensTable)
+      .where(inArray(pushTokensTable.userId, userIds));
+
+    if (tokenRows.length === 0) {
+      res.json({ success: true, sent: 0, message: "No push tokens found for registrants" });
+      return;
+    }
+
+    // 4. Build messages
+    const messages = tokenRows.map((t) => ({
+      to: t.token,
+      title: title.trim(),
+      body: body.trim(),
+      data: { eventId, screen: "event" },
+      sound: "default" as const,
+    }));
+
+    // 5. Send in batches of 100
+    const BATCH_SIZE = 100;
+    let successCount = 0;
+    const staleTokens: string[] = [];
+
+    for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+      const batch = messages.slice(i, i + BATCH_SIZE);
+      try {
+        const tickets = await sendExpoPushNotifications(batch);
+        successCount += tickets.filter((t) => t.status === "ok").length;
+        for (let j = 0; j < tickets.length; j++) {
+          const ticket = tickets[j];
+          if (ticket.status === "error" && ticket.details?.error === "DeviceNotRegistered") {
+            staleTokens.push(batch[j].to);
+          }
+        }
+      } catch (err) {
+        logger.error({ err, batchStart: i }, "Blast: failed to send push notification batch");
+      }
+    }
+
+    // 6. Prune stale tokens
+    if (staleTokens.length > 0) {
+      await db.delete(pushTokensTable).where(inArray(pushTokensTable.token, staleTokens)).catch((err) => {
+        logger.error({ err }, "Blast: failed to prune stale tokens");
+      });
+    }
+
+    logger.info({ eventId, title, successCount, total: messages.length }, "Push blast sent");
+    res.json({ success: true, sent: successCount, total: messages.length });
+  } catch (err) {
+    logger.error({ err }, "Failed to send push blast");
+    res.status(500).json({ error: "Failed to send push blast" });
   }
 });
 

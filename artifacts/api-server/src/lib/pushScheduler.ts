@@ -22,7 +22,7 @@ interface ExpoPushTicket {
   details?: { error?: string };
 }
 
-async function sendExpoPushNotifications(messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
+export async function sendExpoPushNotifications(messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
   if (messages.length === 0) return [];
 
   const response = await fetch(EXPO_PUSH_ENDPOINT, {
