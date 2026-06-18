@@ -1,0 +1,213 @@
+import { useState, useEffect, useMemo } from "react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ProductCard } from "@/components/ProductCard";
+import { FAVORITES, CATEGORIES, CATEGORY_DESCRIPTIONS, type FavoriteCategory } from "@/data/favorites";
+
+const PAGE_TITLE = "BougieBams Favorites | Mahjong Accessories & Winner Brags";
+const META_DESCRIPTION =
+  "Discover our favorite Mahjong accessories, winner brags, trays, and table essentials curated by the BougieBams team.";
+
+function usePageMeta(title: string, description: string, path: string) {
+  useEffect(() => {
+    const prev = document.title;
+    document.title = title;
+
+    const setMeta = (name: string, content: string, prop = false) => {
+      const attr = prop ? "property" : "name";
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    setMeta("description", description);
+    setMeta("og:title", title, true);
+    setMeta("og:description", description, true);
+    setMeta("og:type", "website", true);
+    setMeta("og:url", `https://bougiebams.com${path}`, true);
+
+    const canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null
+      ?? (() => {
+        const el = document.createElement("link");
+        el.setAttribute("rel", "canonical");
+        document.head.appendChild(el);
+        return el;
+      })();
+    canonical.setAttribute("href", `https://bougiebams.com${path}`);
+
+    return () => {
+      document.title = prev;
+    };
+  }, [title, description, path]);
+}
+
+function useJsonLd(data: object) {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "favorites-jsonld";
+    script.textContent = JSON.stringify(data);
+    document.head.appendChild(script);
+    return () => {
+      document.getElementById("favorites-jsonld")?.remove();
+    };
+  }, []);
+}
+
+export default function Favorites() {
+  const [activeCategory, setActiveCategory] = useState<FavoriteCategory | "All">("All");
+  const [search, setSearch] = useState("");
+
+  usePageMeta(PAGE_TITLE, META_DESCRIPTION, "/favorites");
+
+  useJsonLd({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "BougieBams Favorites",
+    description: META_DESCRIPTION,
+    url: "https://bougiebams.com/favorites",
+    itemListElement: FAVORITES.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Product",
+        name: p.name,
+        description: p.description,
+        url: p.affiliateUrl,
+        category: p.category,
+      },
+    })),
+  });
+
+  const filtered = useMemo(() => {
+    return FAVORITES.filter((p) => {
+      const matchCat = activeCategory === "All" || p.category === activeCategory;
+      if (!matchCat) return false;
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    });
+  }, [activeCategory, search]);
+
+  const visibleCategories = activeCategory === "All" ? CATEGORIES : [activeCategory];
+
+  return (
+    <div className="w-full">
+      {/* Hero */}
+      <section className="relative text-background py-20 px-4 overflow-hidden" style={{ minHeight: "360px" }}>
+        <img
+          src={`${import.meta.env.BASE_URL}bougie-zebra-banner.png`}
+          alt="BougieBams Favorites banner"
+          className="absolute inset-0 w-full h-full object-cover object-[50%_center] md:object-[70%_center]"
+        />
+        <div className="absolute inset-0 bg-foreground/40" />
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <div className="max-w-xl">
+            <h1 className="font-serif text-5xl md:text-6xl font-medium mb-4">BougieBams Favorites</h1>
+            <p className="text-lg md:text-xl text-white/90 font-light">
+              Curated Mahjong accessories, winner brags, and table essentials we love.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Filter + Search bar */}
+      <section className="sticky top-[144px] z-30 bg-background border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 max-w-7xl py-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            {/* Category pills */}
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              <button
+                onClick={() => setActiveCategory("All")}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                  activeCategory === "All"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                All ({FAVORITES.length})
+              </button>
+              {CATEGORIES.map((cat) => {
+                const count = FAVORITES.filter((p) => p.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                      activeCategory === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search */}
+            <div className="relative w-full sm:w-64 flex-shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search products…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 rounded-full bg-card border-border"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Product grid */}
+      <section className="py-12 bg-background min-h-[60vh]">
+        <div className="container mx-auto px-4 max-w-7xl space-y-16">
+          {filtered.length === 0 ? (
+            <div className="text-center py-24">
+              <p className="font-serif text-2xl text-muted-foreground">No products match your search.</p>
+              <button
+                onClick={() => { setSearch(""); setActiveCategory("All"); }}
+                className="mt-6 px-6 py-2 rounded-full border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            visibleCategories.map((cat) => {
+              const products = filtered.filter((p) => p.category === cat);
+              if (products.length === 0) return null;
+              return (
+                <div key={cat}>
+                  <div className="mb-6">
+                    <h2 className="font-serif text-3xl font-medium text-foreground mb-1">{cat}</h2>
+                    <p className="text-muted-foreground text-sm">{CATEGORY_DESCRIPTIONS[cat]}</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      {/* Affiliate disclosure */}
+      <div className="bg-muted/50 border-t border-border py-6">
+        <div className="container mx-auto px-4 max-w-7xl text-center text-sm text-muted-foreground">
+          As an Amazon Associate, BougieBams earns from qualifying purchases.
+        </div>
+      </div>
+    </div>
+  );
+}

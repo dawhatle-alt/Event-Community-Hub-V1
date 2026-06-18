@@ -199,7 +199,7 @@ export default function Events() {
               <Button
                 variant="outline"
                 className="mt-6 rounded-full"
-                onClick={() => { setSelectedCategory(null); setShowUpcomingOnly(true); setSearch(""); }}
+                onClick={() => { setShowUpcomingOnly(true); setSearch(""); }}
               >
                 Clear Filters
               </Button>

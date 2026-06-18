@@ -19,8 +19,9 @@ type SubItem = { href: string; label: string };
 type NavLink = { id: string; href: string; label: string; subItems?: SubItem[] };
 
 const NAV_LINKS: NavLink[] = [
-  { id: "home",    href: "/",        label: "Home" },
-  { id: "events",  href: "/events",  label: "Events" },
+  { id: "home",      href: "/",          label: "Home" },
+  { id: "events",    href: "/events",    label: "Events" },
+  { id: "favorites", href: "/favorites", label: "Favorites" },
   {
     id: "about", href: "/about", label: "About",
     subItems: [
@@ -183,6 +184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col p-4 space-y-4">
                 <Link href="/" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Home</Link>
                 <Link href="/events" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Events</Link>
+                <Link href="/favorites" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Favorites</Link>
                 <Link href="/about" className="text-lg font-medium p-2 hover:bg-muted rounded-md">About Bougie Bams</Link>
                 <Link href="/founder" className="text-base font-medium p-2 pl-5 hover:bg-muted rounded-md text-muted-foreground">Meet the Founder</Link>
                 <Link href="/contact" className="text-lg font-medium p-2 hover:bg-muted rounded-md">Contact</Link>
@@ -257,6 +259,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-3 text-sm text-muted">
               <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
               <li><Link href="/events" className="hover:text-primary transition-colors">Events</Link></li>
+              <li><Link href="/favorites" className="hover:text-primary transition-colors">Favorites</Link></li>
               <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
               <li><Link href="/founder" className="hover:text-primary transition-colors">Meet the Founder</Link></li>
               <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>

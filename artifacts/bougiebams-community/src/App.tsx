@@ -17,6 +17,7 @@ import MyEvents from "@/pages/my-events";
 import Feedback from "@/pages/feedback";
 import CancelRegistration from "@/pages/cancel";
 import Pay from "@/pages/pay";
+import Favorites from "@/pages/favorites";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ function Router() {
         <Route path="/my-events" component={MyEvents} />
         <Route path="/feedback/:token" component={Feedback} />
         <Route path="/cancel" component={CancelRegistration} />
+        <Route path="/favorites" component={Favorites} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
