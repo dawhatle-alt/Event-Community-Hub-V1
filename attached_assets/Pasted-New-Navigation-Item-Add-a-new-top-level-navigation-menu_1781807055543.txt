@@ -1,0 +1,223 @@
+New Navigation Item
+
+Add a new top-level navigation menu item:
+
+Favorites
+
+Route:
+
+/favorites
+Favorites Landing Page
+
+Create a landing page titled:
+
+BougieBams Favorites
+
+Subtitle:
+
+"Curated Mahjong accessories, winner brags, and table essentials we love."
+
+Include:
+
+Hero banner
+Elegant card-based layout
+Responsive mobile design
+Search capability
+Category filtering
+Product cards
+Amazon affiliate buttons
+Categories
+
+Create three categories:
+
+Winner Brags
+
+Description:
+
+Small treasures displayed by a player's rack to celebrate a Mahjong win.
+
+Products:
+
+Pink Flamingos
+https://amzn.to/4xuAl6I
+
+Hot Pink Flamingos
+https://amzn.to/4eiGud7
+
+Summer Beach Gnomes
+https://amzn.to/4veCu4Y
+
+Highland Cows
+https://amzn.to/4vOHopa
+
+Gemstone Handbags
+https://amzn.to/49SuHB5
+
+Elephants
+https://amzn.to/43smL5Z
+
+Handblown Yellow Ducks
+https://amzn.to/44aQQqN
+
+Blue Eyed Brass Dog
+https://amzn.to/444fxVQ
+
+Blue Eyed Brass Cat
+https://amzn.to/4vL2VyX
+
+Blue Eyed Brass Dragon
+https://amzn.to/49Vcfrs
+
+Bronze Mini Cowbells
+https://amzn.to/3S8jAOk
+
+Yellow Glass Ducks
+https://amzn.to/4e57H4j
+
+Good Luck Horseshoes
+https://amzn.to/4vOHWeE
+
+Gold Crowns
+https://amzn.to/4v1PPx7
+
+Brass Bees
+https://amzn.to/4geClcP
+
+Brass Butterflies
+https://amzn.to/3S7Psma
+
+Mahjong Essentials
+
+Description:
+
+Our favorite accessories that help make every Mahjong game more enjoyable.
+
+Products:
+
+NMJL Large Card Sleeves
+https://amzn.to/4uC2i9Z
+
+Slap Bracelets for Rolled Mats
+https://amzn.to/4eDfZQZ
+
+Dice & Winner Brag Dishes
+
+Description:
+
+Beautiful trays and dishes for dice, winner brags, and table accessories.
+
+Products:
+
+Three Clear Dishes
+https://amzn.to/4uBB5UX
+
+Clear Glass Tray
+https://amzn.to/4eAwq0x
+
+Bee Kind Dish
+https://amzn.to/4uwKCwk
+
+Glass Crown Dish
+https://amzn.to/49Yfcrk
+
+Brass Flower Bird Dish
+https://amzn.to/4xoSJOd
+
+Tiny Oak Dish
+https://amzn.to/4epuWFd
+
+Pink Blue and Green Flower Trays
+https://amzn.to/3QghF9W
+
+Cloud Flower Dish
+https://amzn.to/4ooO0rH
+
+Product Card Requirements
+
+Each card should contain:
+
+Product image
+Product name
+Short description
+Category tag
+Affiliate button
+
+Button text:
+
+View on Amazon
+
+Affiliate links must:
+
+target="_blank"
+rel="nofollow sponsored"
+Amazon Image Handling
+
+Do NOT use Amazon copyrighted images.
+
+Instead:
+
+Create placeholder image support.
+Build an admin-friendly structure allowing me to upload my own images later.
+Store image paths separately from affiliate URLs.
+
+Example:
+
+{
+  "name": "Pink Flamingos",
+  "category": "Winner Brags",
+  "image": "/images/winner-brags/pink-flamingos.jpg",
+  "affiliateUrl": "https://amzn.to/4xuAl6I"
+}
+SEO Requirements
+
+Generate:
+
+Title:
+
+BougieBams Favorites | Mahjong Accessories & Winner Brags
+
+Meta Description:
+
+Discover our favorite Mahjong accessories, winner brags, trays, and table essentials curated by the BougieBams team.
+
+Add:
+
+Structured data
+Product schema
+Internal links
+Open Graph tags
+Affiliate Disclosure
+
+Display on page footer:
+
+"As an Amazon Associate, BougieBams earns from qualifying purchases."
+
+Display subtly but clearly.
+
+Future Expansion
+
+Design the architecture so new categories can be added easily:
+
+Examples:
+
+Mahjong Mats
+Mahjong Bags
+Mahjong Gifts
+Mahjong Jewelry
+Event Essentials
+Wine Night Favorites
+
+Products should be driven from a JSON or database source rather than hard-coded into page components.
+
+Technical Requirements
+Maintain existing BougieBams design language.
+Mobile-first responsive design.
+Fast loading.
+Lazy-load images.
+Reusable product card component.
+Category filtering without page reload.
+Search products by keyword.
+Clean modern UI.
+Production-ready code.
+
+Before making changes, analyze the existing project structure and reuse current components, color palette, typography, and styling so the Favorites section feels like a native part of the BougieBams website rather than a separate application.
