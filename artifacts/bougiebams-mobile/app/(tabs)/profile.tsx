@@ -279,7 +279,13 @@ export default function ProfileScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const { isAuthenticated, isLoading: authLoading, signIn, signOut } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, signIn, signOut, sessionExpired, clearSessionExpired } = useAuth();
+
+  useEffect(() => {
+    if (!sessionExpired) return;
+    const timer = setTimeout(() => clearSessionExpired(), 4000);
+    return () => clearTimeout(timer);
+  }, [sessionExpired, clearSessionExpired]);
 
   const { data: authData, isLoading: userLoading } = useGetCurrentAuthUser();
   const user = authData?.user ?? null;
@@ -452,6 +458,21 @@ export default function ProfileScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
+          {sessionExpired && (
+            <Pressable
+              testID="session-expired-banner"
+              style={[
+                styles.expiredBanner,
+                { backgroundColor: `${colors.gold}20`, borderColor: colors.gold, borderRadius: colors.radius },
+              ]}
+              onPress={clearSessionExpired}
+            >
+              <Feather name="clock" size={16} color={colors.gold} />
+              <Text style={[styles.expiredBannerText, { color: colors.gold, fontFamily: "Inter_400Regular" }]}>
+                Your session expired — please sign in again
+              </Text>
+            </Pressable>
+          )}
           <View
             style={[
               styles.unauthCard,
@@ -1046,5 +1067,18 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontSize: 13,
+  },
+  expiredBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+  },
+  expiredBannerText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

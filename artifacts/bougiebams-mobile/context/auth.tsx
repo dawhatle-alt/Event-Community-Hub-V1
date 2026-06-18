@@ -38,6 +38,8 @@ setAuthTokenGetter(async () => {
 interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
+  sessionExpired: boolean;
+  clearSessionExpired: () => void;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -47,6 +49,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [tokenLoaded, setTokenLoaded] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const queryClient = useQueryClient();
 
   const discovery = AuthSession.useAutoDiscovery(OIDC_ISSUER);
@@ -118,6 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await promptAsync();
   }, [promptAsync]);
 
+  const clearSessionExpired = useCallback(() => {
+    setSessionExpired(false);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await logoutMutation.mutateAsync();
@@ -148,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!authUserError) return;
     const status = (authUserError as { status?: number })?.status;
     if (status === 401 && token) {
+      setSessionExpired(true);
       signOut();
     }
   }, [authUserError, token, signOut]);
@@ -156,10 +164,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       isAuthenticated: !!token,
       isLoading: !tokenLoaded,
+      sessionExpired,
+      clearSessionExpired,
       signIn,
       signOut,
     }),
-    [token, tokenLoaded, signIn, signOut],
+    [token, tokenLoaded, sessionExpired, clearSessionExpired, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
