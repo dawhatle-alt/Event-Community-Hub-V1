@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { format, isPast } from "date-fns";
+import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import {
   useGetCurrentAuthUser,
@@ -11,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -26,6 +28,7 @@ import { useReminders } from "@/context/reminders";
 import { useColors } from "@/hooks/useColors";
 import {
   cancelEventReminder,
+  getExpoPushToken,
   getPendingReminders,
   removeReminderByRegistrationId,
   removeReminderFromServer,
@@ -36,6 +39,7 @@ import {
 const API_BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type TabFilter = "upcoming" | "past";
+type PushStatus = "loading" | "on" | "off" | "warning";
 
 function StatusBadge({ status }: { status: string }) {
   const colors = useColors();
@@ -205,6 +209,64 @@ function ReminderRow({
   );
 }
 
+function NotificationStatusRow({ status }: { status: PushStatus }) {
+  const colors = useColors();
+
+  if (Platform.OS === "web" || status === "loading") return null;
+
+  const isOff = status === "off";
+  const isWarning = status === "warning";
+
+  const iconName = isOff ? "bell-off" : "bell";
+  const iconColor = isOff
+    ? colors.mutedForeground
+    : isWarning
+      ? colors.gold
+      : colors.primary;
+  const labelColor = isOff ? colors.mutedForeground : iconColor;
+  const label = isOff ? "Off" : isWarning ? "On (registration issue)" : "On";
+  const rowBg = isWarning ? `${colors.gold}14` : isOff ? `${colors.border}` : `${colors.primary}12`;
+
+  const handlePress = () => {
+    if (isOff) {
+      Linking.openSettings();
+    }
+  };
+
+  return (
+    <Pressable
+      testID="notification-status-row"
+      style={({ pressed }) => [
+        styles.notifRow,
+        {
+          backgroundColor: rowBg,
+          borderRadius: colors.radius - 2,
+          opacity: isOff && pressed ? 0.6 : 1,
+        },
+      ]}
+      onPress={isOff ? handlePress : undefined}
+      disabled={!isOff}
+    >
+      <Feather name={iconName as "bell" | "bell-off"} size={14} color={iconColor} />
+      <Text
+        style={[
+          styles.notifRowText,
+          { color: labelColor, fontFamily: "Inter_400Regular" },
+        ]}
+      >
+        <Text style={{ fontFamily: "Inter_500Medium" }}>Reminders: </Text>
+        {label}
+      </Text>
+      {isOff && (
+        <Feather name="chevron-right" size={13} color={colors.mutedForeground} />
+      )}
+      {isWarning && (
+        <Feather name="alert-circle" size={13} color={colors.gold} />
+      )}
+    </Pressable>
+  );
+}
+
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -212,6 +274,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabFilter>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [pushStatus, setPushStatus] = useState<PushStatus>("loading");
   const { reminders, setReminders } = useReminders();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -262,6 +325,46 @@ export default function ProfileScreen() {
       loadAndCleanReminders(registrations);
     }
   }, [isAuthenticated, registrations, loadAndCleanReminders]);
+
+  const checkPushStatus = useCallback(async () => {
+    if (Platform.OS === "web") return;
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") {
+      setPushStatus("off");
+      return;
+    }
+    const token = await getExpoPushToken();
+    if (!token) {
+      setPushStatus("off");
+      return;
+    }
+    const authToken = await getStoredAuthToken();
+    if (!authToken) {
+      setPushStatus("on");
+      return;
+    }
+    try {
+      const resp = await fetch(`${API_BASE_URL}/api/notifications/push-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ token }),
+      });
+      setPushStatus(resp.ok ? "on" : "warning");
+    } catch {
+      setPushStatus("warning");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkPushStatus();
+    } else {
+      setPushStatus("loading");
+    }
+  }, [isAuthenticated, checkPushStatus]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -489,21 +592,24 @@ export default function ProfileScreen() {
                       {user.email}
                     </Text>
                   )}
-                  <Pressable
-                    testID="sign-out-button"
-                    style={({ pressed }) => [styles.signOutBtn, { opacity: pressed ? 0.6 : 1 }]}
-                    onPress={signOut}
-                  >
-                    <Feather name="log-out" size={13} color={colors.mutedForeground} />
-                    <Text
-                      style={[
-                        styles.signOutText,
-                        { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-                      ]}
+                  <View style={styles.profileActions}>
+                    <NotificationStatusRow status={pushStatus} />
+                    <Pressable
+                      testID="sign-out-button"
+                      style={({ pressed }) => [styles.signOutBtn, { opacity: pressed ? 0.6 : 1 }]}
+                      onPress={signOut}
                     >
-                      Sign out
-                    </Text>
-                  </Pressable>
+                      <Feather name="log-out" size={13} color={colors.mutedForeground} />
+                      <Text
+                        style={[
+                          styles.signOutText,
+                          { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                        ]}
+                      >
+                        Sign out
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
 
@@ -721,6 +827,22 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
     gap: 4,
+  },
+  profileActions: {
+    gap: 6,
+    marginTop: 4,
+  },
+  notifRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
+  },
+  notifRowText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   profileName: {
     fontSize: 26,
