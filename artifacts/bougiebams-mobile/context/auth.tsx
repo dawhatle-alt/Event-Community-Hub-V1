@@ -3,8 +3,8 @@ import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import {
   setAuthTokenGetter,
+  setUnauthorizedHandler,
   useExchangeMobileAuthorizationCode,
-  useGetCurrentAuthUser,
   useLogoutMobileSession,
 } from "@workspace/api-client-react";
 import React, {
@@ -138,27 +138,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries();
   }, [logoutMutation, queryClient]);
 
-  // Detect server-side session expiry: if the auth user endpoint returns 401
-  // while we still have a stored token, the session has expired — sign out
-  // automatically so the user isn't left in a broken "signed in" state.
-  const { error: authUserError } = useGetCurrentAuthUser({
-    query: {
-      enabled: tokenLoaded && !!token && Platform.OS !== "web",
-      retry: (_, error) => {
-        const status = (error as { status?: number })?.status;
-        return status !== 401;
-      },
-    },
-  });
-
+  // Global 401 interceptor: register a handler on the shared fetch layer so
+  // that ANY API call returning 401 while a token is stored triggers sign-out.
+  // This covers all screens — not just the auth/user poll — so members are
+  // gracefully signed out regardless of which endpoint detected the expiry.
   useEffect(() => {
-    if (!authUserError) return;
-    const status = (authUserError as { status?: number })?.status;
-    if (status === 401 && token) {
-      setSessionExpired(true);
-      signOut();
+    if (!tokenLoaded) return;
+
+    if (token && Platform.OS !== "web") {
+      setUnauthorizedHandler(() => {
+        setSessionExpired(true);
+        signOut();
+      });
+    } else {
+      setUnauthorizedHandler(null);
     }
-  }, [authUserError, token, signOut]);
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [token, tokenLoaded, signOut]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
