@@ -84,6 +84,9 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
  * Serve object entities from PRIVATE_OBJECT_DIR.
  * These are served from a separate path from /public-objects and can optionally
  * be protected with authentication or ACL checks based on the use case.
+ *
+ * Object paths are random UUIDs that never reuse, so we cache aggressively
+ * with public, immutable to avoid repeated GCS round-trips on every page load.
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
@@ -92,17 +95,19 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     const objectPath = `/objects/${wildcardPath}`;
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
-    const response = await objectStorageService.downloadObject(objectFile);
+    const [metadata] = await objectFile.getMetadata();
+    const contentType = (metadata.contentType as string) || "application/octet-stream";
+    const contentLength = metadata.size ? String(metadata.size) : undefined;
 
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    const nodeStream = objectFile.createReadStream();
 
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
-    } else {
-      res.end();
-    }
+    res.status(200);
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    const webStream = Readable.fromWeb(Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>);
+    webStream.pipe(res);
   } catch (error) {
     if (error instanceof ObjectNotFoundError) {
       req.log.warn({ err: error }, "Object not found");
