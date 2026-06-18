@@ -39,6 +39,7 @@ export default function EventDetail() {
     couponCode: "",
   });
   const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid">("idle");
+  const [formErrors, setFormErrors] = useState<{ phone?: string }>({});
   const [waitlistForm, setWaitlistForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
@@ -135,6 +136,12 @@ export default function EventDetail() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneDigits = formData.phone.replace(/\D/g, "");
+    if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+      setFormErrors({ phone: "Enter a complete phone number" });
+      return;
+    }
+    setFormErrors({});
     createCheckout.mutate(
       {
         data: {
@@ -496,6 +503,26 @@ export default function EventDetail() {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="bg-background" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      Cell Phone
+                      <span className="text-xs font-normal text-muted-foreground ml-1">(optional)</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(512) 555-0100"
+                      value={formData.phone}
+                      onChange={e => {
+                        setFormData({...formData, phone: e.target.value});
+                        setFormErrors(prev => ({ ...prev, phone: undefined }));
+                      }}
+                      className={`bg-background${formErrors.phone ? " border-destructive focus-visible:ring-destructive" : ""}`}
+                    />
+                    {formErrors.phone && (
+                      <p className="text-xs text-destructive">{formErrors.phone}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="quantity">Number of Tickets</Label>
