@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 
 export default function EventDetail() {
@@ -25,6 +25,7 @@ export default function EventDetail() {
   const createCheckout = useCreateCheckoutSession();
   const { user, isAuthenticated, login } = useAuth();
   const [checkoutData, setCheckoutData] = useState<{ sessionId: string } | null>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -167,6 +168,7 @@ export default function EventDetail() {
             setLocation(`/events/confirmation?sessionId=${encodeURIComponent(data.sessionId)}`);
           } else {
             setCheckoutData({ sessionId: data.sessionId });
+            setTimeout(() => reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
           }
         }
       }
@@ -278,7 +280,7 @@ export default function EventDetail() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="sticky top-28 bg-card p-8 rounded-3xl shadow-lg border border-primary/20">
+            <div ref={reviewRef} className="sticky top-28 bg-card p-8 rounded-3xl shadow-lg border border-primary/20">
               {checkoutData ? (
                 <div className="space-y-6">
                   <div>
