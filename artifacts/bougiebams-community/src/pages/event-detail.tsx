@@ -658,7 +658,7 @@ export default function EventDetail() {
                     disabled={createCheckout.isPending}
                   >
                     {createCheckout.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                    Reserve Your Spot
+                    Reserve &amp; Pay
                   </Button>
                 </form>
               )}
