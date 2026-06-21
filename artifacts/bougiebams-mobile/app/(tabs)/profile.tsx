@@ -5,20 +5,25 @@ import { useRouter } from "expo-router";
 import {
   useGetCurrentAuthUser,
   useGetMyRegistrations,
+  getGetCurrentAuthUserQueryKey,
 } from "@workspace/api-client-react";
 import type { RegistrationWithEvent } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -271,11 +276,19 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabFilter>("upcoming");
   const [refreshing, setRefreshing] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [pushStatus, setPushStatus] = useState<PushStatus>("loading");
   const { reminders, setReminders } = useReminders();
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -385,6 +398,58 @@ export default function ProfileScreen() {
       await signIn();
     } finally {
       setSigningIn(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditFirstName(user?.firstName ?? "");
+    setEditLastName(user?.lastName ?? "");
+    setEditEmail(user?.email ?? "");
+    setSaveError(null);
+    setEditModalVisible(true);
+  };
+
+  const saveProfile = async () => {
+    const firstName = editFirstName.trim();
+    const lastName = editLastName.trim();
+    const email = editEmail.trim();
+
+    if (!firstName) {
+      setSaveError("First name is required.");
+      return;
+    }
+    if (!lastName) {
+      setSaveError("Last name is required.");
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSaveError("Please enter a valid email address.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const authToken = await getStoredAuthToken();
+      const resp = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ firstName, lastName, email }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        setSaveError((data as { error?: string }).error ?? "Failed to save. Please try again.");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: getGetCurrentAuthUserQueryKey() });
+      setEditModalVisible(false);
+    } catch {
+      setSaveError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -593,26 +658,52 @@ export default function ProfileScreen() {
                   <Feather name="user" size={32} color={colors.primary} />
                 </View>
                 <View style={styles.profileInfo}>
-                  {user && (user.firstName || user.lastName) && (
-                    <Text
-                      style={[
-                        styles.profileName,
-                        { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
+                  <View style={styles.profileNameRow}>
+                    <View style={{ flex: 1 }}>
+                      {user && (user.firstName || user.lastName) && (
+                        <Text
+                          style={[
+                            styles.profileName,
+                            { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
+                          ]}
+                        >
+                          {[user.firstName, user.lastName].filter(Boolean).join(" ")}
+                        </Text>
+                      )}
+                      {user?.email && (
+                        <Text
+                          style={[
+                            styles.profileEmail,
+                            { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                          ]}
+                        >
+                          {user.email}
+                        </Text>
+                      )}
+                    </View>
+                    <Pressable
+                      testID="edit-profile-button"
+                      style={({ pressed }) => [
+                        styles.editBtn,
+                        {
+                          backgroundColor: `${colors.primary}18`,
+                          borderRadius: colors.radius - 2,
+                          opacity: pressed ? 0.6 : 1,
+                        },
                       ]}
+                      onPress={openEditModal}
                     >
-                      {[user.firstName, user.lastName].filter(Boolean).join(" ")}
-                    </Text>
-                  )}
-                  {user?.email && (
-                    <Text
-                      style={[
-                        styles.profileEmail,
-                        { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-                      ]}
-                    >
-                      {user.email}
-                    </Text>
-                  )}
+                      <Feather name="edit-2" size={13} color={colors.primary} />
+                      <Text
+                        style={[
+                          styles.editBtnText,
+                          { color: colors.primary, fontFamily: "Inter_500Medium" },
+                        ]}
+                      >
+                        Edit
+                      </Text>
+                    </Pressable>
+                  </View>
                   <View style={styles.profileActions}>
                     <NotificationStatusRow status={pushStatus} />
                     <Pressable
@@ -806,6 +897,200 @@ export default function ProfileScreen() {
           }
         />
       )}
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => !saving && setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            {/* Modal Header */}
+            <View
+              style={[
+                styles.modalHeader,
+                { borderBottomColor: colors.border, backgroundColor: colors.background },
+              ]}
+            >
+              <Pressable
+                testID="edit-profile-cancel"
+                style={({ pressed }) => [styles.modalHeaderBtn, { opacity: pressed ? 0.6 : 1 }]}
+                onPress={() => !saving && setEditModalVisible(false)}
+                disabled={saving}
+              >
+                <Text
+                  style={[
+                    styles.modalCancelText,
+                    { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
+                  ]}
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: colors.foreground, fontFamily: "CormorantGaramond_500Medium" },
+                ]}
+              >
+                Edit Profile
+              </Text>
+              <Pressable
+                testID="edit-profile-save"
+                style={({ pressed }) => [
+                  styles.modalHeaderBtn,
+                  { opacity: pressed || saving ? 0.6 : 1 },
+                ]}
+                onPress={saveProfile}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.modalSaveText,
+                      { color: colors.primary, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    Save
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.modalBody}
+              keyboardShouldPersistTaps="handled"
+            >
+              {saveError && (
+                <View
+                  style={[
+                    styles.errorBanner,
+                    {
+                      backgroundColor: `${colors.destructive}12`,
+                      borderColor: `${colors.destructive}40`,
+                      borderRadius: colors.radius,
+                    },
+                  ]}
+                >
+                  <Feather name="alert-circle" size={14} color={colors.destructive} />
+                  <Text
+                    style={[
+                      styles.errorText,
+                      { color: colors.destructive, fontFamily: "Inter_400Regular" },
+                    ]}
+                  >
+                    {saveError}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.fieldGroup}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  First Name
+                </Text>
+                <TextInput
+                  testID="edit-first-name"
+                  style={[
+                    styles.textInput,
+                    {
+                      color: colors.foreground,
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderRadius: colors.radius,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                  value={editFirstName}
+                  onChangeText={setEditFirstName}
+                  placeholder="First name"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  editable={!saving}
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Last Name
+                </Text>
+                <TextInput
+                  testID="edit-last-name"
+                  style={[
+                    styles.textInput,
+                    {
+                      color: colors.foreground,
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderRadius: colors.radius,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                  value={editLastName}
+                  onChangeText={setEditLastName}
+                  placeholder="Last name"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  editable={!saving}
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text
+                  style={[
+                    styles.fieldLabel,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Email
+                </Text>
+                <TextInput
+                  testID="edit-email"
+                  style={[
+                    styles.textInput,
+                    {
+                      color: colors.foreground,
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderRadius: colors.radius,
+                      fontFamily: "Inter_400Regular",
+                    },
+                  ]}
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                  placeholder="Email address"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  returnKeyType="done"
+                  onSubmitEditing={saveProfile}
+                  editable={!saving}
+                />
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -1067,6 +1352,79 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontSize: 13,
+  },
+  profileNameRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  editBtnText: {
+    fontSize: 13,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+  },
+  modalHeaderBtn: {
+    minWidth: 60,
+  },
+  modalTitle: {
+    fontSize: 22,
+    textAlign: "center",
+  },
+  modalCancelText: {
+    fontSize: 15,
+  },
+  modalSaveText: {
+    fontSize: 15,
+    textAlign: "right",
+  },
+  modalBody: {
+    padding: 20,
+    gap: 20,
+  },
+  fieldGroup: {
+    gap: 6,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  textInput: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderWidth: 1,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
   expiredBanner: {
     flexDirection: "row",
