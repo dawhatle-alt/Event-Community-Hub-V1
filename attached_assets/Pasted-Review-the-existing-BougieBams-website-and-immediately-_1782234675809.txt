@@ -1,0 +1,110 @@
+Review the existing BougieBams website and immediately implement the minimum affiliate-ready improvements needed for Amazon Associates.
+
+Focus only on the items that should be addressed now. Do not redesign the whole site.
+
+Immediate priorities:
+
+1. Add a top navigation item called “BougieBams Favorites”
+   - Route: /favorites
+   - Make it visible in desktop and mobile navigation.
+
+2. Create a /favorites page
+   Page title:
+   BougieBams Favorites
+
+   Subtitle:
+   Curated Mahjong accessories, winner brags, and table essentials we love.
+
+   The page should feel boutique, elegant, and consistent with the existing BougieBams brand.
+
+3. Add three product sections:
+
+   A. Winner Brags
+   Description:
+   Small treasures displayed by a player's rack to celebrate a Mahjong win.
+
+   Products:
+   - Pink Flamingos — https://amzn.to/4xuAl6I
+   - Hot Pink Flamingos — https://amzn.to/4eiGud7
+   - Summer Beach Gnomes — https://amzn.to/4veCu4Y
+   - Highland Cows — https://amzn.to/4vOHopa
+   - Gemstone Handbags — https://amzn.to/49SuHB5
+   - Elephants — https://amzn.to/43smL5Z
+   - Handblown Yellow Ducks — https://amzn.to/44aQQqN
+   - Blue Eyed Brass Dog — https://amzn.to/444fxVQ
+   - Blue Eyed Brass Cat — https://amzn.to/4vL2VyX
+   - Blue Eyed Brass Dragon — https://amzn.to/49Vcfrs
+   - Bronze Mini Cowbells — https://amzn.to/3S8jAOk
+   - Yellow Glass Ducks — https://amzn.to/4e57H4j
+   - Good Luck Horseshoes — https://amzn.to/4vOHWeE
+   - Gold Crowns — https://amzn.to/4v1PPx7
+   - Brass Bees — https://amzn.to/4geClcP
+   - Brass Butterflies — https://amzn.to/3S7Psma
+
+   B. Mahjong Supplies
+   Description:
+   Useful accessories that help make Mahjong nights easier, cleaner, and more organized.
+
+   Products:
+   - NMJL Large Card Sleeves — https://amzn.to/4uC2i9Z
+   - Slap Bracelets for Rolled Mats — https://amzn.to/4eDfZQZ
+
+   C. Dice and Winner Brag Dishes
+   Description:
+   Pretty trays and dishes for dice, winner brags, and small table accessories.
+
+   Products:
+   - Three Clear Dishes — https://amzn.to/4uBB5UX
+   - Clear Glass Tray — https://amzn.to/4eAwq0x
+   - Bee Kind Dish — https://amzn.to/4uwKCwk
+   - Glass Crown Dish — https://amzn.to/49Yfcrk
+   - Brass Flower Bird Dish — https://amzn.to/4xoSJOd
+   - Tiny Oak Dish — https://amzn.to/4epuWFd
+   - Pink Blue and Green Flower Trays — https://amzn.to/3QghF9W
+   - Cloud Flower Dish — https://amzn.to/4ooO0rH
+
+4. Product card requirements:
+   - Product name
+   - Category
+   - Short original description
+   - Button text: View on Amazon
+   - Buttons must open in a new tab
+   - Affiliate links must include:
+     rel="nofollow sponsored"
+     target="_blank"
+
+5. Do not use Amazon product images.
+   Use clean placeholder cards or local image placeholders so we can upload our own product photos later.
+
+6. Add Amazon affiliate disclosure.
+   Add this exact disclosure near the top of the Favorites page and also in the site footer if practical:
+
+   “As an Amazon Associate, BougieBams earns from qualifying purchases.”
+
+7. Add basic SEO for the /favorites page:
+   Page title:
+   BougieBams Favorites | Mahjong Accessories & Winner Brags
+
+   Meta description:
+   Discover BougieBams’ favorite Mahjong accessories, winner brags, trays, and table essentials.
+
+8. Add simple filtering:
+   - All
+   - Winner Brags
+   - Mahjong Supplies
+   - Dice and Winner Brag Dishes
+
+9. Keep the implementation maintainable.
+   Store product data in a reusable array, JSON file, or data module instead of hard-coding repeated card markup.
+
+10. Validate the implementation:
+   - The /favorites route works
+   - Navigation link works on desktop and mobile
+   - All Amazon buttons work
+   - Affiliate disclosure is visible
+   - No raw Amazon URLs are displayed to users
+   - Layout works on mobile
+   - No Amazon images are used
+   - Existing pages are not broken
+
+Do not add advanced features yet, including admin pages, product database management, email capture, blog generation, or storefront integration. This task is only to make the site immediately affiliate-ready.
