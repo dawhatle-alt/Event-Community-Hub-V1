@@ -23,9 +23,7 @@ export async function notifyWaitlistSpots(eventId: number, count: number): Promi
 
     if (entries.length === 0) return;
 
-    const domain = process.env.REPLIT_DEV_DOMAIN
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : "https://bougiebams.com";
+    const domain = process.env.APP_URL ?? "https://bougiebams.com";
     const eventUrl = `${domain}/events/${eventId}`;
 
     for (const entry of entries) {

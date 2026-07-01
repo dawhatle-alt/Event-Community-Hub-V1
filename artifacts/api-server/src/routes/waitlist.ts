@@ -64,9 +64,7 @@ router.post("/waitlist", async (req, res) => {
   logger.info({ eventId, email, position }, "Waitlist entry added");
 
   // Build unsubscribe URL with signed token
-  const domain = process.env.REPLIT_DEV_DOMAIN
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : "https://bougiebams.com";
+  const domain = process.env.APP_URL ?? "https://bougiebams.com";
   const unsubscribeUrl = `${domain}/api/waitlist/unsubscribe?id=${inserted.id}&token=${makeUnsubscribeToken(inserted.id)}`;
 
   // Send confirmation email (non-blocking)
