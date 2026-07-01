@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, asc, sql, ilike, or } from "drizzle-orm";
-import { db, eventsTable } from "@workspace/db";
+import { db, eventsTable, registrationsTable, feedbackResponsesTable, waitlistTable } from "@workspace/db";
 import {
   ListEventsQueryParams,
   CreateEventBody,
@@ -238,13 +238,35 @@ router.delete("/events/:id", requireAdminAuth, async (req, res): Promise<void> =
     return;
   }
 
-  const [event] = await db.delete(eventsTable).where(eq(eventsTable.id, params.data.id)).returning();
-  if (!event) {
-    res.status(404).json({ error: "Event not found" });
-    return;
-  }
+  try {
+    const eventId = params.data.id;
 
-  res.sendStatus(204);
+    // Delete dependent rows in FK order before removing the event
+    const registrationIds = await db
+      .select({ id: registrationsTable.id })
+      .from(registrationsTable)
+      .where(eq(registrationsTable.eventId, eventId));
+
+    if (registrationIds.length > 0) {
+      const ids = registrationIds.map((r) => r.id);
+      for (const rid of ids) {
+        await db.delete(feedbackResponsesTable).where(eq(feedbackResponsesTable.registrationId, rid));
+      }
+      await db.delete(registrationsTable).where(eq(registrationsTable.eventId, eventId));
+    }
+
+    await db.delete(waitlistTable).where(eq(waitlistTable.eventId, eventId));
+
+    const [event] = await db.delete(eventsTable).where(eq(eventsTable.id, eventId)).returning();
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
+
+    res.sendStatus(204);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete event" });
+  }
 });
 
 export default router;
